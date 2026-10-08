@@ -92,3 +92,5 @@ and redeploys the web app.
 Secrets live only in Railway/Vercel environment variables and local `.env`
 files — never in the repository. Deployment tokens are used by CI/CLI only
 and must never be committed or exposed to the browser.
+
+<!-- deployment pipeline: GitHub Actions -> Railway + Vercel -->

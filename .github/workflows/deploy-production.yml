@@ -1,0 +1,37 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    name: Deploy backend to Railway
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Railway deploy of latest commit
+        run: |
+          npm install -g @railway/cli
+          railway api 'mutation { serviceInstanceDeploy(serviceId: "dc288dfb-c372-4bf3-aae8-a5c99f479767", environmentId: "7a18babb-4b19-4cf1-9c9d-c2d9747cc319", latestCommit: true) }'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  frontend:
+    name: Deploy frontend to Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Vercel (production)
+        run: |
+          mkdir -p .vercel
+          printf '{"projectId":"%s","orgId":"%s"}' "$VERCEL_PROJECT_ID" "$VERCEL_ORG_ID" > .vercel/project.json
+          npx vercel@latest deploy --prod --yes --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
