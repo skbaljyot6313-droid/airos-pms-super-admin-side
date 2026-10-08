@@ -1,0 +1,37 @@
+# Secrets — NEVER commit
+.env
+.env.*
+!.env.example
+.tmp_tok
+
+# Deployment tool state
+.vercel/
+.railway/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Runtime artifacts
+uploads/
+*.log
+*.dump
+*.sql
+logs/
+migration-backups/
+
+# Installers / build artifacts
+*.exe
+*.msi
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

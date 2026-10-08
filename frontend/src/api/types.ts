@@ -1,0 +1,1067 @@
+import {
+  Area,
+  AuthUser,
+  AutomationTrigger,
+  BedStatus,
+  Company,
+  DormType,
+  Employee,
+  MaintenancePriority,
+  Property,
+  RecurrenceSchedule,
+  RoomStatus,
+  Task,
+  TaskCompletionImage,
+  TaskCompletionSubmission,
+  TaskPriority,
+  TaskStatus,
+  TaskType,
+  WashroomResourceType,
+  WashroomStatus,
+  WashroomType,
+  Zone,
+  ZoneType,
+} from '../types';
+
+/**
+ * Request/response DTOs for the backend contract.
+ * List endpoints return a paginated envelope.
+ */
+
+export interface ListResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+
+export interface LoginRequest {
+  /** Email or username — backend resolves either */
+  identifier: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: AuthUser;
+  company: Company;
+}
+
+export interface RegisterCompanyRequest {
+  company_name: string;
+  brand_name: string;
+  address: string;
+  pin_code: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirm_password?: string;
+}
+
+export interface MeResponse {
+  user: AuthUser;
+  company: Company;
+}
+
+export interface UpdateProfileRequest {
+  name?: string;
+  phone?: string;
+  email?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Company
+// ---------------------------------------------------------------------------
+
+export interface UpdateCompanyRequest {
+  name?: string;
+  legal_name?: string;
+  brand_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  pin_code?: string;
+  /** 'HH:MM' IST — operational-day start; rollover + day analysis use it. */
+  operational_day_start?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Properties
+// ---------------------------------------------------------------------------
+
+export interface PropertyCreateRequest {
+  name: string;
+  location: string;
+  city: string;
+  state: string;
+  /** Manager account is created with the property — scoped to it */
+  manager: {
+    name: string;
+    email: string;
+    phone?: string;
+    /** Optional — backend auto-generates a unique one from name/email */
+    username?: string;
+    password: string;
+  };
+}
+
+export interface PropertyUpdateRequest {
+  name?: string;
+  location?: string;
+  city?: string;
+  state?: string;
+  status?: Property['status'];
+  manager_name?: string;
+  manager_email?: string;
+  manager_phone?: string;
+  /** Reassign the manager to an existing employee and/or update their credentials */
+  manager?: {
+    employee_uid?: string;
+    email?: string;
+    password?: string;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Areas (floors / structural levels within a property)
+// ---------------------------------------------------------------------------
+
+export interface AreaCreateRequest {
+  property_uid: string;
+  name: string;
+  level_number?: number;
+  description?: string;
+}
+
+export type AreaUpdateRequest = Partial<Omit<Area, 'area_uid' | 'property_uid' | 'created_at'>>;
+
+// ---------------------------------------------------------------------------
+// Zones
+// ---------------------------------------------------------------------------
+
+export interface ZoneCreateRequest {
+  property_uid: string;
+  name: string;
+  floor?: string;
+  area_uid?: string | null;
+  zone_type?: ZoneType;
+  description?: string;
+}
+
+export type ZoneUpdateRequest = Partial<
+  Omit<Zone, 'zone_uid' | 'property_uid' | 'created_at'>
+>;
+
+// ---------------------------------------------------------------------------
+// Rooms / Dorms / Beds
+// ---------------------------------------------------------------------------
+
+export interface RoomCreateRequest {
+  property_uid: string;
+  room_number: string;
+  type: string;
+  area_sqft?: number;
+  zone_uid?: string | null;
+  bed_count?: number;
+}
+
+export interface RoomBulkCreateRequest {
+  property_uid: string;
+  start: number;
+  end: number;
+  type: string;
+  /** Optional name prefix — "Special" + range 101-103 → "Special 101"… */
+  prefix?: string;
+  area_sqft?: number;
+  zone_uid?: string | null;
+}
+
+export interface RoomBulkCreateResponse {
+  created: import('../types').Room[];
+  /** Per-number validation failures, e.g. ["Room 203 already exists"] */
+  errors: string[];
+}
+
+export interface RoomBulkDeleteRequest {
+  property_uid: string;
+  room_uids: string[];
+}
+
+export interface RoomUpdateRequest {
+  room_number?: string;
+  type?: string;
+  area_sqft?: number;
+  zone_uid?: string | null;
+  cleaning_note?: string;
+  // status / current_guest are not patchable — resource state moves through
+  // the command API (check-in, check-out, transition) only.
+}
+
+export interface DormCreateRequest {
+  property_uid: string;
+  name: string;
+  dorm_type: DormType;
+  washroom: WashroomType;
+  bed_count: number;
+  zone_uid?: string | null;
+  floor?: string;
+  area_sqft?: number;
+  description?: string;
+}
+
+export type DormUpdateRequest = Partial<
+  Omit<import('../types').Dorm, 'dorm_uid' | 'property_uid' | 'beds' | 'created_at'>
+> & {
+  /** Resize bed inventory — grow appends beds, shrink marks occupied extras inactive */
+  bed_count?: number;
+};
+
+/** One line item of the bulk-dorm form — same fields as DormCreateRequest. */
+export interface DormBulkItem {
+  name: string;
+  dorm_type: DormType;
+  washroom: WashroomType;
+  bed_count: number;
+  zone_uid?: string | null;
+  floor?: string;
+  area_sqft?: number;
+  description?: string;
+}
+
+export interface DormBulkCreateRequest {
+  property_uid: string;
+  dorms: DormBulkItem[];
+}
+
+export interface DormBulkCreateResponse {
+  created: import('../types').Dorm[];
+  /** Row-level validation failures — always empty on success (all-or-nothing) */
+  errors: string[];
+}
+
+// Occupancy commands — the authoritative record behind `occupied`
+export interface CheckInRequest {
+  /** Optional — omitted/null creates an unnamed occupancy. */
+  guest_name?: string | null;
+}
+
+export interface ResourceTransitionRequest {
+  to: string;
+  reason: string;
+}
+
+export interface ResourceTransitionResponse {
+  resource_type: string;
+  resource_id: string;
+  previous_state: string;
+  new_state: string;
+}
+
+// ---------------------------------------------------------------------------
+// Washrooms
+// ---------------------------------------------------------------------------
+
+export interface WashroomCreateRequest {
+  property_uid: string;
+  name: string;
+  washroom_type: WashroomResourceType;
+  /** Fixture counts are resize directives — the backend turns them into
+   *  real washroom_fixtures rows. */
+  stall_count?: number;
+  urinal_count?: number;
+  shower_count?: number;
+  sink_count?: number;
+  mirror_count?: number;
+  bath_tub_count?: number;
+  jacuzzi_count?: number;
+  custom_fixtures?: Record<string, number>;
+  zone_uid?: string | null;
+  area_uid?: string | null;
+  /** Attached to one specific dorm — inherits the dorm's zone/area */
+  dorm_uid?: string | null;
+}
+
+export interface WashroomFixtureUpdateRequest {
+  status: 'operational' | 'maintenance' | 'inactive';
+}
+
+export interface WashroomUpdateRequest {
+  name?: string;
+  washroom_type?: WashroomResourceType;
+  dorm_uid?: string | null;
+  stall_count?: number;
+  urinal_count?: number;
+  shower_count?: number;
+  sink_count?: number;
+  mirror_count?: number;
+  bath_tub_count?: number;
+  jacuzzi_count?: number;
+  custom_fixtures?: Record<string, number>;
+  zone_uid?: string | null;
+  area_uid?: string | null;
+}
+
+export interface WashroomBulkItem {
+  name: string;
+  washroom_type: WashroomResourceType;
+  stall_count?: number;
+  urinal_count?: number;
+  shower_count?: number;
+  sink_count?: number;
+  mirror_count?: number;
+  bath_tub_count?: number;
+  jacuzzi_count?: number;
+  custom_fixtures?: Record<string, number>;
+  zone_uid?: string | null;
+  area_uid?: string | null;
+  dorm_uid?: string | null;
+}
+
+export interface WashroomBulkCreateRequest {
+  property_uid: string;
+  washrooms: WashroomBulkItem[];
+}
+
+export interface WashroomBulkCreateResponse {
+  created: import('../types').Washroom[];
+  errors: string[];
+}
+
+export interface UnitAllocationRequest {
+  zone_uid?: string | null;
+  area_uid?: string | null;
+}
+
+/**
+ * Bulk status transition — mirrors the multi-select bulk actions.
+ * Backend may trigger automation rules (e.g. housekeeping task generation).
+ */
+export interface BulkUnitStatusRequest {
+  action: 'checkout' | 'cleaning' | 'available' | 'cleaned' | 'maintenance';
+  property_uid: string;
+  room_uids?: string[];
+  bed_uids?: string[];
+  washroom_uids?: string[];
+}
+
+export interface BulkUnitStatusResponse {
+  rooms: import('../types').Room[];
+  dorms: import('../types').Dorm[];
+  washrooms?: import('../types').Washroom[];
+  /** Tasks auto-created by automation rules as a side effect */
+  generated_tasks?: Task[];
+  /** Units kept unavailable because active work still blocks them */
+  skipped_blocked?: string[];
+}
+
+
+// ---------------------------------------------------------------------------
+// Employees
+// ---------------------------------------------------------------------------
+
+export interface EmployeeCreateRequest {
+  property_uid: string;
+  name: string;
+  email: string;
+  phone?: string;
+  username?: string;
+  /** Creates the staff login credential — the employee signs in with it */
+  password: string;
+  job_title: string;
+  department: Employee['department'];
+  zone_uid?: string | null;
+  salary?: string;
+  shift?: string;
+  start_date?: string;
+}
+
+export interface EmployeeUpdateRequest {
+  name?: string;
+  job_title?: string;
+  department?: Employee['department'];
+  phone?: string;
+  email?: string;
+  zone_uid?: string | null;
+  salary?: string;
+  shift?: string;
+}
+
+export interface EmployeeZoneAssignRequest {
+  zone_uid: string | null;
+  /** Area-level assignment — mutually exclusive with zone_uid */
+  area_uid?: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Tasks
+// ---------------------------------------------------------------------------
+
+export interface TaskCreateRequest {
+  property_uid: string;
+  title: string;
+  description?: string;
+  task_type: TaskType;
+  /** cleaning | maintenance | inspection | housekeeping | other */
+  work_type?: string;
+  employee_uid?: string;
+  supervisor_uid?: string | null;
+  room_uid?: string | null;
+  washroom_uid?: string | null;
+  /** Fixture-level task target — must belong to washroom_uid */
+  washroom_fixture_uid?: string | null;
+  zone_uid?: string | null;
+  priority?: TaskPriority;
+  due_date?: string;
+  due_time?: string;
+  /** HH:MM — time of day each repetitive occurrence starts */
+  start_time?: string;
+  recurrence_start_date?: string;
+  recurrence_end_date?: string;
+  recurrence_window_end?: string;
+  recurrence?: RecurrenceSchedule;
+  recurrence_interval_days?: number;
+  automation_rule?: {
+    trigger: AutomationTrigger;
+    scope_zone_uid?: string | null;
+    template_title: string;
+    template_description?: string;
+    assign_to_uid?: string;
+  };
+}
+
+export interface TaskUpdateRequest {
+  title?: string;
+  description?: string;
+  task_type?: TaskType;
+  work_type?: string;
+  employee_uid?: string;
+  supervisor_uid?: string | null;
+  room_uid?: string | null;
+  washroom_uid?: string | null;
+  washroom_fixture_uid?: string | null;
+  zone_uid?: string | null;
+  priority?: TaskPriority;
+  // status is lifecycle state — it moves only through the lifecycle
+  // endpoints (start/complete/redo/reopen); the backend rejects it
+  due_date?: string;
+  due_time?: string;
+  start_time?: string;
+  recurrence_start_date?: string;
+  recurrence_end_date?: string;
+  recurrence_window_end?: string;
+  recurrence?: RecurrenceSchedule;
+  recurrence_interval_days?: number;
+  automation_rule?: Task['automation_rule'];
+}
+
+export interface TaskCompleteRequest {
+  /** URLs returned by POST /media/uploads */
+  photo_urls: string[];
+  note?: string;
+}
+
+export interface TaskCompleteResponse {
+  task: Task;
+  /** Next instance when a repetitive task regenerates on completion */
+  generated_task?: Task;
+}
+
+export interface TaskActionRequest {
+  note?: string;
+}
+
+export interface TaskReassignRequest {
+  employee_uid: string | null;
+}
+
+
+// ---------------------------------------------------------------------------
+// Maintenance tickets
+// ---------------------------------------------------------------------------
+
+export interface MaintenanceCreateRequest {
+  property_uid: string;
+  /** Exactly one of room_uid / dorm_uid / bed_uid / washroom_uid must be provided. */
+  room_uid?: string;
+  dorm_uid?: string;
+  bed_uid?: string;
+  washroom_uid?: string;
+  /** Fixture-level target — must belong to washroom_uid */
+  washroom_fixture_uid?: string;
+  maintenance_type: string;
+  issue: string;
+  description?: string;
+  priority?: MaintenancePriority;
+  due_date?: string;
+  attachment_urls?: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Work allocation batches — grouped ticket creation, one employee per zone
+// ---------------------------------------------------------------------------
+
+export interface WorkBatchTicketIn {
+  kind: 'maintenance';
+  room_uid?: string;
+  dorm_uid?: string;
+  bed_uid?: string;
+  washroom_uid?: string;
+  /** Fixture-level target — must belong to washroom_uid */
+  washroom_fixture_uid?: string;
+  maintenance_type: string;
+  issue: string;
+  description?: string;
+  priority?: MaintenancePriority;
+  due_date?: string;
+  attachment_urls?: string[];
+}
+
+export interface WorkBatchCreateRequest {
+  property_uid: string;
+  tickets: WorkBatchTicketIn[];
+}
+
+export interface WorkBatch {
+  batch_id: string;
+  batch_number: string; // WB-YYYY-NNNNN
+  property_uid: string;
+  zone_uid?: string | null;
+  zone_name?: string;
+  employee_uid?: string | null;
+  employee_name?: string;
+  work_type: string;
+  allocation_status: 'auto_assigned' | 'unassigned' | string;
+  allocation_reason?: string;
+  created_by_name?: string;
+  created_at?: string;
+  tickets: import('../types').MaintenanceTicket[];
+}
+
+export interface WorkBatchCreateResponse {
+  batches: WorkBatch[];
+  total: number;
+}
+
+export interface MaintenanceUpdateRequest {
+  maintenance_type?: string;
+  issue?: string;
+  description?: string;
+  priority?: MaintenancePriority;
+  due_date?: string;
+  assigned_to?: string | null;
+  status?: 'cancelled';
+}
+
+export interface MaintenanceAssignRequest {
+  employee_uid: string | null;
+}
+
+export interface MaintenanceResolveRequest {
+  resolution_notes: string;
+  photo_urls?: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Media
+// ---------------------------------------------------------------------------
+
+export interface UploadResponse {
+  url: string;
+  key?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Work Templates — reusable operational definitions; backend scheduler owns
+// generation (tasks/tickets) and the zone round-robin picks the employee.
+// ---------------------------------------------------------------------------
+
+export type TemplateType =
+  | 'task' | 'maintenance' | 'inspection' | 'cleaning' | 'checklist'
+  | 'operations' | 'housekeeping' | 'other';
+export type TemplateStatus = 'draft' | 'active' | 'paused' | 'archived';
+export type AssignmentMode =
+  | 'team' | 'individual' | 'employees' | 'department' | 'automatic';
+export type LocationScope =
+  | 'property'
+  | 'zone'
+  | 'area'
+  | 'rooms'
+  | 'dorms'
+  | 'beds'
+  | 'washrooms'
+  | 'units';
+export type ScheduleKind = 'one_time' | 'recurring';
+export type ScheduleFrequency = 'minutes' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
+
+export interface TemplateAssignment {
+  mode: AssignmentMode;
+  team?: string;
+  department?: string;
+  employee_uid?: string;
+  employee_uids?: string[];
+  supervisor_uid?: string;
+  method?: 'zone_round_robin' | 'team_round_robin' | 'supervisor';
+}
+
+export interface TemplateLocation {
+  scope: LocationScope;
+  zone_uid?: string;
+  area_uid?: string;
+  room_uids?: string[];
+  dorm_uids?: string[];
+  bed_uids?: string[];
+  washroom_uids?: string[];
+  /** dynamic expansion inside a zone/area: rooms | dorms | beds | washrooms | units | common_area (one task per zone) */
+  target?: string;
+  /** occupancy condition — resolved at generation time; rooms/beds/dorms only */
+  occupancy?: 'all' | 'occupied' | 'unoccupied';
+  /** legacy alias for occupancy:'occupied' */
+  occupied_only?: boolean;
+}
+
+export interface TemplateSchedule {
+  kind: ScheduleKind;
+  timezone?: string;
+  date?: string;
+  time?: string;
+  end_time?: string;
+  frequency?: ScheduleFrequency;
+  every?: number;
+  custom_unit?: 'days' | 'weeks' | 'months';
+  start_time?: string;
+  recurrence_start_date?: string;
+  recurrence_end_date?: string;
+  recurrence_window_end?: string;
+  window_end?: string;
+  weekdays?: number[]; // 0=Mon … 6=Sun
+  day_of_month?: number;
+  relative_week?: 'first' | 'second' | 'third' | 'fourth' | 'last';
+  relative_weekday?: number;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface TemplateChecklistItem {
+  title: string;
+  description?: string;
+  required: boolean;
+}
+
+export interface TemplateVerification {
+  checklist_required?: boolean;
+  photo_required?: boolean;
+  min_photos?: number;
+  max_photos?: number;
+  supervisor_approval?: boolean;
+  before_photo?: boolean;
+  after_photo?: boolean;
+}
+
+export interface TemplateOverdue {
+  actions: string[]; // mark_overdue|notify_supervisor|notify_manager|escalate|auto_reassign
+  threshold_minutes?: number;
+  reassign_method?: 'next_zone_employee' | 'supervisor' | 'manual';
+}
+
+export interface TemplateNotifications {
+  notify_on_assignment?: boolean;
+  notify_on_completion?: boolean;
+  notify_on_overdue?: boolean;
+  remind_before_minutes?: number;
+}
+
+export interface WorkTemplate {
+  template_uid: string;
+  property_uid: string;
+  name: string;
+  template_type: TemplateType;
+  description?: string;
+  category?: string;
+  priority: TaskPriority;
+  duration_minutes?: number;
+  status: TemplateStatus;
+  version: number;
+  assignment: TemplateAssignment;
+  location: TemplateLocation;
+  schedule: TemplateSchedule;
+  checklist: TemplateChecklistItem[];
+  verification: TemplateVerification;
+  overdue: TemplateOverdue;
+  notifications: TemplateNotifications;
+  next_run_at?: string;
+  last_run_at?: string;
+  generated_count: number;
+  created_by_name?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface WorkTemplateCreateRequest {
+  property_uid: string;
+  name: string;
+  template_type: TemplateType;
+  description?: string;
+  category?: string;
+  priority?: TaskPriority;
+  duration_minutes?: number;
+  status?: TemplateStatus;
+  assignment?: TemplateAssignment;
+  location?: TemplateLocation;
+  schedule?: TemplateSchedule;
+  checklist?: TemplateChecklistItem[];
+  verification?: TemplateVerification;
+  overdue?: TemplateOverdue;
+  notifications?: TemplateNotifications;
+}
+
+export type WorkTemplateUpdateRequest = Partial<
+  Omit<WorkTemplateCreateRequest, 'property_uid'>
+>;
+
+export interface TemplateGenerationRow {
+  occurrence_key: string;
+  ticket_kind: 'maintenance' | 'task';
+  ticket_number?: string;
+  target_label?: string;
+  created_at?: string;
+}
+
+export interface WorkTemplateGeneratedWork {
+  tasks: import('../types').Task[];
+  maintenance: import('../types').MaintenanceTicket[];
+}
+
+// ---------------------------------------------------------------------------
+// Task operations — Today's Tasks (scheduled + generated) vs Task History
+// (actual generated instances only). Backend is the source of truth for
+// generation_state vs work_status.
+// ---------------------------------------------------------------------------
+
+export interface TodayTaskItem {
+  item_type: 'task' | 'occurrence';
+  occurrence_key?: string;
+  template_uid?: string;
+  template_name?: string;
+  template_version?: number;
+  title: string;
+  source: 'template' | 'manual' | 'recurring' | 'one_time';
+  priority: TaskPriority;
+  scheduled_at?: string;
+  zone_name?: string;
+  target_label?: string;
+  room_number?: string;
+  washroom_name?: string;
+  generation_state: 'generated' | 'pending_generation' | 'generation_failed' | 'skipped' | 'cancelled';
+  work_status?: string;
+  task_uid?: string;
+  ticket_number?: string;
+  assignee?: string;
+  assignment_mode?: string;
+  allocation_method?: string;
+}
+
+export interface AbandonedTaskItem {
+  task_uid: string;
+  ticket_number?: string;
+  title: string;
+  source: 'template' | 'manual' | 'recurring' | 'one_time';
+  template_uid?: string;
+  priority: TaskPriority;
+  zone_name?: string;
+  target_label?: string;
+  room_number?: string;
+  assignee?: string;
+  scheduled_for?: string;
+  expires_at?: string;
+  abandoned_at?: string;
+  abandoned_reason?: string;
+  abandoned_from_status?: string;
+}
+
+export interface TodayTasksResponse {
+  date: string;
+  /** operational-day key (YYYY-MM-DD) the abandoned_today list is scoped to — resets at the company's operational_day_start, not IST midnight */
+  abandoned_day: string;
+  summary: {
+    total_planned: number;
+    generated: number;
+    pending_generation: number;
+    assigned: number;
+    in_progress: number;
+    completed: number;
+    overdue: number;
+    unassigned: number;
+    abandoned: number;
+  };
+  items: TodayTaskItem[];
+  abandoned_today: AbandonedTaskItem[];
+}
+
+export interface TaskHistoryItem {
+  task_uid: string;
+  ticket_number?: string;
+  title: string;
+  task_type: string;
+  room_number?: string;
+  washroom_name?: string;
+  zone_name?: string;
+  assigned_to?: string;
+  generated_at?: string;
+  scheduled_for?: string;
+  status: string;
+  priority: TaskPriority;
+  source: 'template' | 'recurring' | 'manual';
+  template_uid?: string;
+  template_version?: number;
+  allocation_method?: string;
+}
+
+export interface TaskHistoryResponse {
+  items: TaskHistoryItem[];
+  pagination: { page: number; page_size: number; total: number; total_pages: number };
+}
+
+export interface TaskHistoryParams {
+  property_uid?: string;
+  date_from?: string;
+  date_to?: string;
+  zone_uid?: string;
+  room_uid?: string;
+  washroom_uid?: string;
+  employee_uid?: string;
+  status?: string;
+  priority?: string;
+  task_type?: string;
+  source?: string;
+  template_uid?: string;
+  search?: string;
+  page?: number;
+  page_size?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Task calendar + daily analysis (Super Admin)
+// ---------------------------------------------------------------------------
+
+export interface TaskCalendarDay {
+  date: string; // YYYY-MM-DD operational-day key
+  generated: number;
+  allocated: number;
+  completed: number;
+  abandoned: number;
+  active: number;
+}
+
+export interface TaskCalendarResponse {
+  month: string;
+  today: string; // current operational-day key
+  operational_day_start: string;
+  days: TaskCalendarDay[];
+}
+
+export interface DayAnalysisTask {
+  task_uid: string;
+  ticket_number?: string;
+  title: string;
+  status: string;
+  priority: string;
+  task_type: string;
+  work_type?: string;
+  category: string;
+  origin: string;
+  template_name?: string;
+  assigned_employee_uid?: string;
+  assigned_employee?: string;
+  actual_worker?: string;
+  zone_name?: string;
+  area_name?: string;
+  resource?: string;
+  room_number?: string;
+  dorm_name?: string;
+  washroom_name?: string;
+  scheduled_for?: string;   // recurring-instance occurrence instant
+  expires_at?: string;      // validity end = next scheduled boundary
+  generated_at?: string;
+  allocated_at?: string;
+  started_at?: string;
+  submitted_at?: string;
+  completed_at?: string;
+  abandoned: boolean;
+  abandoned_at?: string;
+  abandoned_reason?: string;
+  abandoned_from_status?: string;
+  auto_abandoned: boolean;
+  allocation_method?: string;
+}
+
+export interface DayAnalysisEmployee {
+  employee_uid: string;
+  employee?: string;
+  allocated: number;
+  completed: number;
+  abandoned: number;
+  active: number;
+  completion_rate: number;
+  zones: string[];
+  areas: string[];
+  work: string[];
+}
+
+export interface DayAnalysisBucket {
+  generated: number;
+  allocated: number;
+  completed: number;
+  abandoned: number;
+  active: number;
+  completion_rate: number;
+}
+
+export interface DayAnalysisResponse {
+  date: string;
+  operational_day_start: string;
+  is_today: boolean;
+  summary: {
+    generated: number;
+    allocated: number;
+    completed: number;
+    abandoned: number;
+    active: number;
+    completion_rate: number;
+    employees_involved: number;
+    resources_processed: number;
+  };
+  tasks: DayAnalysisTask[];
+  employees: DayAnalysisEmployee[];
+  zones: (DayAnalysisBucket & { zone: string })[];
+  areas: (DayAnalysisBucket & { area: string })[];
+  categories: (DayAnalysisBucket & { category: string })[];
+}
+
+// ---------------------------------------------------------------------------
+// Maintenance calendar + daily analysis (Super Admin)
+// ---------------------------------------------------------------------------
+
+export interface MaintenanceCalendarDay {
+  date: string; // YYYY-MM-DD operational-day key
+  raised: number;
+  carried: number;
+  resolved: number;
+  closed: number;
+  cancelled: number;
+}
+
+export interface MaintenanceCalendarResponse {
+  month: string;
+  today: string;
+  operational_day_start: string;
+  days: MaintenanceCalendarDay[];
+}
+
+export interface ResourceTransition {
+  at: string;
+  from: string;
+  to: string;
+  source: string;
+  actor?: string;
+}
+
+export interface MaintenanceDayTicket {
+  ticket_uid: string;
+  ticket_number: string;
+  issue: string;
+  maintenance_type: string;
+  priority: string;
+  status: string;             // live status
+  status_at_day_end: string;  // replayed status at window end
+  raised_today: boolean;
+  carried: boolean;
+  resource_type?: string;
+  resource_label?: string;
+  zone_name?: string;
+  area_name?: string;
+  assigned_employee_uid?: string;
+  assigned_employee?: string;
+  actual_worker?: string;
+  reported_by?: string;
+  created_at: string;
+  allocated_at?: string;
+  started_at?: string;
+  resolved_at?: string;
+  closed_at?: string;
+  cancelled_at?: string;
+  resolution_notes?: string;
+  allocation_method?: string;
+  due_date?: string;
+  time_to_allocate_min?: number;
+  time_to_start_min?: number;
+  resolution_time_min?: number;
+  close_time_min?: number;
+  resource_was?: string;
+  resource_after?: string;
+  resource_current?: string;
+  resource_transitions: ResourceTransition[];
+}
+
+export interface MaintenanceDayEmployee {
+  employee_uid: string;
+  employee?: string;
+  tickets: number;
+  resolved: number;
+  closed: number;
+  cancelled: number;
+  open: number;
+  pending_review: number;
+  zones: string[];
+  areas: string[];
+  work: string[];
+  avg_resolution_min?: number;
+}
+
+export interface MaintenanceDayBucket {
+  raised: number;
+  allocated: number;
+  resolved: number;
+  closed: number;
+  cancelled: number;
+  open: number;
+  employees_involved: number;
+  completion_rate: number;
+  avg_resolution_min?: number;
+}
+
+export interface MaintenanceDayAnalysis {
+  date: string;
+  operational_day_start: string;
+  window_start_utc: string;
+  window_end_utc: string;
+  is_today: boolean;
+  summary: {
+    raised: number;
+    carried: number;
+    allocated: number;
+    resolved: number;
+    closed: number;
+    cancelled: number;
+    open_at_end: number;
+    pending_review: number;
+    tickets: number;
+    allocated_total: number;
+    completion_rate: number;
+    employees_involved: number;
+    zones_affected: number;
+    resources_affected: number;
+    avg_resolution_min?: number;
+    avg_time_to_start_min?: number;
+  };
+  tickets: MaintenanceDayTicket[];
+  employees: MaintenanceDayEmployee[];
+  zones: (MaintenanceDayBucket & { zone: string })[];
+  areas: (MaintenanceDayBucket & { area: string })[];
+  categories: (MaintenanceDayBucket & { category: string })[];
+}
