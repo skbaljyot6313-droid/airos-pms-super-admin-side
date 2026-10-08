@@ -14,12 +14,34 @@ jobs:
     name: Deploy backend to Railway
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Railway deploy of latest commit
-        run: |
-          npm install -g @railway/cli
-          railway api 'mutation { serviceInstanceDeploy(serviceId: "dc288dfb-c372-4bf3-aae8-a5c99f479767", environmentId: "7a18babb-4b19-4cf1-9c9d-c2d9747cc319", latestCommit: true) }'
+      - name: Deploy latest commit to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: dc288dfb-c372-4bf3-aae8-a5c99f479767
+          RAILWAY_ENVIRONMENT_ID: 7a18babb-4b19-4cf1-9c9d-c2d9747cc319
+        run: |
+          set -e
+          npm install -g @railway/cli
+
+          railway api 'mutation { serviceInstanceDeploy(serviceId: "'"$RAILWAY_SERVICE_ID"'", environmentId: "'"$RAILWAY_ENVIRONMENT_ID"'", latestCommit: true) }'
+          sleep 20
+
+          # Poll newest deployment; if the trial builder flakes at scheduling
+          # (status FAILED with empty build logs), redeploy the same commit.
+          for i in 1 2 3; do
+            sleep 60
+            DEP=$(railway api 'query { deployments(first: 1, input: { serviceId: "'"$RAILWAY_SERVICE_ID"'", environmentId: "'"$RAILWAY_ENVIRONMENT_ID"'" }) { edges { node { id status } } } }' \
+              | python3 -c 'import json,sys; n=json.load(sys.stdin)["data"]["deployments"]["edges"][0]["node"]; print(n["id"], n["status"])')
+            echo "poll $i: $DEP"
+            STATUS=$(echo "$DEP" | awk '{print $2}')
+            [ "$STATUS" = "SUCCESS" ] && exit 0
+            if [ "$STATUS" = "FAILED" ]; then
+              ID=$(echo "$DEP" | awk '{print $1}')
+              echo "build failed, redeploying $ID"
+              railway api 'mutation { deploymentRedeploy(id: "'"$ID"'") { id status } }'
+            fi
+          done
+          echo "deployment did not succeed in time" && exit 1
 
   frontend:
     name: Deploy frontend to Vercel
