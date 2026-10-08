@@ -30,11 +30,26 @@ target_metadata = Base.metadata
 
 
 def _pgbouncer_connect_args() -> dict:
-    """Disable asyncpg prepared-statement cache when using a pgbouncer pooler."""
+    """Disable asyncpg prepared-statement cache when using a pgbouncer pooler.
+
+    asyncpg renamed the kwarg in 0.30 (`statement_cache_size` →
+    `prepared_statement_cache_size`); pass whichever the installed
+    version accepts."""
     try:
         parsed = make_url(settings.database_url)
-        if parsed.host and "pooler" in parsed.host:
-            return {"prepared_statement_cache_size": 0}
+        if not (parsed.host and "pooler" in parsed.host):
+            return {}
+        import inspect
+
+        import asyncpg
+
+        params = inspect.signature(asyncpg.connect).parameters
+        key = (
+            "statement_cache_size"
+            if "statement_cache_size" in params
+            else "prepared_statement_cache_size"
+        )
+        return {key: 0}
     except Exception:
         pass
     return {}

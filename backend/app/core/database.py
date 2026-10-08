@@ -41,11 +41,26 @@ class DatabaseUnavailable(AppError):
 def _pgbouncer_connect_args() -> dict:
     """pgbouncer transaction/statement poolers do not support asyncpg's
     prepared-statement cache. Disable the cache when the URL points at a
-    Supabase pooler host so migrations and queries work reliably."""
+    Supabase pooler host so migrations and queries work reliably.
+
+    asyncpg renamed the connect kwarg in 0.30 (`statement_cache_size` →
+    `prepared_statement_cache_size`) — pass whichever the installed
+    version accepts; the wrong name raises TypeError on connect."""
     try:
         parsed = make_url(settings.database_url)
-        if parsed.host and "pooler" in parsed.host:
-            return {"prepared_statement_cache_size": 0}
+        if not (parsed.host and "pooler" in parsed.host):
+            return {}
+        import inspect
+
+        import asyncpg
+
+        params = inspect.signature(asyncpg.connect).parameters
+        key = (
+            "statement_cache_size"
+            if "statement_cache_size" in params
+            else "prepared_statement_cache_size"
+        )
+        return {key: 0}
     except Exception:
         pass
     return {}
