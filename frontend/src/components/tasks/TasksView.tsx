@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CalendarCheck, CalendarDays, History, OctagonX, Plus, Wrench } from 'lucide-react';
+import { CalendarCheck, CalendarDays, ClipboardCheck, History, OctagonX, Plus, Wrench } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
@@ -10,6 +10,7 @@ import { TodayTasksView } from './TodayTasksView';
 import { TaskHistoryView } from './TaskHistoryView';
 import { TaskCalendarView } from './TaskCalendarView';
 import { AbandonedTodayView } from './AbandonedTodayView';
+import { TaskReviewPanel } from './TaskReviewPanel';
 import { MaintenanceView } from '../maintenance/MaintenanceView';
 import { BackButton } from '../ui/BackButton';
 import { Task } from '../../types';
@@ -28,11 +29,13 @@ export const TasksView: React.FC = () => {
   } = useApp();
 
   const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState<'today' | 'abandoned' | 'maintenance' | 'history' | 'calendar'>(
+  const [tab, setTab] = useState<'today' | 'abandoned' | 'review' | 'maintenance' | 'history' | 'calendar'>(
     () =>
       searchParams.get('tab') === 'maintenance' || searchParams.get('ticket')
         ? 'maintenance'
-        : 'today'
+        : searchParams.get('tab') === 'review'
+          ? 'review'
+          : 'today'
   );
   const isSuperAdmin = currentUser?.role === 'super_admin';
   const [selectedTaskUid, setSelectedTaskUid] = useState<string | null>(null);
@@ -79,6 +82,7 @@ export const TasksView: React.FC = () => {
         {([
           { v: 'today' as const, l: "Today's Tasks", icon: CalendarCheck },
           { v: 'abandoned' as const, l: "Today's Abandoned", icon: OctagonX },
+          { v: 'review' as const, l: 'Review', icon: ClipboardCheck },
           { v: 'maintenance' as const, l: 'Maintenance', icon: Wrench },
           { v: 'history' as const, l: 'Task History', icon: History },
           ...(isSuperAdmin ? [{ v: 'calendar' as const, l: 'Calendar', icon: CalendarDays }] : []),
@@ -105,6 +109,8 @@ export const TasksView: React.FC = () => {
         <TodayTasksView onOpenTask={setSelectedTaskUid} />
       ) : tab === 'abandoned' ? (
         <AbandonedTodayView onOpenTask={setSelectedTaskUid} />
+      ) : tab === 'review' ? (
+        <TaskReviewPanel onOpenTask={setSelectedTaskUid} />
       ) : tab === 'maintenance' ? (
         <MaintenanceView embedded />
       ) : tab === 'calendar' ? (

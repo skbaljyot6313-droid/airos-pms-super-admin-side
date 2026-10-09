@@ -15,6 +15,7 @@ object comes back from save() — the caller never builds paths itself.
 
 import asyncio
 import uuid
+from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -33,9 +34,18 @@ ALLOWED_CONTENT_TYPES = {
 }
 
 
+OpenedObject = tuple[
+    "Callable[[], AsyncIterator[bytes]]", str | None, int | None
+]
+
+
 class StorageBackend:
     async def save(self, data: bytes, key: str, content_type: str) -> str:
         """Persist `data` at `key`; return the URL the client should store."""
+        raise NotImplementedError
+
+    async def open(self, key: str) -> OpenedObject | None:
+        """Open a stored object for streaming — None when absent."""
         raise NotImplementedError
 
     async def delete(self, key: str) -> None:
@@ -55,6 +65,19 @@ class LocalStorage(StorageBackend):
         # write off the event loop — uploads can be several MB
         await asyncio.to_thread(path.write_bytes, data)
         return f"/uploads/{key}"  # relative — frontend resolves via mediaUrl()
+
+    async def open(self, key: str) -> OpenedObject | None:
+        path = self.dir / key
+        if not await asyncio.to_thread(path.is_file):
+            return None
+        size = await asyncio.to_thread(path.stat)
+
+        async def stream() -> AsyncIterator[bytes]:
+            data = await asyncio.to_thread(path.read_bytes)
+            for i in range(0, len(data), 64 * 1024):
+                yield data[i : i + 64 * 1024]
+
+        return stream, None, size.st_size
 
     async def delete(self, key: str) -> None:
         if not key or Path(key).name != key:
@@ -96,6 +119,27 @@ class S3Storage(StorageBackend):
             await asyncio.to_thread(
                 self.client.delete_object, Bucket=self.bucket, Key=key
             )
+
+    async def open(self, key: str) -> OpenedObject | None:
+        import botocore.exceptions  # deferred like boto3
+
+        try:
+            obj = await asyncio.to_thread(
+                self.client.get_object, Bucket=self.bucket, Key=key
+            )
+        except botocore.exceptions.ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") in (
+                "NoSuchKey", "404",
+            ):
+                return None
+            raise
+        body = await asyncio.to_thread(obj["Body"].read)
+
+        async def stream() -> AsyncIterator[bytes]:
+            for i in range(0, len(body), 64 * 1024):
+                yield body[i : i + 64 * 1024]
+
+        return stream, obj.get("ContentType"), obj.get("ContentLength")
 
 
 class SupabaseStorage(StorageBackend):
@@ -162,6 +206,31 @@ class SupabaseStorage(StorageBackend):
             if res.status_code != 404:
                 res.raise_for_status()
 
+    async def open(self, key: str) -> OpenedObject | None:
+        import httpx  # deferred — only needed when this backend is selected
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.get(
+                f"{self.base}/object/{self.bucket}/{key}",
+                headers=self._auth,
+            )
+            if res.status_code == 404:
+                return None
+            res.raise_for_status()
+            body = res.content
+            content_type = res.headers.get("Content-Type")
+            length = res.headers.get("Content-Length")
+
+        async def stream() -> AsyncIterator[bytes]:
+            for i in range(0, len(body), 64 * 1024):
+                yield body[i : i + 64 * 1024]
+
+        return (
+            stream,
+            content_type,
+            int(length) if length and length.isdigit() else None,
+        )
+
 
 def _s3_ready() -> bool:
     return bool(
@@ -210,6 +279,10 @@ def storage_key_from_url(url: str) -> str | None:
     candidates: list[str] = []
     if not parsed.netloc and path.startswith("/uploads/"):
         candidates.append(path.removeprefix("/uploads/"))
+    # Employee-backend proxy paths (/api/v1/media/file/<key>) — the
+    # object-store is shared, so those keys resolve/deletable here too.
+    if "/media/file/" in path:
+        candidates.append(path.rsplit("/media/file/", 1)[1])
     supabase_host = urlparse(settings.SUPABASE_URL).netloc
     if parsed.netloc == supabase_host:
         for marker in (

@@ -45,8 +45,19 @@ frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-do
   is derived from its beds.
 - **Task**: `pending → assigned → in_progress → completed`, `reopened` via
   request-redo/reopen. Staff close work directly via `POST /tasks/{id}/complete`
-  (photo evidence required) — the employee submit/approve/reject review
-  pipeline was removed; `submitted` remains a legacy status in the DB.
+  (photo evidence required). Employee-app work is instead **submitted for
+  review** (`submitted` = PENDING_CHECK): staff decide it via the Tasks →
+  Review tab → `GET /tasks/review-queue` (submissions+images eager-loaded)
+  and `POST /tasks/{id}/approve` (→ `completed`, submission.approved) /
+  `POST /tasks/{id}/reject` (→ `reopened`, submission.disapproved).
+  Reviewers are staff-only (`_require_reviewer` — an employee, even the
+  assignee, can never review); resource-targeted tasks additionally require
+  `super_admin` (`_require_resource_authority`). Decisions write shared
+  `notifications` rows (`submission_approved`/`_disapproved`) for the
+  employee feed. Evidence images live in the SHARED object bucket and are
+  serialized as `/api/v1/media/file/<key>` — SA serves that same path
+  (`GET /media/file/{key}` streams via `StorageBackend.open`) so the
+  frontend renders evidence same-origin.
   Completion writes a TaskCompletionSubmission attempt + TaskCompletionImage
   evidence (models kept — `complete_task` still records them).
   `task_type`: fixed | repetitive | automated (`automation_rule` JSONB).

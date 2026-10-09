@@ -1159,6 +1159,197 @@ class TaskService:
         await self.session.commit()
         return task
 
+    # ------------------------------------------------------------------
+    # Review workflow — submitted tasks awaiting a decision
+    # ------------------------------------------------------------------
+
+    async def review_queue(
+        self, user: User, property_id: uuid.UUID
+    ) -> list[Task]:
+        """Submitted tasks awaiting review — submissions + evidence
+        eager-loaded so the panel needs no per-task detail calls."""
+        await self.structure._property_for_write(user, property_id)
+        res = await self.session.execute(
+            select(Task)
+            .where(
+                Task.property_id == property_id,
+                Task.status == "submitted",
+            )
+            .options(
+                selectinload(Task.history),
+                selectinload(Task.completion_images),
+                selectinload(Task.completion_submissions)
+                .selectinload(TaskCompletionSubmission.images),
+            )
+            .order_by(Task.submitted_at.asc().nulls_first(),
+                      Task.created_at.desc())
+        )
+        return list(res.unique().scalars())
+
+    def _latest_pending_submission(
+        self, task: Task
+    ) -> TaskCompletionSubmission | None:
+        subs = (
+            task.completion_submissions
+            if "completion_submissions"
+            not in sa_inspect(task).unloaded
+            else []
+        )
+        return next(
+            (s for s in subs if s.status == "pending"), None
+        )
+
+    def _review_notification(
+        self, task: Task, user: User, approved: bool, note: str | None
+    ) -> None:
+        """Write the shared notifications row the employee's feed picks
+        up — SA owns the review decision, EB owns the feed."""
+        from app.models.notifications import Notification
+
+        if not task.employee_id:
+            return
+        if approved:
+            n_type, title = "submission_approved", "Submission Approved"
+            body = f"Your submission for '{task.title}' was approved."
+        else:
+            n_type, title = (
+                "submission_disapproved", "Submission Disapproved"
+            )
+            body = f"Your submission for '{task.title}' was sent back."
+            if note:
+                body = f"{body} Reason: {note}"
+        self.session.add(
+            Notification(
+                property_id=task.property_id,
+                employee_id=task.employee_id,
+                employee_name=task.assigned_to_name,
+                task_id=task.id,
+                type=n_type,
+                title=title,
+                body=body,
+            )
+        )
+
+    async def approve_task(
+        self, user: User, task_id: uuid.UUID, note: str | None = None
+    ) -> dict:
+        """Approve a submitted task → 'completed'. Only here does the
+        task's unit re-derive its status (employee submissions hold the
+        resource blocked until a decision)."""
+        task = await self._get_task(user, task_id)
+        self._require_reviewer(user)  # staff only — never self-review
+        self._require_resource_authority(user, task)
+        already_completed = task.status == "completed"
+        if already_completed:
+            # the review already happened — only a still-blocked resource
+            # (task completed before review existed) can be acknowledged
+            # again
+            still_blocked = False
+            if task.room_id:
+                res = await self.session.execute(
+                    select(Room.status).where(Room.id == task.room_id)
+                )
+                still_blocked = res.scalar_one_or_none() in {
+                    "cleaning", "maintenance",
+                }
+            elif task.dorm_id:
+                res = await self.session.execute(
+                    select(Dorm.status).where(Dorm.id == task.dorm_id)
+                )
+                still_blocked = res.scalar_one_or_none() in {
+                    "cleaning", "maintenance",
+                }
+                if not still_blocked:
+                    # the dorm row may not be flagged — check covered beds
+                    # (bed_ids NULL = whole-dorm task → all its beds)
+                    cond = (
+                        (Bed.dorm_id == task.dorm_id) if not task.bed_ids
+                        else Bed.id.in_(
+                            [uuid.UUID(x) for x in task.bed_ids]
+                        )
+                    )
+                    res = await self.session.execute(
+                        select(Bed.status).where(cond)
+                    )
+                    still_blocked = any(
+                        s in {"cleaning", "maintenance"}
+                        for s in res.scalars()
+                    )
+            if not still_blocked:
+                raise ConflictErr(
+                    "Only submitted tasks can be approved."
+                )
+        elif task.status != "submitted":
+            raise ConflictErr("Only submitted tasks can be approved.")
+        if not already_completed:
+            task.status = "completed"
+            task.completed_at = datetime.now(timezone.utc)
+            await self._stamp_fixture_cleaned(task)
+            submission = self._latest_pending_submission(task)
+            if submission:
+                submission.status = "approved"
+                submission.reviewed_at = datetime.now(timezone.utc)
+                submission.reviewed_by_id = user.id
+                submission.reviewed_by_name = user.name
+                submission.review_comment = note
+        self._history(task, "approved", user, note=note)
+        if not already_completed:
+            self._review_notification(
+                task, user, approved=True, note=note
+            )
+        if task.room_id or task.dorm_id or task.washroom_id:
+            await self._refresh_unit(task, user, "supervisor approved")
+        generated = None
+        if not already_completed and task.recurrence \
+                and task.task_type == "repetitive":
+            generated = await self._next_instance(user, task)
+        await self.session.commit()
+        result = {"task": task}
+        if generated:
+            result["generated_task"] = await self._get_task(
+                user, generated.id
+            )
+        return result
+
+    async def reject_task(
+        self, user: User, task_id: uuid.UUID, reason: str | None = None
+    ) -> Task:
+        """Reject a submission → 'reopened' so the assignee reworks it."""
+        task = await self._get_task(user, task_id)
+        self._require_reviewer(user)
+        self._require_resource_authority(user, task)
+        if task.status != "submitted":
+            raise ConflictErr("Only submitted tasks can be rejected.")
+        task.status = "reopened"
+        task.submitted_at = None
+        submission = self._latest_pending_submission(task)
+        if submission:
+            submission.status = "disapproved"
+            submission.reviewed_at = datetime.now(timezone.utc)
+            submission.reviewed_by_id = user.id
+            submission.reviewed_by_name = user.name
+            submission.review_comment = reason
+        self._history(task, "rejected", user, note=reason)
+        self._review_notification(task, user, approved=False, note=reason)
+        if task.room_id or task.dorm_id or task.washroom_id:
+            await self._refresh_unit(
+                task, user, "work rejected — reopened"
+            )
+        await self.session.commit()
+        return task
+
+    def _require_reviewer(self, user: User) -> None:
+        """Review decisions are staff-only — an employee (even the
+        assignee) can never approve or reject a submission."""
+        if user.role not in (
+            UserRole.SUPER_ADMIN, UserRole.PROPERTY_MANAGER
+        ):
+            from app.dependencies.auth import Forbidden
+
+            raise Forbidden(
+                "Only supervisory staff can review submissions."
+            )
+
     def _require_resource_authority(self, user: User, task: Task) -> None:
         """Review decisions that release a resource are Super-Admin-only
         (spec §13). Tasks with no resource target stay approvable by any

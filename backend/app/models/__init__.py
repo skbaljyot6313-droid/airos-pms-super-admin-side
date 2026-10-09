@@ -54,3 +54,4 @@ from app.models.shift import (  # noqa: E402, F401
     EmployeeShiftAssignment,
     Shift,
 )
+from app.models.notifications import Notification  # noqa: E402, F401

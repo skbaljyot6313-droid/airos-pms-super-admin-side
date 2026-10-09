@@ -349,6 +349,10 @@ class TaskActionRequest(BaseModel):
     note: str | None = None
 
 
+class TaskRejectRequest(BaseModel):
+    reason: str | None = None
+
+
 class TaskCompleteRequest(BaseModel):
     photo_urls: list[str] = []
     note: str | None = None

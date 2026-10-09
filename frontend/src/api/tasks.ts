@@ -85,6 +85,33 @@ export async function reopenTask(task_uid: string, note?: string): Promise<Task>
   });
 }
 
+/** Submitted tasks awaiting review — submissions + evidence eager-loaded. */
+export async function taskReviewQueue(property_uid: string): Promise<Task[]> {
+  const res = await apiFetch<{ items: Task[] }>('/tasks/review-queue', {
+    query: { property_id: property_uid },
+  });
+  return res.items;
+}
+
+/** Approve a submitted task → completed; submission marked approved. */
+export async function approveTask(
+  task_uid: string,
+  note?: string
+): Promise<TaskCompleteResponse> {
+  return apiFetch<TaskCompleteResponse>(`/tasks/${task_uid}/approve`, {
+    method: 'POST',
+    body: { note } satisfies TaskActionRequest,
+  });
+}
+
+/** Disapprove a submitted task → reopened for rework. */
+export async function rejectTask(task_uid: string, reason?: string): Promise<Task> {
+  return apiFetch<Task>(`/tasks/${task_uid}/reject`, {
+    method: 'POST',
+    body: { reason },
+  });
+}
+
 export async function tasksToday(property_uid?: string): Promise<import('./types').TodayTasksResponse> {
   return apiFetch<import('./types').TodayTasksResponse>('/tasks/today', {
     query: { property_uid },

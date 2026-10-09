@@ -2,11 +2,17 @@
 or S3-compatible object store). Local objects are served from the
 `/uploads` static mount; S3 objects get their public/CDN URL back.
 
-Returns the stored URL so the frontend can render/store it directly.
+`GET /media/file/{key}` proxies any stored object through this origin —
+required because employee-app evidence is stored in the SAME shared bucket
+but serialized as `/api/v1/media/file/<key>` paths the Super Admin
+frontend resolves against this API.
 """
+
+import re
 
 from fastapi import APIRouter, Depends, Request, UploadFile, status
 from fastapi import File
+from fastapi.responses import StreamingResponse
 
 from app.core.exceptions import AppError
 from app.core.logging import get_logger
@@ -24,10 +30,18 @@ router = APIRouter(tags=["media"])
 
 logger = get_logger("app.media")
 
+# Flat uuid-keyed blobs only — traversal can't pass the whitelist.
+_OBJECT_KEY_RE = re.compile(r"^[0-9a-f]{32}\.[a-z0-9]{2,5}$")
+
 
 class InvalidUpload(AppError):
     status_code = 422
     code = "INVALID_UPLOAD"
+
+
+class MediaNotFound(AppError):
+    status_code = 404
+    code = "MEDIA_NOT_FOUND"
 
 
 class StorageUnavailable(AppError):
@@ -91,3 +105,50 @@ async def upload_media(
     # mediaUrl() resolves it against the API origin. Works identically
     # direct, or behind nginx (absolute proxy-derived URLs lose the port).
     return {"url": url, "key": key}
+
+
+@router.get(
+    "/media/file/{key}",
+    dependencies=[
+        Depends(rate_limit("media_fetch", limit=240, window_seconds=60))
+    ],
+)
+async def get_media_file(key: str):
+    """Stream a stored object through the API origin.
+
+    Task evidence uploaded by the employee app is serialized as
+    `/api/v1/media/file/<key>` — both backends share the same object
+    bucket, so the same proxy path serves those objects here. Public by
+    design, same as the storage URLs it replaces: keys are unguessable
+    uuid4 names and <img> tags can't attach a JWT. The key whitelist makes
+    traversal impossible, so only our own objects are ever served.
+    """
+    if not _OBJECT_KEY_RE.fullmatch(key):
+        raise MediaNotFound()
+    try:
+        opened = await get_storage().open(key)
+    except Exception as exc:
+        logger.error(
+            "media fetch failed for %s: %s", key, exc, exc_info=True,
+        )
+        raise StorageUnavailable(
+            "Media storage is unavailable."
+        ) from exc
+    if opened is None:
+        raise MediaNotFound()
+    stream, content_type, length = opened
+    headers = {
+        # objects are immutable uuid-keyed blobs
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "X-Content-Type-Options": "nosniff",
+        # already-compressed formats — bypass GZipMiddleware so
+        # Content-Length survives for client progress display
+        "Content-Encoding": "identity",
+    }
+    if length is not None:
+        headers["Content-Length"] = str(length)
+    return StreamingResponse(
+        stream(),
+        media_type=content_type or "application/octet-stream",
+        headers=headers,
+    )

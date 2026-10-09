@@ -53,6 +53,7 @@ from app.schemas.structure import (
     TaskCompleteRequest,
     TaskCreateRequest,
     TaskReassignRequest,
+    TaskRejectRequest,
     TaskUpdateRequest,
     ResourceTransitionRequest,
     WashroomBulkCreateRequest,
@@ -959,6 +960,16 @@ async def create_task(
     return ws.task_out(await TaskService(session).create_task(user, payload))
 
 
+@router.get("/tasks/review-queue")
+async def tasks_review_queue(
+    property_id: str = Query(...),
+    user: User = Staff,
+    session: AsyncSession = Depends(get_db),
+):
+    tasks = await TaskService(session).review_queue(user, _uid(property_id))
+    return {"items": [ws.task_out(t) for t in tasks]}
+
+
 @router.get("/tasks/{task_id}")
 async def get_task(
     task_id: uuid.UUID,
@@ -1048,6 +1059,32 @@ async def reopen_task(
 ):
     return ws.task_out(
         await TaskService(session).reopen_task(user, task_id, payload.note)
+    )
+
+
+@router.post("/tasks/{task_id}/approve")
+async def approve_task(
+    task_id: uuid.UUID,
+    payload: TaskActionRequest,
+    user: User = Staff,
+    session: AsyncSession = Depends(get_db),
+):
+    res = await TaskService(session).approve_task(user, task_id, payload.note)
+    out = {"task": ws.task_out(res["task"])}
+    if res.get("generated_task"):
+        out["generated_task"] = ws.task_out(res["generated_task"])
+    return out
+
+
+@router.post("/tasks/{task_id}/reject")
+async def reject_task(
+    task_id: uuid.UUID,
+    payload: TaskRejectRequest,
+    user: User = Staff,
+    session: AsyncSession = Depends(get_db),
+):
+    return ws.task_out(
+        await TaskService(session).reject_task(user, task_id, payload.reason)
     )
 
 
