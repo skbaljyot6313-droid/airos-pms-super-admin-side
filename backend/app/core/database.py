@@ -87,6 +87,58 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
+# --------------------------------------------------------------------------
+# Employee-Backend push notices — allocation events buffered by
+# WorkAllocationService.record() on session.info are dispatched to the EB
+# ONLY after the outer transaction commits; rollbacks discard the buffer.
+# SQLAlchemy fires after_commit for SAVEPOINT releases too, so nested
+# transactions are skipped — the outer commit drains the whole buffer.
+# --------------------------------------------------------------------------
+
+from sqlalchemy import event  # noqa: E402
+from sqlalchemy.orm import Session as _SyncSession  # noqa: E402
+
+# Session events can't target an async_sessionmaker — the listener
+# receives the underlying sync Session, so register on the Session class
+# (AsyncSessionLocal is the only session factory in this process).
+
+
+@event.listens_for(_SyncSession, "after_commit")
+def _eb_events_after_commit(session) -> None:
+    if session.in_nested_transaction():
+        return
+    from app.services.employee_events import (
+        EB_ALLOC_EVENTS,
+        dispatch_allocation_notices,
+    )
+    events = session.info.pop(EB_ALLOC_EVENTS, None)
+    if not events:
+        return
+    try:
+        try:
+            asyncio.get_running_loop().create_task(
+                dispatch_allocation_notices(list(events))
+            )
+        except RuntimeError:
+            # inside greenlet_spawn during session.commit() — await directly
+            from sqlalchemy.util.concurrency import await_only
+            await_only(dispatch_allocation_notices(list(events)))
+    except Exception as exc:
+        # The commit already happened — a failed notice must never surface
+        # as a failed allocation. The EB feed synthesis is the backstop.
+        logger.warning(
+            "allocation-notice dispatch failed: %s", type(exc).__name__
+        )
+
+
+@event.listens_for(_SyncSession, "after_rollback")
+def _eb_events_after_rollback(session) -> None:
+    if session.in_nested_transaction():
+        return
+    from app.services.employee_events import EB_ALLOC_EVENTS
+    session.info.pop(EB_ALLOC_EVENTS, None)
+
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency — yields an AsyncSession, always closed on exit."""
     async with AsyncSessionLocal() as session:

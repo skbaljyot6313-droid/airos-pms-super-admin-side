@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.models.employee import Employee, employee_is_assignable
+from app.services.employee_events import queue_allocation_notice
 from app.models.structure import Area, Zone
 from app.models.user import User
 from app.models.work_allocation import (
@@ -955,7 +956,7 @@ class WorkAllocationService:
         previous_employee_id: uuid.UUID | None = None,
         previous_employee_name: str | None = None,
     ) -> None:
-        self.session.add(WorkAllocationHistory(
+        hist = WorkAllocationHistory(
             property_id=property_id,
             zone_id=zone_id,
             batch_id=batch.id if batch else None,
@@ -970,8 +971,20 @@ class WorkAllocationService:
             allocation_method=method,
             reason=reason,
             actor_name=actor_name,
-        ))
+        )
+        self.session.add(hist)
         # Production sessions run with autoflush disabled. Persist the audit
         # row inside the transaction now so the NEXT allocation can see this
         # pointer before the request-level commit.
         await self.session.flush()
+        # Buffer an Employee-Backend push notice — the session-level
+        # after_commit hook dispatches it; a rollback drops the buffer.
+        queue_allocation_notice(
+            self.session,
+            ticket_kind=ticket_kind,
+            ticket_id=ticket_id,
+            employee_id=employee_id,
+            employee_name=employee_name,
+            previous_employee_id=previous_employee_id,
+            event_created_at=hist.created_at,
+        )

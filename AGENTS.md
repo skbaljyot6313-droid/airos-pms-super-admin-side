@@ -137,7 +137,16 @@ frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-do
   zone in memory, one lock + rotation seed per scope — a unit NEVER
   leaves its zone pool (zone ∪ covering-area fallback only).
   Manual reassign never moves the pointer; everything audited in
-  WorkAllocationHistory.
+  WorkAllocationHistory. `record()` also buffers an allocation event on
+  `session.info` — a Session-level `after_commit` hook (in
+  `app/core/database.py`, registered on the sync `Session` class;
+  `async_sessionmaker` isn't a valid event target) POSTs it to the
+  Employee Backend `POST {EMPLOYEE_API_BASE_URL}/admin/notify-allocation`
+  with `X-Location-Service-Key` (`services/employee_events.py`). Nested
+  savepoint commits/rollbacks are skipped so only the real commit
+  dispatches; delivery is best-effort (`LOCATION_SERVICE_TIMEOUT_SECONDS`
+  cap, all failures logged+swallowed — allocation never depends on EB),
+  and EB's ledger synthesis is the recovery backstop.
 - **ResourceStateService** (`services/resource_state.py`): THE authoritative
   status writer for room/bed/dorm/washroom/fixture. All status writes funnel
   through `transition()` / `derive()` / `repair()`; status is DERIVED from
