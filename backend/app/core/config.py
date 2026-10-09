@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     # Employee Backend — server-to-server calls (live locations). The API
     # key never reaches the browser: the frontend polls /live-locations on
     # THIS backend, which forwards to the employee service with the key.
+    # EMPLOYEE_API_BASE_URL is the full API base (…/api/v1); when unset,
+    # EMPLOYEE_BACKEND_URL (service root) + /api/v1 is used.
+    EMPLOYEE_API_BASE_URL: str | None = None
     EMPLOYEE_BACKEND_URL: str | None = None
     LOCATION_SERVICE_API_KEY: str | None = None
     LOCATION_SERVICE_TIMEOUT_SECONDS: float = 8.0

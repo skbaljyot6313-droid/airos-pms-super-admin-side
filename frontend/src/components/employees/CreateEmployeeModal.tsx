@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { PasswordInput } from '../auth/PasswordInput';
 import { ApiError } from '../../api/client';
 import { istDateKey } from '../../lib/datetime';
+import { shiftsApi } from '../../api/shifts';
 
 interface CreateEmployeeModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { createEmployee, currentPropertyZones } = useApp();
+  const { createEmployee, currentPropertyZones, activeProperty, addToast } = useApp();
 
   const [name, setName] = useState('');
   const [jobTitle, setJobTitle] = useState('Front Desk Associate');
@@ -34,6 +35,9 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({
   const [phone, setPhone] = useState('');
   const [zoneUid, setZoneUid] = useState('');
   const [startDate, setStartDate] = useState(istDateKey());
+  const [shiftStart, setShiftStart] = useState('');
+  const [shiftEnd, setShiftEnd] = useState('');
+  const [shiftError, setShiftError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -63,10 +67,17 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({
     }
     if (!valid) return;
 
+    // Shift times are optional but must be given as a pair
+    setShiftError(null);
+    if ((shiftStart && !shiftEnd) || (!shiftStart && shiftEnd)) {
+      setShiftError('Enter both a shift start and end time, or neither.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // POST /employees — creates the staff record and its login credential
-      await createEmployee({
+      const created = await createEmployee({
         name: name.trim(),
         job_title: jobTitle.trim(),
         department: department as any,
@@ -77,10 +88,49 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({
         start_date: startDate,
       });
 
+      // Optional shift — reuse an active definition with matching times or
+      // create one (all-days working pattern; editable under Shifts), then
+      // assign it effective from the joining date. Employee creation must
+      // not fail if this step does — warn instead.
+      if (shiftStart && shiftEnd && activeProperty?.property_uid) {
+        try {
+          const { items } = await shiftsApi.list(activeProperty.property_uid);
+          let shift = items.find(
+            (s) =>
+              s.is_active &&
+              s.start_time === shiftStart &&
+              s.end_time === shiftEnd
+          );
+          if (!shift) {
+            shift = await shiftsApi.create({
+              property_uid: activeProperty.property_uid,
+              name: `${shiftStart}–${shiftEnd} shift`,
+              start_time: shiftStart,
+              end_time: shiftEnd,
+            });
+          }
+          await shiftsApi.assign(created.employee_uid, {
+            shift_uid: shift.shift_uid,
+            effective_from: startDate,
+          });
+        } catch (err) {
+          addToast({
+            type: 'error',
+            title: 'Shift Not Assigned',
+            description:
+              err instanceof ApiError
+                ? err.message
+                : 'Employee created, but the shift could not be assigned — set it under the Shifts tab.',
+          });
+        }
+      }
+
       setName('');
       setEmail('');
       setPhone('');
       setZoneUid('');
+      setShiftStart('');
+      setShiftEnd('');
       setPassword('');
       setConfirmPassword('');
       onClose();
@@ -218,6 +268,57 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({
               className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
             />
           </div>
+        </div>
+
+        {/* Optional shift — feeds schedule-aware attendance metrics */}
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+                Shift Start (IST)
+              </label>
+              <input
+                type="time"
+                value={shiftStart}
+                onChange={(e) => {
+                  setShiftStart(e.target.value);
+                  setShiftError(null);
+                }}
+                aria-invalid={!!shiftError}
+                className={`w-full px-3.5 py-2 bg-[#FAF8F5] border rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641] ${
+                  shiftError ? 'border-[#D96C6C]' : 'border-[#DDD7CB]'
+                }`}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+                Shift End (IST)
+              </label>
+              <input
+                type="time"
+                value={shiftEnd}
+                onChange={(e) => {
+                  setShiftEnd(e.target.value);
+                  setShiftError(null);
+                }}
+                aria-invalid={!!shiftError}
+                className={`w-full px-3.5 py-2 bg-[#FAF8F5] border rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641] ${
+                  shiftError ? 'border-[#D96C6C]' : 'border-[#DDD7CB]'
+                }`}
+              />
+            </div>
+          </div>
+          {shiftError ? (
+            <p className="text-[11px] text-[#A32A2A] font-medium mt-1">
+              {shiftError}
+            </p>
+          ) : (
+            <p className="text-[11px] text-[#8C867C] mt-1.5 font-body">
+              Optional. An end ≤ start counts as an overnight shift. Assigned
+              every day from the joining date — adjust days or grace under the
+              Shifts tab.
+            </p>
+          )}
         </div>
 
         {/* Login credentials — the employee signs in with these */}

@@ -46,6 +46,11 @@ from app.models.maintenance import (  # noqa: E402, F401
 from app.models.occupancy import Occupancy  # noqa: E402, F401
 from app.models.resource_state_event import ResourceStateEvent  # noqa: E402, F401
 from app.models.attendance import (  # noqa: E402, F401
+    AttendanceBreak,
     AttendanceDay,
     AttendanceRequest,
+)
+from app.models.shift import (  # noqa: E402, F401
+    EmployeeShiftAssignment,
+    Shift,
 )

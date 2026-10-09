@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CalendarOff, LayoutGrid, List, MapPin, Plus, UserX } from 'lucide-react';
+import { CalendarOff, ClipboardList, Clock, LayoutGrid, List, MapPin, Plus, UserX } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { ZoneBoard } from './ZoneBoard';
@@ -7,6 +7,8 @@ import { EmployeeDirectory } from './EmployeeDirectory';
 import { CreateEmployeeModal } from './CreateEmployeeModal';
 import { LiveLocationMap } from './LiveLocationMap';
 import { LeavesPanel } from './LeavesPanel';
+import { ShiftManager } from './ShiftManager';
+import { AttendanceBoard } from './AttendanceBoard';
 import { BackButton } from '../ui/BackButton';
 import { isEmployeeDeactivated } from '../../lib/employeeUtils';
 
@@ -44,7 +46,13 @@ export const EmployeesView: React.FC = () => {
 
   const isSuperAdmin = currentUser?.role === 'super_admin';
   const [activeTab, setActiveTab] = useState<
-    'board' | 'directory' | 'deactivated' | 'live' | 'leaves'
+    | 'board'
+    | 'directory'
+    | 'deactivated'
+    | 'live'
+    | 'leaves'
+    | 'shifts'
+    | 'attendance'
   >('board');
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
@@ -152,6 +160,32 @@ export const EmployeesView: React.FC = () => {
               {deactivatedEmployees.length}
             </span>
           </button>
+          <button
+            onClick={() => setActiveTab('shifts')}
+            className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
+              activeTab === 'shifts'
+                ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                : 'text-[#66706A] hover:text-[#17221B]'
+            }`}
+          >
+            <Clock
+              className={`w-3.5 h-3.5 ${activeTab === 'shifts' ? 'text-[#2F6B45]' : ''}`}
+            />
+            <span>Shifts</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('attendance')}
+            className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
+              activeTab === 'attendance'
+                ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                : 'text-[#66706A] hover:text-[#17221B]'
+            }`}
+          >
+            <ClipboardList
+              className={`w-3.5 h-3.5 ${activeTab === 'attendance' ? 'text-[#2F6B45]' : ''}`}
+            />
+            <span>Attendance</span>
+          </button>
           {isSuperAdmin && (
             <>
               <button
@@ -199,6 +233,10 @@ export const EmployeesView: React.FC = () => {
         <ZoneBoard onOpenCreateModal={() => setCreateModalOpen(true)} />
       ) : activeTab === 'live' ? (
         <LiveLocationMap />
+      ) : activeTab === 'shifts' ? (
+        <ShiftManager />
+      ) : activeTab === 'attendance' ? (
+        <AttendanceBoard />
       ) : activeTab === 'leaves' ? (
         <LeavesPanel />
       ) : (

@@ -24,7 +24,7 @@ backend/                # FastAPI + SQLAlchemy 2 async + asyncpg + Alembic
   app/models/           # see Domain below
   app/services/         # business logic (Router → Service → Repository → SQLAlchemy)
   app/repositories/     # data access; workspace.py holds company/property scoping
-  alembic/versions/     # 34 migrations; NEVER hand-edit the schema
+  alembic/versions/     # 35 migrations; NEVER hand-edit the schema
 frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-dom 7
   src/App.tsx           # routes + RequireAuth/RequireRole/PropertyScopedView guards
   src/context/AppContext.tsx  # god-context: session, all collections, all mutations, toasts
@@ -74,12 +74,55 @@ frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-do
   every date in the inclusive range with the day status (worked day in
   range → 409; overlapping open request → 409); reject just marks.
 - **Live locations** (`services/live_location.py`): server-to-server proxy
-  to the Employee Backend — `GET /live-locations` (super_admin) forwards
-  `{EMPLOYEE_BACKEND_URL}/api/v1/admin/live-locations` with bearer
-  `LOCATION_SERVICE_API_KEY`. Key never reaches the browser; coordinates
-  are never stored/logged. 502 on auth-reject/malformed, 503 on
-  unreachable/unconfigured. Frontend polls ~7s from the Employees → Live
-  Location tab (Leaflet map, markers keyed by employee UUID).
+  to the Employee Backend — `GET /live-locations` (super_admin, optional
+  `employee_id`/`property_id`/`zone_id`/`is_active` filters — all
+  company-scope-validated in `api/v1/locations.py` before forwarding),
+  `GET /live-locations/{uid}` (live-or-stale single lookup), and
+  `GET /live-locations/{uid}/history` (`from`/`to` UTC, ≤31d span,
+  `tracking_session_id`, `max_points` 1–100000) forward to
+  `{EMPLOYEE_API_BASE_URL}/admin/...` with header
+  `X-Location-Service-Key: LOCATION_SERVICE_API_KEY`. Base URL resolution:
+  `EMPLOYEE_API_BASE_URL` (full `…/api/v1` base, prod value
+  `https://employee-api-production-c0e3.up.railway.app/api/v1`) wins over
+  legacy `EMPLOYEE_BACKEND_URL` + `/api/v1`. Key never reaches the browser;
+  coordinates are never stored/logged. 400 passes upstream filter/range
+  codes through, 502 on auth-reject/malformed, 503 on unreachable/
+  unconfigured. Frontend polls every 10s from the Employees → Live
+  Location tab (Leaflet + leaflet.markercluster — co-located staff
+  cluster and spiderfy at max zoom; auto-fits live bounds, yields to
+  manual pan/zoom until Recenter; markers keyed by employee UUID;
+  `is_live`/`is_stale` are authoritative — null coords never render a
+  marker). Each location also carries `work_status`
+  (`services/attendance.py::current_work_statuses`) resolved from the
+  shared `attendance_days`/`attendance_breaks` rows: open day →
+  working, +open break → on_break, closed/marked op-day → off_duty,
+  else unknown. GPS/tracking-session activity is NEVER treated as
+  working — attendance is the only source of truth. Both live
+  endpoints then filter to on-duty staff only (`working`/`on_break`);
+  employees who never clocked in or already clocked out are dropped
+  server-side (single lookup → `{"location": null}`), so map bounds,
+  clusters, and counts only ever reflect clocked-in staff.
+- **Shifts & day metrics** (`services/shifts.py`, `api/v1/shifts.py`,
+  `GET /attendance/status-board`): shared tables `shifts` (company/
+  property-scoped definitions — `start_time`/`end_time` IST, `end <=
+  start` = overnight, `grace_minutes`, `early_exit_minutes`, Monday-first
+  `working_days` bitmap, `is_active`) + `employee_shift_assignments`
+  (`effective_from`/`effective_until`, overlap prevented, history
+  retained — metrics resolve the assignment effective on the evaluated
+  date, never the current one). Routes are `require_property_manager`
+  + `_assert_company_scope`, so PMs manage only their property's staff.
+  `status_board()` in `services/attendance.py` is the ONE authoritative
+  evaluator: open day → working/on_break; ended day → completed
+  (arrival vs shift start+grace → on_time|late; departure vs end−
+  tolerance → on_time|early); scheduled past cutoff → absent;
+  pre-shift → awaiting/scheduled; leave/week_off → off_day; clock-in
+  with no applicable assignment → unscheduled; open day from a prior
+  op-day whose scheduled window has passed → `incomplete` +
+  `needs_review` (fail closed — never grants floor presence).
+  `floor_eligible` = `working`/`on_break` only. Zone Board cards
+  filter to `floor_eligible` via `attendanceApi.statusBoard` (30s
+  poll, fails closed); Employees → Shifts/Attendance tabs expose
+  `ShiftManager` + `AttendanceBoard` to SA and PM.
 - **WorkTemplate**: JSONB config (assignment/location/schedule/checklist/
   verification/overdue/notifications), versioned (WorkTemplateVersion);
   `next_run_at` drives the scheduler; TemplateGeneration ledger
@@ -151,6 +194,12 @@ backend's env.
 - Boot refuses to start if `alembic_version` ≠ script head
   (`check_schema_version` in `app/main.py`) — including a DB migrated by a
   different branch of this codebase.
+- The Postgres DB is SHARED with the Employee Backend, whose Alembic chain
+  mirrors this repo's through `s5c9e3a7d1f4` and then applies its own
+  revisions on the same `alembic_version` row. `u7e1f5a9d3c6` records the
+  EB-owned tables (`location_tracking_sessions`, `mobile_releases`) so SA
+  can resolve the shared stamp — do not `alembic stamp` over EB
+  revisions; extend the chain instead.
 - `backend/uploads/` holds dev-uploaded images referenced by the DB —
   gitignored, but do not delete casually.
 - Backend route permission shortcut: `Staff = Depends(require_property_manager)`

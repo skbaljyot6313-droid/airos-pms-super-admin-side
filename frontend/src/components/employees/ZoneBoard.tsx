@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   DndContext,
   useDraggable,
@@ -22,6 +22,7 @@ import { useApp } from '../../context/AppContext';
 import { Employee, Zone } from '../../types';
 import { getInitials } from '../../lib/utils';
 import { isEmployeeAssignable } from '../../lib/employeeUtils';
+import { attendanceApi } from '../../api/attendance';
 
 interface ZoneBoardProps {
   onOpenCreateModal: () => void;
@@ -229,7 +230,47 @@ export const ZoneBoard: React.FC<ZoneBoardProps> = ({ onOpenCreateModal }) => {
   } = useApp();
 
   const [activeDragEmp, setActiveDragEmp] = useState<Employee | null>(null);
-  const assignableEmployees = currentPropertyEmployees.filter(isEmployeeAssignable);
+
+  // Strict floor visibility — the backend's status board decides who is
+  // on the floor: a valid open attendance day (clocked in, not clocked
+  // out, not a stale record). Fails closed while loading or on error;
+  // GPS activity alone never qualifies.
+  const [eligibleUids, setEligibleUids] = useState<Set<string> | null>(
+    null
+  );
+  useEffect(() => {
+    const propertyUid = activeProperty?.property_uid;
+    if (!propertyUid) return;
+    let dead = false;
+    const load = async () => {
+      try {
+        const res = await attendanceApi.statusBoard(propertyUid);
+        if (dead) return;
+        setEligibleUids(
+          new Set(
+            res.employees
+              .filter((e) => e.floor_eligible)
+              .map((e) => e.employee_uid)
+          )
+        );
+      } catch {
+        if (!dead) setEligibleUids(new Set());
+      }
+    };
+    void load();
+    const timer = setInterval(() => void load(), 30_000);
+    return () => {
+      dead = true;
+      clearInterval(timer);
+    };
+  }, [activeProperty?.property_uid]);
+
+  const assignableEmployees = currentPropertyEmployees.filter(
+    (e) =>
+      isEmployeeAssignable(e) &&
+      eligibleUids !== null &&
+      eligibleUids.has(e.employee_uid)
+  );
   const assignableUnallocatedEmployees = assignableEmployees.filter(
     (e) => !e.zone_uid && !e.area_uid
   );

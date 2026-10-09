@@ -60,6 +60,31 @@ class AttendanceDay(Base):
     )
 
 
+class AttendanceBreak(Base):
+    __tablename__ = "attendance_breaks"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, default=uuid.uuid4
+    )
+    attendance_day_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("attendance_days.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    # NULL while the break is still open — the employee is on break now.
+    ended_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    duration_seconds: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class AttendanceRequest(Base):
     __tablename__ = "attendance_requests"
 

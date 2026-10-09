@@ -11,11 +11,32 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.dependencies.auth import require_super_admin
+from app.dependencies.auth import (
+    require_property_manager,
+    require_super_admin,
+)
 from app.models.user import User
-from app.services.attendance import AttendanceService, request_out
+from app.services.attendance import (
+    AttendanceService,
+    day_status_board,
+    request_out,
+)
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
+
+
+@router.get("/status-board")
+async def status_board(
+    property_id: uuid.UUID | None = None,
+    date: str | None = None,
+    user: User = Depends(require_property_manager),
+    session: AsyncSession = Depends(get_db),
+):
+    """Schedule-aware attendance for one IST operational day —
+    super_admin picks any company property; PMs are pinned to theirs."""
+    return await day_status_board(
+        session, user, property_id, op_date=date
+    )
 
 
 class AttendanceReviewBody(BaseModel):
