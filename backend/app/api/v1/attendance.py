@@ -11,10 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.dependencies.auth import (
-    require_property_manager,
-    require_super_admin,
-)
+from app.dependencies.auth import require_property_manager
 from app.models.user import User
 from app.services.attendance import (
     AttendanceService,
@@ -46,7 +43,7 @@ class AttendanceReviewBody(BaseModel):
 @router.get("/requests")
 async def list_requests(
     status: str | None = None,
-    user: User = Depends(require_super_admin),
+    user: User = Depends(require_property_manager),
     session: AsyncSession = Depends(get_db),
 ):
     svc = AttendanceService(session)
@@ -63,7 +60,7 @@ async def list_requests(
 async def approve_request(
     request_uid: uuid.UUID,
     body: AttendanceReviewBody | None = None,
-    user: User = Depends(require_super_admin),
+    user: User = Depends(require_property_manager),
     session: AsyncSession = Depends(get_db),
 ):
     svc = AttendanceService(session)
@@ -78,7 +75,7 @@ async def approve_request(
 async def reject_request(
     request_uid: uuid.UUID,
     body: AttendanceReviewBody | None = None,
-    user: User = Depends(require_super_admin),
+    user: User = Depends(require_property_manager),
     session: AsyncSession = Depends(get_db),
 ):
     svc = AttendanceService(session)

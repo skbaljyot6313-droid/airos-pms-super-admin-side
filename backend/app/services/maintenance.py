@@ -669,13 +669,16 @@ class MaintenanceService:
             )
 
     def _require_release_authority(self, user: User) -> None:
-        """Review/closure decisions that release a resource are Super
-        Admin authority (spec §13)."""
-        if user.role != UserRole.SUPER_ADMIN:
+        """Review/closure decisions that release a resource need a staff
+        role — super_admin company-wide, property_manager within their
+        own property (scope enforced by _get_ticket)."""
+        if user.role not in (
+            UserRole.SUPER_ADMIN, UserRole.PROPERTY_MANAGER
+        ):
             from app.dependencies.auth import Forbidden
             raise Forbidden(
-                "Closing or disapproving resource work requires the "
-                "Super Admin role."
+                "Closing or disapproving resource work requires a "
+                "supervisory staff role."
             )
 
     async def start(self, user: User, ticket_id: uuid.UUID):

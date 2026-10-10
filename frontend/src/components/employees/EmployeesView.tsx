@@ -44,7 +44,7 @@ export const EmployeesView: React.FC = () => {
   const { currentPropertyEmployees, currentPropertyUnallocatedEmployees, activeProperty, currentUser } =
     useApp();
 
-  const isSuperAdmin = currentUser?.role === 'super_admin';
+  const isStaff = currentUser?.role === 'super_admin' || currentUser?.role === 'property_manager';
   const [activeTab, setActiveTab] = useState<
     | 'board'
     | 'directory'
@@ -186,7 +186,7 @@ export const EmployeesView: React.FC = () => {
             />
             <span>Attendance</span>
           </button>
-          {isSuperAdmin && (
+          {isStaff && (
             <>
               <button
                 onClick={() => setActiveTab('live')}

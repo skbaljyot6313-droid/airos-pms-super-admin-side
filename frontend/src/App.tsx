@@ -243,9 +243,9 @@ const AppContent: React.FC = () => {
           <Route path="/property/:propertyUid/rooms" element={<RequireAuth><PropertyScopedView view="rooms" /></RequireAuth>} />
           <Route path="/property/:propertyUid/employees" element={<RequireAuth><PropertyScopedView view="employees" /></RequireAuth>} />
           <Route path="/property/:propertyUid/tasks" element={<RequireAuth><PropertyScopedView view="tasks" /></RequireAuth>} />
-          <Route path="/property/:propertyUid/tasks/history/:date" element={<RequireAuth><RequireRole roles={['super_admin']}><PropertyScopedView view="task_day" /></RequireRole></RequireAuth>} />
+          <Route path="/property/:propertyUid/tasks/history/:date" element={<RequireAuth><RequireRole roles={['super_admin', 'property_manager']}><PropertyScopedView view="task_day" /></RequireRole></RequireAuth>} />
           <Route path="/property/:propertyUid/maintenance" element={<RequireAuth><MaintenanceRedirect /></RequireAuth>} />
-          <Route path="/property/:propertyUid/maintenance/history/:date" element={<RequireAuth><RequireRole roles={['super_admin']}><PropertyScopedView view="maint_day" /></RequireRole></RequireAuth>} />
+          <Route path="/property/:propertyUid/maintenance/history/:date" element={<RequireAuth><RequireRole roles={['super_admin', 'property_manager']}><PropertyScopedView view="maint_day" /></RequireRole></RequireAuth>} />
           <Route path="/property/:propertyUid/templates" element={<RequireAuth><PropertyScopedView view="templates" /></RequireAuth>} />
           <Route path="/property/:propertyUid/profile" element={<RequireAuth><WorkspaceGate><ProfileView /></WorkspaceGate></RequireAuth>} />
           <Route path="/property/:propertyUid" element={<RequireAuth><Navigate to="zones" replace /></RequireAuth>} />

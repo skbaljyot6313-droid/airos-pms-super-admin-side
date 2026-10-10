@@ -623,13 +623,65 @@ class TestRoutes:
             )
         assert res.status_code == 422
 
-    async def test_forbidden_for_property_manager(self, client):
+    @respx.mock
+    async def test_property_manager_pinned_to_own_property(self, client):
+        """PMs can read live locations — but always scoped to their own
+        property, regardless of the filter they pass."""
+        from app.core.database import get_db
+        from app.dependencies.auth import get_current_user
+        from app.main import app
+        from app.models.user import UserRole
+
+        PM_PROP = uuid.uuid4()
+        PM_COMPANY = uuid.uuid4()
+        upstream = respx.get(LIVE_URL).mock(
+            return_value=httpx.Response(200, json={"locations": []})
+        )
+        app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(
+            role=UserRole.PROPERTY_MANAGER, company_id=PM_COMPANY,
+            property_id=PM_PROP,
+        )
+
+        async def _db():
+            yield _FakeSession(owned=True)
+
+        app.dependency_overrides[get_db] = _db
+        async with client as c:
+            res = await c.get("/api/v1/live-locations")
+        assert res.status_code == 200
+        # The forwarded filter is the PM's own property, not the caller's arg.
+        assert str(PM_PROP) in str(upstream.calls.last.request.url)
+
+    async def test_pm_foreign_property_id_is_404(self, client):
+        """A PM passing another property's id gets 404 — never forwarded."""
+        from app.core.database import get_db
         from app.dependencies.auth import get_current_user
         from app.main import app
         from app.models.user import UserRole
 
         app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(
-            role=UserRole.PROPERTY_MANAGER, company_id=uuid.uuid4()
+            role=UserRole.PROPERTY_MANAGER, company_id=uuid.uuid4(),
+            property_id=uuid.uuid4(),
+        )
+
+        async def _db():
+            yield _FakeSession(owned=True)
+
+        app.dependency_overrides[get_db] = _db
+        async with client as c:
+            res = await c.get(
+                "/api/v1/live-locations",
+                params={"property_id": str(uuid.uuid4())},
+            )
+        assert res.status_code == 404
+
+    async def test_forbidden_for_employee_role(self, client):
+        from app.dependencies.auth import get_current_user
+        from app.main import app
+        from app.models.user import UserRole
+
+        app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(
+            role=UserRole.EMPLOYEE, company_id=uuid.uuid4()
         )
         async with client as c:
             res = await c.get("/api/v1/live-locations")

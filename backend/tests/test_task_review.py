@@ -158,12 +158,35 @@ class TestApprove:
             )
         assert getattr(ei.value, "status_code", None) == 403
 
-    async def test_pm_cannot_approve_room_task(self):
+    async def test_pm_can_approve_room_task_in_own_property(
+        self, monkeypatch
+    ):
+        """PM has SA's review authority inside his own property — the
+        resource-refresh is stubbed since the scripted session holds no
+        real room rows."""
         task = _task(room_id=ROOM)
+        sub = _submission(task)
+
+        async def _noop_refresh(self, task, user, trigger):
+            return None
+
+        monkeypatch.setattr(
+            TaskService, "_refresh_unit", _noop_refresh
+        )
+        res = await TaskService(_svc(task)).approve_task(PM_USER, task.id)
+        assert res["task"].status == "completed"
+        assert sub.status == "approved"
+
+    async def test_pm_cannot_review_foreign_property_task(self):
+        """A task in a different property 404s at the scope check —
+        _property_for_write rejects before review logic runs."""
+        task = _task()
         _submission(task)
+        foreign = SimpleNamespace(id=uuid.uuid4(), company_id=CID)
+        sess = _Session(executes=[[task], [foreign]])
         with pytest.raises(Exception) as ei:
-            await TaskService(_svc(task)).approve_task(PM_USER, task.id)
-        assert getattr(ei.value, "status_code", None) == 403
+            await TaskService(sess).approve_task(PM_USER, task.id)
+        assert getattr(ei.value, "status_code", None) == 404
 
     async def test_approve_no_submission_still_completes(self):
         task = _task()

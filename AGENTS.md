@@ -223,4 +223,11 @@ backend's env.
 - `backend/uploads/` holds dev-uploaded images referenced by the DB —
   gitignored, but do not delete casually.
 - Backend route permission shortcut: `Staff = Depends(require_property_manager)`
-  (super_admin + property_manager).
+  (super_admin + property_manager). Property managers get every capability a
+  super_admin has INSIDE their own property — task review incl. resource
+  release, ticket close/disapprove, attendance leave decisions, live
+  locations, calendars/day-analysis, resource repair, shifts. Company-level
+  surface stays `require_super_admin`: create/delete property, PATCH
+  /companies, /admin/settings. PM scoping is enforced per-service
+  (`_property_for_write`, `_request_for_review`, `_assert_company_scope`
+  pinning, `_scoped`) — never by hiding UI.

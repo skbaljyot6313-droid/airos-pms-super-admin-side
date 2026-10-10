@@ -1351,15 +1351,17 @@ class TaskService:
             )
 
     def _require_resource_authority(self, user: User, task: Task) -> None:
-        """Review decisions that release a resource are Super-Admin-only
-        (spec §13). Tasks with no resource target stay approvable by any
-        staff member."""
+        """Review decisions that release a resource need a staff role —
+        super_admin across the company, property_manager within their own
+        property (scope already enforced by _get_task)."""
         has_target = bool(task.room_id or task.dorm_id or task.washroom_id)
-        if has_target and user.role != UserRole.SUPER_ADMIN:
+        if has_target and user.role not in (
+            UserRole.SUPER_ADMIN, UserRole.PROPERTY_MANAGER
+        ):
             from app.dependencies.auth import Forbidden
             raise Forbidden(
-                "Approving work on a physical resource requires the "
-                "Super Admin role."
+                "Approving work on a physical resource requires a "
+                "supervisory staff role."
             )
 
     async def _refresh_unit(self, task: Task, user: User, trigger: str) -> None:

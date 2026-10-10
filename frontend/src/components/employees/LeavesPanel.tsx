@@ -37,7 +37,7 @@ const formatRange = (r: AttendanceRequest) =>
 
 export const LeavesPanel: React.FC = () => {
   const { currentUser } = useApp();
-  const isSuperAdmin = currentUser?.role === 'super_admin';
+  const isStaff = currentUser?.role === 'super_admin' || currentUser?.role === 'property_manager';
 
   const [requests, setRequests] = useState<AttendanceRequest[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -90,10 +90,10 @@ export const LeavesPanel: React.FC = () => {
     }
   };
 
-  if (!isSuperAdmin) {
+  if (!isStaff) {
     return (
       <Card className="p-6 text-sm text-[#66706A]">
-        Leave decisions are restricted to the Super Admin.
+        Leave decisions are restricted to supervisory staff.
       </Card>
     );
   }

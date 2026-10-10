@@ -379,7 +379,7 @@ Staff = Depends(require_property_manager)
 async def tasks_calendar(
     month: str = Query(...),
     property_uid: str | None = Query(default=None),
-    user: User = Depends(require_super_admin),
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
     """Task calendar — per-operational-day activity counts for a month
@@ -394,7 +394,7 @@ async def tasks_calendar(
 async def tasks_day_analysis(
     day: str,
     property_uid: str | None = Query(default=None),
-    user: User = Depends(require_super_admin),
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
     """Daily task analysis — full breakdown for one operational day
@@ -738,7 +738,7 @@ async def resource_transition(
 async def resource_repair(
     resource_type: str,
     resource_id: uuid.UUID,
-    user: User = Depends(require_super_admin),
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
     """Super Admin reconciliation-repair — rewrites the materialized
@@ -1130,7 +1130,7 @@ async def list_maintenance(
 async def maintenance_calendar(
     month: str = Query(...),
     property_uid: str | None = Query(default=None),
-    user: User = Depends(require_super_admin),
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
     """Maintenance calendar — per-operational-day ticket activity for one
@@ -1145,7 +1145,7 @@ async def maintenance_calendar(
 async def maintenance_day_analysis(
     day: str,
     property_uid: str | None = Query(default=None),
-    user: User = Depends(require_super_admin),
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
     """Daily maintenance analysis — tickets raised/carried/resolved/closed

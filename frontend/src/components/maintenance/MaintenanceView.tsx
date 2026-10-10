@@ -515,7 +515,7 @@ export const TicketDrawer: React.FC<{
 
 export const MaintenanceView: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const { currentPropertyMaintenance, activeProperty, currentUser, activePropertyUid } = useApp();
-  const isSuperAdmin = currentUser?.role === 'super_admin';
+  const isStaff = currentUser?.role === 'super_admin' || currentUser?.role === 'property_manager';
   const [searchParams] = useSearchParams();
   const [view, setView] = useState<'live' | 'history' | 'calendar'>('live');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -576,7 +576,7 @@ export const MaintenanceView: React.FC<{ embedded?: boolean }> = ({ embedded = f
         {([
           { v: 'live' as const, l: 'Current Live', icon: Activity },
           { v: 'history' as const, l: 'History', icon: History },
-          ...(isSuperAdmin
+          ...(isStaff
             ? [{ v: 'calendar' as const, l: 'Calendar', icon: CalendarDays }]
             : []),
         ]).map((t) => {

@@ -37,7 +37,7 @@ export const TasksView: React.FC = () => {
           ? 'review'
           : 'today'
   );
-  const isSuperAdmin = currentUser?.role === 'super_admin';
+  const isStaff = currentUser?.role === 'super_admin' || currentUser?.role === 'property_manager';
   const [selectedTaskUid, setSelectedTaskUid] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -85,7 +85,7 @@ export const TasksView: React.FC = () => {
           { v: 'review' as const, l: 'Review', icon: ClipboardCheck },
           { v: 'maintenance' as const, l: 'Maintenance', icon: Wrench },
           { v: 'history' as const, l: 'Task History', icon: History },
-          ...(isSuperAdmin ? [{ v: 'calendar' as const, l: 'Calendar', icon: CalendarDays }] : []),
+          ...(isStaff ? [{ v: 'calendar' as const, l: 'Calendar', icon: CalendarDays }] : []),
         ]).map((t) => {
           const Icon = t.icon;
           return (

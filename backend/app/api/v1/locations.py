@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.exceptions import AppError
-from app.dependencies.auth import require_super_admin
+from app.dependencies.auth import require_property_manager
 from app.models.employee import Employee
 from app.models.property import Property
 from app.models.structure import Zone
@@ -49,18 +49,23 @@ async def _assert_company_scope(
     zone_id: uuid.UUID | None = None,
 ) -> None:
     """Every scoped id must belong to the caller's company — never forward
-    a foreign-tenant filter upstream. 404 (not 403) so a bad id reveals
-    nothing about other tenants."""
+    a foreign-tenant filter upstream. Property managers are further pinned
+    to their own property. 404 (not 403) so a bad id reveals nothing about
+    other tenants."""
+    from app.models.user import UserRole
+
+    is_sa = user.role == UserRole.SUPER_ADMIN
     if employee_id is not None:
-        found = await session.scalar(
-            select(Employee.id).where(
-                Employee.id == employee_id,
-                Employee.company_id == user.company_id,
-            )
-        )
+        cond = [Employee.id == employee_id,
+                Employee.company_id == user.company_id]
+        if not is_sa:
+            cond.append(Employee.property_id == user.property_id)
+        found = await session.scalar(select(Employee.id).where(*cond))
         if found is None:
             raise LocationScopeNotFound("Employee not found.")
     if property_id is not None:
+        if not is_sa and property_id != user.property_id:
+            raise LocationScopeNotFound("Property not found.")
         found = await session.scalar(
             select(Property.id).where(
                 Property.id == property_id,
@@ -75,6 +80,14 @@ async def _assert_company_scope(
             .join(Property, Zone.property_id == Property.id)
             .where(Zone.id == zone_id, Property.company_id == user.company_id)
         )
+        zone = None
+        if found is not None and not is_sa:
+            # PM's zone must live inside their own property
+            zone = await session.scalar(
+                select(Zone.property_id).where(Zone.id == zone_id)
+            )
+            if zone != user.property_id:
+                found = None
         if found is None:
             raise LocationScopeNotFound("Zone not found.")
 
@@ -124,12 +137,15 @@ async def get_live_locations(
     property_id: uuid.UUID | None = None,
     zone_id: uuid.UUID | None = None,
     is_active: bool = True,
-    user: User = Depends(require_super_admin),
+    user: User = Depends(require_property_manager),
     session: AsyncSession = Depends(get_db),
 ):
     """Snapshot of reporting employees. `is_active=false` requires
     `employee_id` and returns a stale (null-coordinate) entry after the
-    fix has expired — the service enforces the same rule as upstream."""
+    fix has expired — the service enforces the same rule as upstream.
+    Property managers are always pinned to their own property."""
+    from app.models.user import UserRole
+
     await _assert_company_scope(
         session,
         user,
@@ -137,6 +153,10 @@ async def get_live_locations(
         property_id=property_id,
         zone_id=zone_id,
     )
+    # PMs are pinned to their own property — scope-check above already
+    # rejected an explicitly foreign id; absent filter defaults to theirs.
+    if user.role != UserRole.SUPER_ADMIN:
+        property_id = user.property_id
     data = await live_location.fetch_live_locations(
         employee_id=str(employee_id) if employee_id else None,
         property_id=str(property_id) if property_id else None,
@@ -152,7 +172,7 @@ async def get_live_locations(
 @router.get("/live-locations/{employee_uid}")
 async def get_live_location(
     employee_uid: uuid.UUID,
-    user: User = Depends(require_super_admin),
+    user: User = Depends(require_property_manager),
     session: AsyncSession = Depends(get_db),
 ):
     """One employee's latest entry — live or stale (is_active=false lookup
@@ -174,7 +194,7 @@ async def get_location_history(
     to_dt: datetime = Query(alias="to"),
     tracking_session_id: uuid.UUID | None = None,
     max_points: int = Query(default=10_000, ge=1, le=100_000),
-    user: User = Depends(require_super_admin),
+    user: User = Depends(require_property_manager),
     session: AsyncSession = Depends(get_db),
 ):
     """Time-ranged route for one employee. `from`/`to` are ISO-8601

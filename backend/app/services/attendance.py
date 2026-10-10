@@ -73,17 +73,22 @@ class AttendanceService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    def _require_super_admin(self, user: User) -> None:
+    def _require_reviewer(self, user: User) -> None:
+        """Leave/week-off review is staff-only: super_admin across the
+        company, property_manager scoped to their own property."""
         from app.dependencies.auth import Forbidden
 
-        if user.role != UserRole.SUPER_ADMIN:
+        if user.role not in (
+            UserRole.SUPER_ADMIN, UserRole.PROPERTY_MANAGER
+        ):
             raise Forbidden()
 
     async def list_requests(
         self, user: User, *, status: str | None = None
     ) -> list[AttendanceRequest]:
-        """Company-scoped review queue — Super Admin only, newest first."""
-        self._require_super_admin(user)
+        """Review queue, newest first — company-wide for Super Admin,
+        pinned to the manager's own property otherwise."""
+        self._require_reviewer(user)
         q = (
             select(AttendanceRequest)
             .join(Property, AttendanceRequest.property_id == Property.id)
@@ -92,6 +97,8 @@ class AttendanceService:
                 AttendanceRequest.created_at.desc(),
             )
         )
+        if user.role != UserRole.SUPER_ADMIN:
+            q = q.where(AttendanceRequest.property_id == user.property_id)
         if status:
             if status not in ("pending", "approved", "rejected", "cancelled"):
                 raise ValidationErr("Unknown status filter.")
@@ -102,8 +109,8 @@ class AttendanceService:
     async def _request_for_review(
         self, user: User, request_id: uuid.UUID
     ) -> AttendanceRequest:
-        """FOR UPDATE lock + company scope. Cross-company → 404, never a leak."""
-        self._require_super_admin(user)
+        """FOR UPDATE lock + tenant scope. Cross-scope → 404, never a leak."""
+        self._require_reviewer(user)
         res = await self.session.execute(
             select(AttendanceRequest)
             .where(AttendanceRequest.id == request_id)
@@ -114,6 +121,9 @@ class AttendanceService:
             raise NotFoundErr("Request not found.")
         prop = await self.session.get(Property, req.property_id)
         if prop is None or prop.company_id != user.company_id:
+            raise NotFoundErr("Request not found.")
+        if user.role != UserRole.SUPER_ADMIN \
+                and req.property_id != user.property_id:
             raise NotFoundErr("Request not found.")
         return req
 
