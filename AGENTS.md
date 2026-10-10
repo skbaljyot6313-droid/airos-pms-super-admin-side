@@ -141,7 +141,11 @@ frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-do
 - **Work allocation** (`services/work_allocation.py`): persistent zone
   round-robin (ZoneAllocationState row locked FOR UPDATE), area-level
   employee pool as fallback, department eligibility by work_type
-  (cleaning→housekeeping, maintenance→maintenance/engineering).
+  (cleaning→housekeeping, maintenance→maintenance/engineering). Every auto
+  or manual assignee must have an open `attendance_days` row for the current
+  operational day (`status=present`, started, not ended); that row is created
+  by the employee app's Start Day action. With nobody present, work remains
+  unassigned.
   WorkAllocationBatch = one POST → N tickets, one employee per unit.
   `allocate_units()` = batched zone-aware path used by template
   generation: one property-wide staff/workload fetch, pools grouped by

@@ -961,10 +961,12 @@ class TaskService:
         )
         work_type = await self._task_work_type(task)
         emp_id, emp_name = task.employee_id, task.assigned_to_name
+        present_ids = await self.alloc.present_employee_ids(task.property_id)
         if emp_id is not None:
             source_emp = await self.session.get(Employee, emp_id)
             if (
                 source_emp is None
+                or emp_id not in present_ids
                 or not self.alloc.employee_matches_work_type(source_emp, work_type)
             ):
                 emp_id, emp_name = None, None

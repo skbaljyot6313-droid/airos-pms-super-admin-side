@@ -359,11 +359,13 @@ class TemplateService:
         supervisor_uid = assignment.get("supervisor_uid")
         if employee_uid:
             await allocs.employee_for_assignment(
-                uuid.UUID(str(employee_uid)), prop_id, work_type=work_type
+                uuid.UUID(str(employee_uid)), prop_id, work_type=work_type,
+                require_presence=False,
             )
         if supervisor_uid:
             await allocs.employee_for_assignment(
-                uuid.UUID(str(supervisor_uid)), prop_id
+                uuid.UUID(str(supervisor_uid)), prop_id,
+                require_presence=False,
             )
         if location.get("zone_uid"):
             await exists(Zone, uuid.UUID(str(location["zone_uid"])), "Zone")
@@ -1086,8 +1088,12 @@ class TemplateService:
             return None
         emp = await self.session.get(Employee, uuid.UUID(str(uid)))
         work_type = infer_task_work_type(template_type=t.template_type)
+        present_ids = await WorkAllocationService(
+            self.session
+        ).present_employee_ids(t.property_id)
         if (
             emp is None
+            or emp.id not in present_ids
             or emp.property_id != t.property_id
             or not employee_is_assignable(emp)
             or not WorkAllocationService.employee_matches_work_type(
