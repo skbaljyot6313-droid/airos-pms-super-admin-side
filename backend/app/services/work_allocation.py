@@ -19,14 +19,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.models.attendance import AttendanceDay
-from app.models.company import Company
 from app.models.employee import Employee, employee_is_assignable
 from app.services.employee_events import queue_allocation_notice
 from app.models.property import Property
 from app.models.structure import Area, Zone
 from app.models.user import User
-from app.services.rollover import current_operational_day, parse_day_start
 from app.models.work_allocation import (
     WorkAllocationBatch,
     WorkAllocationHistory,
@@ -151,35 +148,9 @@ class WorkAllocationService:
         department = (employee.department or "").lower()
         return any(term in department for term in departments)
 
-    async def present_employee_ids(
-        self, property_id: uuid.UUID
-    ) -> set[uuid.UUID]:
-        res = await self.session.execute(
-            select(Company.operational_day_start)
-            .join(Property, Property.company_id == Company.id)
-            .where(Property.id == property_id)
-        )
-        day_start = res.scalar_one_or_none()
-        if day_start is None:
-            return set()
-        attendance_date = current_operational_day(
-            datetime.now(timezone.utc), parse_day_start(day_start)
-        )
-        res = await self.session.execute(
-            select(AttendanceDay.employee_id).where(
-                AttendanceDay.property_id == property_id,
-                AttendanceDay.attendance_date == attendance_date,
-                AttendanceDay.status == "present",
-                AttendanceDay.started_at.is_not(None),
-                AttendanceDay.ended_at.is_(None),
-                AttendanceDay.employee_id.is_not(None),
-            )
-        )
-        return set(res.scalars())
-
     async def employee_for_assignment(
         self, employee_id: uuid.UUID, property_id: uuid.UUID,
-        *, work_type: str | None = None, require_presence: bool = True,
+        *, work_type: str | None = None,
     ) -> Employee:
         """Resolve an explicit assignee under the central eligibility rules."""
         from app.services.structure import ValidationErr
@@ -197,11 +168,6 @@ class WorkAllocationService:
         if not employee_is_assignable(emp):
             raise ValidationErr(
                 "Employee is not active and cannot be assigned new work.",
-                field="employee_uid",
-            )
-        if require_presence and employee_id not in await self.present_employee_ids(property_id):
-            raise ValidationErr(
-                "Employee has not started their workday and cannot be assigned new work.",
                 field="employee_uid",
             )
         if work_type and not self.employee_matches_work_type(emp, work_type):
@@ -232,8 +198,6 @@ class WorkAllocationService:
             .order_by(Employee.created_at, Employee.id)
         )
         employees = list(res.scalars())
-        present_ids = await self.present_employee_ids(property_id)
-        employees = [e for e in employees if e.id in present_ids]
         if manager_employee_id:
             employees = [e for e in employees if e.id != manager_employee_id]
         return employees
@@ -473,11 +437,10 @@ class WorkAllocationService:
         this applies work-type gating + dedupe + fair pick. No zone/area
         semantics are involved."""
         departments = eligible_departments(work_type)
-        present_ids = await self.present_employee_ids(property_id)
         seen: set[uuid.UUID] = set()
         eligible: list[Employee] = []
         for e in employees:
-            if e.id in seen or e.property_id != property_id or e.id not in present_ids:
+            if e.id in seen or e.property_id != property_id:
                 continue
             if not employee_is_assignable(e):
                 continue

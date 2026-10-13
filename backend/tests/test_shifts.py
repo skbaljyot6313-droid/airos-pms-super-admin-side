@@ -20,7 +20,6 @@ from app.models.employee import Employee
 from app.models.shift import EmployeeShiftAssignment, Shift
 from app.services.attendance import current_work_statuses, day_status_board
 from app.services.shifts import shift_applies_on, shift_window_utc
-from app.services.structure import ValidationErr
 from app.services.work_allocation import WorkAllocationService
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -628,39 +627,22 @@ class _AssignmentSession:
 
 
 @pytest.mark.asyncio
-async def test_manual_assignment_requires_started_workday(monkeypatch):
+async def test_manual_assignment_allows_employee_without_attendance():
+    """Attendance no longer gates assignment — an employee with no open
+    workday may still be picked explicitly."""
     employee = _emp()
     service = WorkAllocationService(_AssignmentSession(employee))
 
-    async def no_present_employees(_property_id):
-        return set()
-
-    monkeypatch.setattr(service, "present_employee_ids", no_present_employees)
-    with pytest.raises(ValidationErr, match="has not started their workday"):
-        await service.employee_for_assignment(employee.id, PID)
-
-
-@pytest.mark.asyncio
-async def test_manual_assignment_accepts_present_employee(monkeypatch):
-    employee = _emp()
-    service = WorkAllocationService(_AssignmentSession(employee))
-
-    async def present_employees(_property_id):
-        return {employee.id}
-
-    monkeypatch.setattr(service, "present_employee_ids", present_employees)
     assigned = await service.employee_for_assignment(employee.id, PID)
     assert assigned is employee
 
 
 @pytest.mark.asyncio
-async def test_auto_allocation_pool_excludes_absent_employees(monkeypatch):
+async def test_auto_allocation_pool_includes_employees_without_attendance():
+    """The allocation pool is every active, non-leave employee of the
+    property — clock-in state is not an eligibility filter."""
     employee = _emp()
     service = WorkAllocationService(_AssignmentSession([employee]))
 
-    async def no_present_employees(_property_id):
-        return set()
-
-    monkeypatch.setattr(service, "present_employee_ids", no_present_employees)
     pool = await service._employee_pool(PID)
-    assert pool == []
+    assert pool == [employee]

@@ -130,10 +130,11 @@ frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-do
   with no applicable assignment → unscheduled; open day from a prior
   op-day whose scheduled window has passed → `incomplete` +
   `needs_review` (fail closed — never grants floor presence).
-  `floor_eligible` = `working`/`on_break` only. Zone Board cards
-  filter to `floor_eligible` via `attendanceApi.statusBoard` (30s
-  poll, fails closed); Employees → Shifts/Attendance tabs expose
-  `ShiftManager` + `AttendanceBoard` to SA and PM.
+  `floor_eligible` = `working`/`on_break` only — a display flag on the
+  Attendance board. Zone Board shows ALL assignable employees;
+  attendance does not gate floor visibility or allocation.
+  Employees → Shifts/Attendance tabs expose `ShiftManager` +
+  `AttendanceBoard` to SA and PM.
 - **WorkTemplate**: JSONB config (assignment/location/schedule/checklist/
   verification/overdue/notifications), versioned (WorkTemplateVersion);
   `next_run_at` drives the scheduler; TemplateGeneration ledger
@@ -141,11 +142,10 @@ frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-do
 - **Work allocation** (`services/work_allocation.py`): persistent zone
   round-robin (ZoneAllocationState row locked FOR UPDATE), area-level
   employee pool as fallback, department eligibility by work_type
-  (cleaning→housekeeping, maintenance→maintenance/engineering). Every auto
-  or manual assignee must have an open `attendance_days` row for the current
-  operational day (`status=present`, started, not ended); that row is created
-  by the employee app's Start Day action. With nobody present, work remains
-  unassigned.
+  (cleaning→housekeeping, maintenance→maintenance/engineering). Attendance
+  does NOT gate allocation — an assignee needs only
+  `employee_is_assignable` (active + not on leave); clock-in state is
+  ignored for both auto and manual assignment.
   WorkAllocationBatch = one POST → N tickets, one employee per unit.
   `allocate_units()` = batched zone-aware path used by template
   generation: one property-wide staff/workload fetch, pools grouped by
