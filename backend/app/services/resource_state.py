@@ -135,6 +135,7 @@ class ResourceStateService:
         task_id: uuid.UUID | None = None,
         ticket_id: uuid.UUID | None = None,
         occupancy_id: uuid.UUID | None = None,
+        locked_row=None,
     ):
         """Commit one operational transition. Returns (row, prev, new).
 
@@ -157,7 +158,13 @@ class ResourceStateService:
                 f"({', '.join(sorted(allowed))}).",
                 field="to",
             )
-        row = await self._lock(resource_type, resource_id)
+        # locked_row lets callers that already hold FOR UPDATE on the row
+        # (e.g. the checkout pipeline) skip the redundant re-lock SELECT.
+        if locked_row is not None and locked_row.id == resource_id:
+            row = locked_row
+            await self.session.flush()  # parity with _lock's pre-read flush
+        else:
+            row = await self._lock(resource_type, resource_id)
         prev = row.status
 
         await self._check_scope(user, row)

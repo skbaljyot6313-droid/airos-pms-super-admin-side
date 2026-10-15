@@ -3,7 +3,9 @@
 import uuid
 from dataclasses import dataclass
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.models.structure import Area, Bed, Dorm, Room, Washroom, Zone
 
@@ -63,7 +65,18 @@ async def resolve_task_location(
         else washroom.zone_id if washroom is not None
         else zone_id
     )
-    zone = await session.get(Zone, resolved_zone_id) if resolved_zone_id else None
+    # joinedload(Zone.area) folds the area fetch into the zone query —
+    # one WAN round trip instead of two in the common zone-scoped case.
+    zone = (
+        (
+            await session.execute(
+                select(Zone)
+                .options(joinedload(Zone.area))
+                .where(Zone.id == resolved_zone_id)
+            )
+        ).scalar_one_or_none()
+        if resolved_zone_id else None
+    )
     if zone is not None and zone.property_id != property_id:
         raise ValueError("Task zone belongs to a different property")
 
@@ -74,7 +87,12 @@ async def resolve_task_location(
         else area_id
     )
     resolved_area_id = zone.area_id if zone and zone.area_id else unit_area_id
-    area = await session.get(Area, resolved_area_id) if resolved_area_id else None
+    area = (
+        zone.area
+        if zone is not None and resolved_area_id == zone.area_id
+        else await session.get(Area, resolved_area_id)
+        if resolved_area_id else None
+    )
     if area is not None and area.property_id != property_id:
         raise ValueError("Task area belongs to a different property")
 

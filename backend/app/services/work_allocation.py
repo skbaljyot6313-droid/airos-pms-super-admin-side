@@ -14,7 +14,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import func, or_, select, text, union_all
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -240,37 +240,53 @@ class WorkAllocationService:
             else area_id
         )
 
-        zone_pool = (
-            await self._employee_pool(
-                property_id, Employee.zone_id == zone_id,
-                manager_employee_id=manager_employee_id,
-                departments=departments,
-            )
-            if zone_id is not None else []
-        )
-        if cover_area is not None and zone_id is None:
-            # AREA-LEVEL task — pool = area-wide staff UNION the staff of
-            # every zone inside the area (single query via zone subselect).
-            area_pool = await self._employee_pool(
+        if zone_id is not None and cover_area is not None:
+            # Zone-scoped unit with a covering area — ONE query for both
+            # pools (each WAN round trip is ~200ms), partitioned in memory.
+            both = await self._employee_pool(
                 property_id,
                 or_(
+                    Employee.zone_id == zone_id,
                     Employee.area_id == cover_area,
-                    Employee.zone_id.in_(
-                        select(Zone.id).where(Zone.area_id == cover_area)
-                    ),
                 ),
                 manager_employee_id=manager_employee_id,
                 departments=departments,
             )
+            zone_pool = [e for e in both if e.zone_id == zone_id]
+            area_pool = [e for e in both if e.area_id == cover_area]
         else:
-            area_pool = (
+            zone_pool = (
                 await self._employee_pool(
-                    property_id, Employee.area_id == cover_area,
+                    property_id, Employee.zone_id == zone_id,
                     manager_employee_id=manager_employee_id,
                     departments=departments,
                 )
-                if cover_area is not None else []
+                if zone_id is not None else []
             )
+            if cover_area is not None and zone_id is None:
+                # AREA-LEVEL task — pool = area-wide staff UNION the staff
+                # of every zone inside the area (single query via zone
+                # subselect).
+                area_pool = await self._employee_pool(
+                    property_id,
+                    or_(
+                        Employee.area_id == cover_area,
+                        Employee.zone_id.in_(
+                            select(Zone.id).where(Zone.area_id == cover_area)
+                        ),
+                    ),
+                    manager_employee_id=manager_employee_id,
+                    departments=departments,
+                )
+            else:
+                area_pool = (
+                    await self._employee_pool(
+                        property_id, Employee.area_id == cover_area,
+                        manager_employee_id=manager_employee_id,
+                        departments=departments,
+                    )
+                    if cover_area is not None else []
+                )
 
         seen: set[uuid.UUID] = set()
         pool: list[Employee] = []
@@ -363,35 +379,30 @@ class WorkAllocationService:
         # so tasks created earlier in THIS transaction (bulk generation,
         # multi-fixture assignment) count toward the workload immediately.
         await self.session.flush()
-        res = await self.session.execute(
-            select(Task.employee_id, func.count())
-            .where(
+        # Open tasks + open maintenance tickets in ONE round trip — both
+        # count as assigned work (an employee with three unresolved
+        # tickets is not "idle" because the work lives elsewhere).
+        work = union_all(
+            select(Task.employee_id.label("eid")).where(
                 Task.property_id == property_id,
                 Task.employee_id.in_(employee_ids),
                 Task.status.notin_(
                     ("completed", "cancelled", "scheduled", "abandoned")
                 ),
-            )
-            .group_by(Task.employee_id)
-        )
-        for eid, count in res.all():
-            loads[eid] = count
-        # Open maintenance tickets are assigned work too — an employee
-        # carrying three unresolved tickets is not "idle" just because the
-        # work lives in the ticket table.
-        res = await self.session.execute(
-            select(MaintenanceTicket.assigned_to, func.count())
-            .where(
+            ),
+            select(MaintenanceTicket.assigned_to.label("eid")).where(
                 MaintenanceTicket.property_id == property_id,
                 MaintenanceTicket.assigned_to.in_(employee_ids),
                 MaintenanceTicket.status.notin_(
                     ("resolved", "closed", "cancelled")
                 ),
-            )
-            .group_by(MaintenanceTicket.assigned_to)
+            ),
+        ).subquery()
+        res = await self.session.execute(
+            select(work.c.eid, func.count()).group_by(work.c.eid)
         )
         for eid, count in res.all():
-            loads[eid] += count
+            loads[eid] = count
         return loads
 
     async def _locked_area(self, area_id: uuid.UUID) -> None:

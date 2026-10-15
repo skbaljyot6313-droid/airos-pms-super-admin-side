@@ -24,7 +24,7 @@ from app.domain.resource_events import (
 from app.models.occupancy import Occupancy
 from app.models.property import Property
 from app.models.structure import Bed, Dorm, Room
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.services.resource_state import ResourceStateService
 from app.services.structure import (
     ConflictErr,
@@ -45,30 +45,48 @@ class OccupancyService:
     # ------------------------------------------------------------------
 
     async def _lock_room(self, user: User, room_id: uuid.UUID) -> Room:
+        # Room + its Property in ONE joined query — the scope check costs
+        # no extra round trip (each remote RTT is ~200ms+). Only the room
+        # row is locked (FOR UPDATE OF rooms).
         await self.session.flush()
         res = await self.session.execute(
-            select(Room).where(Room.id == room_id).with_for_update()
+            select(Room, Property)
+            .join(Property, Room.property_id == Property.id)
+            .where(Room.id == room_id)
+            .with_for_update(of=Room)
         )
-        room = res.scalar_one_or_none()
-        if room is None:
+        row = res.first()
+        if row is None:
             raise NotFoundErr("Room not found.")
-        await self.structure._property_for_write(user, room.property_id)
+        room, prop = row
+        if user.role == UserRole.SUPER_ADMIN:
+            if prop.company_id != user.company_id:
+                raise NotFoundErr("Property not found.")
+        elif user.property_id != prop.id:
+            raise NotFoundErr("Property not found.")
         return room
 
     async def _lock_bed(
         self, user: User, bed_id: uuid.UUID
     ) -> tuple[Bed, Dorm]:
+        # Bed + Dorm + Property in ONE joined query (was three).
         await self.session.flush()
         res = await self.session.execute(
-            select(Bed).where(Bed.id == bed_id).with_for_update()
+            select(Bed, Dorm, Property)
+            .join(Dorm, Bed.dorm_id == Dorm.id)
+            .join(Property, Dorm.property_id == Property.id)
+            .where(Bed.id == bed_id)
+            .with_for_update(of=Bed)
         )
-        bed = res.scalar_one_or_none()
-        if bed is None:
+        row = res.first()
+        if row is None:
             raise NotFoundErr("Bed not found.")
-        dorm = await self.session.get(Dorm, bed.dorm_id)
-        if dorm is None:
-            raise NotFoundErr("Dorm not found.")
-        await self.structure._property_for_write(user, dorm.property_id)
+        bed, dorm, prop = row
+        if user.role == UserRole.SUPER_ADMIN:
+            if prop.company_id != user.company_id:
+                raise NotFoundErr("Property not found.")
+        elif user.property_id != prop.id:
+            raise NotFoundErr("Property not found.")
         return bed, dorm
 
     async def open_occupancy(
@@ -269,6 +287,8 @@ class OccupancyService:
             )
 
         # 4-5. commit the transitions — audited occupancy_checkout events
+        # locked_row: the caller already holds FOR UPDATE on these rows —
+        # transition must not pay a second SELECT to re-lock them.
         for r in out_rooms:
             occ = occs["room"].get(r.id)
             if r.status == "occupied":
@@ -276,7 +296,7 @@ class OccupancyService:
                     "room", r.id, "cleaning", user=user,
                     source=SRC_OCCUPANCY_CHECKOUT,
                     occupancy_id=occ.id if occ else None,
-                    reason=reason,
+                    reason=reason, locked_row=r,
                 )
             else:
                 # drifted projection (e.g. 'available' with an open
@@ -293,7 +313,7 @@ class OccupancyService:
                     "bed", b.id, "cleaning", user=user,
                     source=SRC_OCCUPANCY_CHECKOUT,
                     occupancy_id=occ.id if occ else None,
-                    reason=reason,
+                    reason=reason, locked_row=b,
                 )
             else:
                 await self.state.derive(
@@ -319,31 +339,32 @@ class OccupancyService:
 
     async def check_out_room(self, user: User, room_id: uuid.UUID) -> dict:
         room = await self._lock_room(user, room_id)
-        occ = await self.open_occupancy(room_id=room.id)
-        if occ is None and room.status != "occupied":
-            raise ConflictErr("Room has no active occupant to check out.")
         prop = await self.session.get(Property, room.property_id)
-        res = {"rooms": [], "beds": [], "generated": [], "dorm_ids": set()}
-        if prop:
-            res = await self.checkout_units(user, prop, rooms=[room])
-            await self.structure._fire_automation(
-                user, room.property_id, "room_checked_out", room.zone_id
-            )
+        # checkout_units batch-loads the open occupancy itself — its
+        # result is the conflict check, so no duplicate occupancy query.
+        res = await self.checkout_units(user, prop, rooms=[room]) \
+            if prop else {"rooms": [], "generated": []}
+        if not res["rooms"]:
+            raise ConflictErr("Room has no active occupant to check out.")
+        await self.structure._fire_automation(
+            user, room.property_id, "room_checked_out", room.zone_id
+        )
         await self.session.commit()
+        # Authoritative post-commit occupancy — lets the response
+        # serializer skip re-querying open occupancies for this room.
+        room._open_occupancy = False
         return {"room": room, "generated": res["generated"]}
 
     async def check_out_bed(self, user: User, bed_id: uuid.UUID) -> dict:
         bed, dorm = await self._lock_bed(user, bed_id)
-        occ = await self.open_occupancy(bed_id=bed.id)
-        if occ is None and bed.status != "occupied":
-            raise ConflictErr("Bed has no active occupant to check out.")
         prop = await self.session.get(Property, dorm.property_id)
-        res = {"generated": []}
-        if prop:
-            res = await self.checkout_units(user, prop, beds=[bed])
-            await self.structure._fire_automation(
-                user, prop.id, "bed_available_after_checkout", dorm.zone_id
-            )
+        res = await self.checkout_units(user, prop, beds=[bed]) \
+            if prop else {"beds": [], "generated": []}
+        if not res["beds"]:
+            raise ConflictErr("Bed has no active occupant to check out.")
+        await self.structure._fire_automation(
+            user, prop.id, "bed_available_after_checkout", dorm.zone_id
+        )
         await self.session.commit()
         dorm = await self.structure._reload_dorm(bed.dorm_id)
         return {"dorm": dorm, "generated": res["generated"]}

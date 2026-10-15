@@ -88,6 +88,19 @@ async def mark_open_occupancy(
     from app.models.occupancy import Occupancy
 
     dorm_beds = [b for d in (dorms or []) for b in getattr(d, "beds", [])]
+    leaf_units = [*(rooms or []), *(beds or []), *dorm_beds]
+    if leaf_units and all(
+        hasattr(u, "_open_occupancy") for u in leaf_units
+    ):
+        # Occupancy already resolved upstream (e.g. the checkout pipeline
+        # stamps the just-closed unit) — derive dorm aggregates and skip
+        # the round trip entirely.
+        for d in dorms or []:
+            d._open_occupancy = any(
+                getattr(b, "_open_occupancy", False)
+                for b in getattr(d, "beds", [])
+            )
+        return
     room_ids = [r.id for r in (rooms or [])]
     bed_ids = [b.id for b in [*(beds or []), *dorm_beds]]
     if not room_ids and not bed_ids:

@@ -482,6 +482,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const refreshUnitsInFlight = useRef<Promise<void> | null>(null);
   const refreshUnitsPendingScope = useRef<UnitRefreshScope | null>(null);
+  // Own-mutation echo suppression — a successful mutation response already
+  // applied authoritative state, so OUR OWN Centrifugo event echo must not
+  // trigger a redundant collection refetch. Keyed by resource_uid; other
+  // clients — and any event whose state differs from what we applied —
+  // still refresh normally.
+  const selfUnitEvents = useRef(
+    new Map<string, { state?: string; ts: number }>()
+  );
+  const markSelfUnitEvent = useCallback((uid: string, state?: string) => {
+    selfUnitEvents.current.set(uid, { state, ts: Date.now() });
+    if (selfUnitEvents.current.size > 200) {
+      const cutoff = Date.now() - 10_000;
+      for (const [k, v] of selfUnitEvents.current) {
+        if (v.ts < cutoff) selfUnitEvents.current.delete(k);
+      }
+    }
+  }, []);
   const fetchUnitScope = useCallback(async (scope: UnitRefreshScope): Promise<void> => {
     await Promise.allSettled([
       scope.rooms && roomsApi.listRooms().then((r) => setRooms(r.items)),
@@ -600,7 +617,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useRealtimeChannel(
     activePropertyUid ? propChannel(activePropertyUid, 'units') : null,
     !!currentUser && !!activePropertyUid,
-    () => void refreshUnitsScoped({ rooms: true, dorms: true, washrooms: true }),
+    (ev) => {
+      const d = (ev?.data ?? {}) as {
+        resource_type?: string;
+        resource_uid?: string;
+        state?: string;
+      };
+      const rec = d.resource_uid
+        ? selfUnitEvents.current.get(d.resource_uid)
+        : undefined;
+      if (
+        rec &&
+        Date.now() - rec.ts < 5000 &&
+        (!rec.state || !d.state || rec.state === d.state)
+      ) {
+        return; // own-mutation echo — response already applied this state
+      }
+      // Refetch ONLY the collection holding the changed resource — a room
+      // event must not reload dorms and washrooms too.
+      void refreshUnitsScoped(
+        d.resource_type === 'room'
+          ? { rooms: true }
+          : d.resource_type === 'dorm' || d.resource_type === 'bed'
+            ? { dorms: true }
+            : d.resource_type === 'washroom' || d.resource_type === 'fixture'
+              ? { washrooms: true }
+              : { rooms: true, dorms: true, washrooms: true }
+      );
+    },
   );
   useRealtimeChannel(
     activePropertyUid ? propChannel(activePropertyUid, 'maintenance') : null,
@@ -1112,6 +1156,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const room = await roomsApi.checkInRoom(room_uid, {
           guest_name: guest_name ?? null,
         });
+        markSelfUnitEvent(room_uid, room.status);
         setRooms((prev) => prev.map((r) => (r.room_uid === room_uid ? room : r)));
       } catch (err) {
         addToast({
@@ -1121,7 +1166,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
       }
     },
-    [addToast]
+    [addToast, markSelfUnitEvent]
   );
 
   const checkOutRoom = useCallback(
@@ -1129,6 +1174,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       try {
         const { generated_tasks, ...room } =
           await roomsApi.checkOutRoom(room_uid);
+        markSelfUnitEvent(room_uid, room.status);
         setRooms((prev) =>
           prev.map((r) => (r.room_uid === room_uid ? room : r))
         );
@@ -1161,7 +1207,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
       }
     },
-    [addToast]
+    [addToast, markSelfUnitEvent]
   );
 
   /** Staff administrative transition — the API returns the committed
@@ -1174,9 +1220,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       reason: string
     ) => {
       try {
-        await roomsApi.transitionResource(resource_type, resource_id, { to, reason });
-        // authoritative refresh — fetch the resource lists back from the API
-        await loadWorkspace();
+        const res = await roomsApi.transitionResource(
+          resource_type, resource_id, { to, reason }
+        );
+        // Suppress our own Centrifugo echo, then refresh ONLY the affected
+        // collection — a room transition must not reload the whole workspace.
+        markSelfUnitEvent(resource_id, res?.new_state ?? to);
+        await refreshUnitsScoped(
+          resource_type === 'room'
+            ? { rooms: true }
+            : resource_type === 'dorm' || resource_type === 'bed'
+              ? { dorms: true }
+              : resource_type === 'washroom' || resource_type === 'fixture'
+                ? { washrooms: true }
+                : { rooms: true, dorms: true, washrooms: true }
+        );
       } catch (err) {
         addToast({
           type: 'error',
@@ -1185,7 +1243,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
       }
     },
-    [addToast, loadWorkspace]
+    [addToast, markSelfUnitEvent, refreshUnitsScoped]
   );
 
   // Fire-and-forget zone assignment — errors already toasted by updateRoom
@@ -1330,6 +1388,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const dorm = await dormsApi.checkInBed(bed_uid, {
           guest_name: guest_name ?? null,
         });
+        markSelfUnitEvent(
+          bed_uid,
+          dorm.beds?.find((b) => b.bed_uid === bed_uid)?.status
+        );
+        markSelfUnitEvent(dorm.dorm_uid, dorm.status);
         setDorms((prev) => prev.map((d) => (d.dorm_uid === dorm.dorm_uid ? dorm : d)));
       } catch (err) {
         addToast({
@@ -1339,7 +1402,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
       }
     },
-    [addToast]
+    [addToast, markSelfUnitEvent]
   );
 
   const checkOutBed = useCallback(
@@ -1347,6 +1410,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       try {
         const { generated_tasks, ...dorm } =
           await dormsApi.checkOutBed(bed_uid);
+        markSelfUnitEvent(
+          bed_uid,
+          dorm.beds?.find((b) => b.bed_uid === bed_uid)?.status
+        );
+        markSelfUnitEvent(dorm.dorm_uid, dorm.status);
         setDorms((prev) =>
           prev.map((d) => (d.dorm_uid === dorm.dorm_uid ? dorm : d))
         );
@@ -1373,7 +1441,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
       }
     },
-    [addToast]
+    [addToast, markSelfUnitEvent]
   );
 
   const checkoutDorm = useCallback(
@@ -1381,6 +1449,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       try {
         const { generated_tasks, ...dorm } =
           await dormsApi.checkoutDorm(dorm_uid);
+        markSelfUnitEvent(dorm_uid, dorm.status);
+        for (const b of dorm.beds ?? []) {
+          markSelfUnitEvent(b.bed_uid, b.status);
+        }
         setDorms((prev) =>
           prev.map((d) => (d.dorm_uid === dorm_uid ? dorm : d))
         );
@@ -1411,7 +1483,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
       }
     },
-    [addToast]
+    [addToast, markSelfUnitEvent]
   );
 
   const markDormCleaned = useCallback(

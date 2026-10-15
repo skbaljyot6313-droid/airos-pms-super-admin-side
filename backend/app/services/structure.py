@@ -2032,12 +2032,17 @@ class StructureService:
             # uq_tasks_open_room_title — a concurrent request won the same
             # (property, room, title) slot; dedupe instead of duplicating
             return None
+        # zone/area names for the log line — both entities were already
+        # loaded during allocation, so session.get is an identity-map hit
+        # (no extra round trip just to format a log message).
+        _z = await self.session.get(Zone, zone_id) if zone_id else None
+        _a = await self.session.get(Area, area_id) if area_id else None
         allocs.log_task_allocation(
             alloc, task_id=t.id,
             room=room.room_number if room else None,
             dorm=dorm.name if dorm else None,
-            zone=await self.session.scalar(select(Zone.name).where(Zone.id == zone_id)) if zone_id else None,
-            area=await self.session.scalar(select(Area.name).where(Area.id == area_id)) if area_id else None,
+            zone=_z.name if _z else None,
+            area=_a.name if _a else None,
         )
         await allocs.record(
             property_id=prop.id, zone_id=zone_id,
