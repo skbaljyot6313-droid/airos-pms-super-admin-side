@@ -1,0 +1,536 @@
+{
+  "probe": "api",
+  "captured_at": "2026-10-15T10:28:59Z",
+  "base": "http://localhost:8000/api/v1",
+  "runs_per_endpoint": 10,
+  "env": "development",
+  "note": "local client -> local API -> remote Supabase (ap-south-1)",
+  "endpoints": [
+    {
+      "endpoint": "GET /auth/me",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 44.8,
+        "median_ms": 54.1,
+        "p90_ms": 422.7,
+        "p95_ms": 422.7,
+        "p99_ms": 422.7,
+        "max_ms": 422.7,
+        "mean_ms": 102.5
+      },
+      "payload_bytes_med": 633,
+      "server_total": {
+        "n": 10,
+        "min_ms": 40.0,
+        "median_ms": 50.5,
+        "p90_ms": 118.0,
+        "p95_ms": 118.0,
+        "p99_ms": 118.0,
+        "max_ms": 118.0,
+        "mean_ms": 67.8
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 35.0,
+        "median_ms": 42.5,
+        "p90_ms": 71.0,
+        "p95_ms": 71.0,
+        "p99_ms": 71.0,
+        "max_ms": 71.0,
+        "mean_ms": 45.6
+      },
+      "db_queries_med": 1.0
+    },
+    {
+      "endpoint": "GET /properties",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 63.7,
+        "median_ms": 77.8,
+        "p90_ms": 153.8,
+        "p95_ms": 153.8,
+        "p99_ms": 153.8,
+        "max_ms": 153.8,
+        "mean_ms": 83.6
+      },
+      "payload_bytes_med": 480,
+      "server_total": {
+        "n": 10,
+        "min_ms": 60.0,
+        "median_ms": 74.0,
+        "p90_ms": 150.0,
+        "p95_ms": 150.0,
+        "p99_ms": 150.0,
+        "max_ms": 150.0,
+        "mean_ms": 79.8
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 57.0,
+        "median_ms": 71.0,
+        "p90_ms": 82.0,
+        "p95_ms": 82.0,
+        "p99_ms": 82.0,
+        "max_ms": 82.0,
+        "mean_ms": 70.4
+      },
+      "db_queries_med": 2.0
+    },
+    {
+      "endpoint": "GET /areas",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 57.7,
+        "median_ms": 72.4,
+        "p90_ms": 86.4,
+        "p95_ms": 86.4,
+        "p99_ms": 86.4,
+        "max_ms": 86.4,
+        "mean_ms": 73.8
+      },
+      "payload_bytes_med": 264,
+      "server_total": {
+        "n": 10,
+        "min_ms": 54.0,
+        "median_ms": 68.5,
+        "p90_ms": 83.0,
+        "p95_ms": 83.0,
+        "p99_ms": 83.0,
+        "max_ms": 83.0,
+        "mean_ms": 69.9
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 51.0,
+        "median_ms": 65.5,
+        "p90_ms": 80.0,
+        "p95_ms": 80.0,
+        "p99_ms": 80.0,
+        "max_ms": 80.0,
+        "mean_ms": 66.8
+      },
+      "db_queries_med": 2.0
+    },
+    {
+      "endpoint": "GET /zones",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 64.8,
+        "median_ms": 76.0,
+        "p90_ms": 112.8,
+        "p95_ms": 112.8,
+        "p99_ms": 112.8,
+        "max_ms": 112.8,
+        "mean_ms": 80.1
+      },
+      "payload_bytes_med": 615,
+      "server_total": {
+        "n": 10,
+        "min_ms": 61.0,
+        "median_ms": 72.5,
+        "p90_ms": 109.0,
+        "p95_ms": 109.0,
+        "p99_ms": 109.0,
+        "max_ms": 109.0,
+        "mean_ms": 76.5
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 58.0,
+        "median_ms": 69.5,
+        "p90_ms": 105.0,
+        "p95_ms": 105.0,
+        "p99_ms": 105.0,
+        "max_ms": 105.0,
+        "mean_ms": 73.3
+      },
+      "db_queries_med": 2.0
+    },
+    {
+      "endpoint": "GET /rooms",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 101.1,
+        "median_ms": 112.6,
+        "p90_ms": 331.2,
+        "p95_ms": 331.2,
+        "p99_ms": 331.2,
+        "max_ms": 331.2,
+        "mean_ms": 137.1
+      },
+      "payload_bytes_med": 7644,
+      "server_total": {
+        "n": 10,
+        "min_ms": 97.0,
+        "median_ms": 109.0,
+        "p90_ms": 328.0,
+        "p95_ms": 328.0,
+        "p99_ms": 328.0,
+        "max_ms": 328.0,
+        "mean_ms": 133.3
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 92.0,
+        "median_ms": 104.5,
+        "p90_ms": 323.0,
+        "p95_ms": 323.0,
+        "p99_ms": 323.0,
+        "max_ms": 323.0,
+        "mean_ms": 128.2
+      },
+      "db_queries_med": 3.0
+    },
+    {
+      "endpoint": "GET /dorms",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 126.2,
+        "median_ms": 150.1,
+        "p90_ms": 472.9,
+        "p95_ms": 472.9,
+        "p99_ms": 472.9,
+        "max_ms": 472.9,
+        "mean_ms": 203.4
+      },
+      "payload_bytes_med": 2212,
+      "server_total": {
+        "n": 10,
+        "min_ms": 122.0,
+        "median_ms": 146.0,
+        "p90_ms": 469.0,
+        "p95_ms": 469.0,
+        "p99_ms": 469.0,
+        "max_ms": 469.0,
+        "mean_ms": 199.6
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 118.0,
+        "median_ms": 142.0,
+        "p90_ms": 465.0,
+        "p95_ms": 465.0,
+        "p99_ms": 465.0,
+        "max_ms": 465.0,
+        "mean_ms": 194.5
+      },
+      "db_queries_med": 4.0
+    },
+    {
+      "endpoint": "GET /washrooms",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 90.2,
+        "median_ms": 108.6,
+        "p90_ms": 157.5,
+        "p95_ms": 157.5,
+        "p99_ms": 157.5,
+        "max_ms": 157.5,
+        "mean_ms": 117.6
+      },
+      "payload_bytes_med": 1722,
+      "server_total": {
+        "n": 10,
+        "min_ms": 87.0,
+        "median_ms": 105.5,
+        "p90_ms": 154.0,
+        "p95_ms": 154.0,
+        "p99_ms": 154.0,
+        "max_ms": 154.0,
+        "mean_ms": 114.2
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 82.0,
+        "median_ms": 101.5,
+        "p90_ms": 150.0,
+        "p95_ms": 150.0,
+        "p99_ms": 150.0,
+        "max_ms": 150.0,
+        "mean_ms": 109.8
+      },
+      "db_queries_med": 3.0
+    },
+    {
+      "endpoint": "GET /employees",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 60.8,
+        "median_ms": 80.3,
+        "p90_ms": 298.8,
+        "p95_ms": 298.8,
+        "p99_ms": 298.8,
+        "max_ms": 298.8,
+        "mean_ms": 103.7
+      },
+      "payload_bytes_med": 2014,
+      "server_total": {
+        "n": 10,
+        "min_ms": 58.0,
+        "median_ms": 76.0,
+        "p90_ms": 294.0,
+        "p95_ms": 294.0,
+        "p99_ms": 294.0,
+        "max_ms": 294.0,
+        "mean_ms": 99.9
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 54.0,
+        "median_ms": 72.5,
+        "p90_ms": 291.0,
+        "p95_ms": 291.0,
+        "p99_ms": 291.0,
+        "max_ms": 291.0,
+        "mean_ms": 96.5
+      },
+      "db_queries_med": 2.0
+    },
+    {
+      "endpoint": "GET /tasks?limit=500",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 125.9,
+        "median_ms": 171.5,
+        "p90_ms": 354.4,
+        "p95_ms": 354.4,
+        "p99_ms": 354.4,
+        "max_ms": 354.4,
+        "mean_ms": 197.6
+      },
+      "payload_bytes_med": 24910,
+      "server_total": {
+        "n": 10,
+        "min_ms": 122.0,
+        "median_ms": 168.0,
+        "p90_ms": 351.0,
+        "p95_ms": 351.0,
+        "p99_ms": 351.0,
+        "max_ms": 351.0,
+        "mean_ms": 194.0
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 115.0,
+        "median_ms": 159.0,
+        "p90_ms": 344.0,
+        "p95_ms": 344.0,
+        "p99_ms": 344.0,
+        "max_ms": 344.0,
+        "mean_ms": 186.2
+      },
+      "db_queries_med": 4.0
+    },
+    {
+      "endpoint": "GET /maintenance",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 111.0,
+        "median_ms": 196.0,
+        "p90_ms": 366.6,
+        "p95_ms": 366.6,
+        "p99_ms": 366.6,
+        "max_ms": 366.6,
+        "mean_ms": 221.7
+      },
+      "payload_bytes_med": 2935,
+      "server_total": {
+        "n": 10,
+        "min_ms": 107.0,
+        "median_ms": 192.5,
+        "p90_ms": 363.0,
+        "p95_ms": 363.0,
+        "p99_ms": 363.0,
+        "max_ms": 363.0,
+        "mean_ms": 217.8
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 102.0,
+        "median_ms": 186.5,
+        "p90_ms": 358.0,
+        "p95_ms": 358.0,
+        "p99_ms": 358.0,
+        "max_ms": 358.0,
+        "mean_ms": 211.7
+      },
+      "db_queries_med": 4.0
+    },
+    {
+      "endpoint": "GET /tasks/today",
+      "status": 422,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 39.0,
+        "median_ms": 47.2,
+        "p90_ms": 64.7,
+        "p95_ms": 64.7,
+        "p99_ms": 64.7,
+        "max_ms": 64.7,
+        "mean_ms": 49.6
+      },
+      "payload_bytes_med": 150
+    },
+    {
+      "endpoint": "GET /tasks/review-queue",
+      "status": 422,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 46.5,
+        "median_ms": 54.9,
+        "p90_ms": 66.7,
+        "p95_ms": 66.7,
+        "p99_ms": 66.7,
+        "max_ms": 66.7,
+        "mean_ms": 56.2
+      },
+      "payload_bytes_med": 243
+    },
+    {
+      "endpoint": "GET /attendance/status-board",
+      "status": 422,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 42.9,
+        "median_ms": 58.9,
+        "p90_ms": 82.7,
+        "p95_ms": 82.7,
+        "p99_ms": 82.7,
+        "max_ms": 82.7,
+        "mean_ms": 61.5
+      },
+      "payload_bytes_med": 170
+    },
+    {
+      "endpoint": "GET /templates",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 66.3,
+        "median_ms": 71.4,
+        "p90_ms": 556.8,
+        "p95_ms": 556.8,
+        "p99_ms": 556.8,
+        "max_ms": 556.8,
+        "mean_ms": 121.6
+      },
+      "payload_bytes_med": 22,
+      "server_total": {
+        "n": 10,
+        "min_ms": 62.0,
+        "median_ms": 67.0,
+        "p90_ms": 553.0,
+        "p95_ms": 553.0,
+        "p99_ms": 553.0,
+        "max_ms": 553.0,
+        "mean_ms": 117.7
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 53.0,
+        "median_ms": 63.0,
+        "p90_ms": 91.0,
+        "p95_ms": 91.0,
+        "p99_ms": 91.0,
+        "max_ms": 91.0,
+        "mean_ms": 64.6
+      },
+      "db_queries_med": 2.0
+    },
+    {
+      "endpoint": "GET /shifts",
+      "status": 422,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 48.7,
+        "median_ms": 59.0,
+        "p90_ms": 83.4,
+        "p95_ms": 83.4,
+        "p99_ms": 83.4,
+        "max_ms": 83.4,
+        "mean_ms": 61.5
+      },
+      "payload_bytes_med": 148
+    },
+    {
+      "endpoint": "GET /live-locations",
+      "status": 200,
+      "client_wall": {
+        "n": 10,
+        "min_ms": 571.3,
+        "median_ms": 708.7,
+        "p90_ms": 955.4,
+        "p95_ms": 955.4,
+        "p99_ms": 955.4,
+        "max_ms": 955.4,
+        "mean_ms": 698.3
+      },
+      "payload_bytes_med": 16,
+      "server_total": {
+        "n": 10,
+        "min_ms": 567.0,
+        "median_ms": 705.5,
+        "p90_ms": 952.0,
+        "p95_ms": 952.0,
+        "p99_ms": 952.0,
+        "max_ms": 952.0,
+        "mean_ms": 694.5
+      },
+      "db_time": {
+        "n": 10,
+        "min_ms": 27.0,
+        "median_ms": 42.5,
+        "p90_ms": 264.0,
+        "p95_ms": 264.0,
+        "p99_ms": 264.0,
+        "max_ms": 264.0,
+        "mean_ms": 63.2
+      },
+      "db_queries_med": 1.0,
+      "ext_time": {
+        "n": 10,
+        "min_ms": 319.0,
+        "median_ms": 435.0,
+        "p90_ms": 523.0,
+        "p95_ms": 523.0,
+        "p99_ms": 523.0,
+        "max_ms": 523.0,
+        "mean_ms": 416.7
+      }
+    }
+  ],
+  "workspace_burst": {
+    "requests_per_load": 9,
+    "wall": {
+      "n": 10,
+      "min_ms": 161.7,
+      "median_ms": 207.3,
+      "p90_ms": 675.2,
+      "p95_ms": 675.2,
+      "p99_ms": 675.2,
+      "max_ms": 675.2,
+      "mean_ms": 256.1
+    },
+    "per_request_server_ms_median": {
+      "/properties": 85.5,
+      "/areas": 87.0,
+      "/zones": 90.5,
+      "/rooms": 121.0,
+      "/dorms": 155.5,
+      "/washrooms": 125.0,
+      "/employees": 98.0,
+      "/tasks?limit=500": 166.5,
+      "/maintenance": 158.0
+    }
+  }
+}

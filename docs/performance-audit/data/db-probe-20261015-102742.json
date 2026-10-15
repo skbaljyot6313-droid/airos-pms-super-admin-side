@@ -1,0 +1,1713 @@
+{
+  "probe": "db",
+  "captured_at": "2026-10-15T10:27:40Z",
+  "env": "development",
+  "db_host": "aws-0-ap-south-1.pooler.supabase.com",
+  "db_port": 6543,
+  "pooler_mode_hint": "transaction (port 6543)",
+  "fresh_connect_ms": {
+    "n": 5,
+    "min_ms": 62.4,
+    "median_ms": 76.0,
+    "p95_ms": 124.0,
+    "max_ms": 124.0,
+    "mean_ms": 81.5
+  },
+  "select1_rtt": {
+    "n": 11,
+    "min_ms": 12.5,
+    "median_ms": 17.7,
+    "p95_ms": 34.3,
+    "max_ms": 34.3,
+    "mean_ms": 19.7
+  },
+  "server_version": "17.11",
+  "extensions": [
+    "btree_gist-1.7",
+    "pg_stat_statements-1.11",
+    "pgcrypto-1.3",
+    "plpgsql-1.0",
+    "supabase_vault-0.3.1",
+    "uuid-ossp-1.1"
+  ],
+  "pg_stat_statements_enabled": true,
+  "sessions": {
+    "total": 8,
+    "active": 1,
+    "idle_in_tx": 0
+  },
+  "tenant_row_estimates": [
+    {
+      "table": "tasks",
+      "est_rows": 587,
+      "total_size": "672 kB"
+    },
+    {
+      "table": "resource_state_events",
+      "est_rows": 1376,
+      "total_size": "512 kB"
+    },
+    {
+      "table": "task_history_events",
+      "est_rows": 1413,
+      "total_size": "504 kB"
+    },
+    {
+      "table": "work_allocation_history",
+      "est_rows": 662,
+      "total_size": "392 kB"
+    },
+    {
+      "table": "task_completion_images",
+      "est_rows": 350,
+      "total_size": "344 kB"
+    },
+    {
+      "table": "work_allocation_batches",
+      "est_rows": 603,
+      "total_size": "328 kB"
+    },
+    {
+      "table": "maintenance_tickets",
+      "est_rows": -1,
+      "total_size": "240 kB"
+    },
+    {
+      "table": "notifications",
+      "est_rows": 279,
+      "total_size": "216 kB"
+    },
+    {
+      "table": "audit_events",
+      "est_rows": 106,
+      "total_size": "192 kB"
+    },
+    {
+      "table": "task_completion_submissions",
+      "est_rows": 103,
+      "total_size": "152 kB"
+    },
+    {
+      "table": "work_templates",
+      "est_rows": 3,
+      "total_size": "144 kB"
+    },
+    {
+      "table": "template_generations",
+      "est_rows": 152,
+      "total_size": "136 kB"
+    },
+    {
+      "table": "rooms",
+      "est_rows": 87,
+      "total_size": "136 kB"
+    },
+    {
+      "table": "washrooms",
+      "est_rows": -1,
+      "total_size": "128 kB"
+    },
+    {
+      "table": "refresh_tokens",
+      "est_rows": 162,
+      "total_size": "128 kB"
+    },
+    {
+      "table": "employees",
+      "est_rows": 42,
+      "total_size": "128 kB"
+    },
+    {
+      "table": "allocation_events",
+      "est_rows": 217,
+      "total_size": "128 kB"
+    },
+    {
+      "table": "users",
+      "est_rows": 55,
+      "total_size": "120 kB"
+    },
+    {
+      "table": "washroom_fixtures",
+      "est_rows": 66,
+      "total_size": "120 kB"
+    },
+    {
+      "table": "beds",
+      "est_rows": 115,
+      "total_size": "104 kB"
+    },
+    {
+      "table": "zone_allocation_state",
+      "est_rows": 7,
+      "total_size": "104 kB"
+    },
+    {
+      "table": "occupancies",
+      "est_rows": -1,
+      "total_size": "104 kB"
+    },
+    {
+      "table": "attendance_days",
+      "est_rows": -1,
+      "total_size": "104 kB"
+    },
+    {
+      "table": "attendance_requests",
+      "est_rows": -1,
+      "total_size": "104 kB"
+    },
+    {
+      "table": "mobile_releases",
+      "est_rows": 10,
+      "total_size": "104 kB"
+    }
+  ],
+  "scan_stats": [
+    {
+      "relname": "tasks",
+      "seq_scan": 11384,
+      "idx_scan": 189945,
+      "seq_tup_read": 4092858,
+      "idx_tup_fetch": 6438088,
+      "n_live_tup": 593
+    },
+    {
+      "relname": "rooms",
+      "seq_scan": 3863,
+      "idx_scan": 5569,
+      "seq_tup_read": 330530,
+      "idx_tup_fetch": 8919,
+      "n_live_tup": 87
+    },
+    {
+      "relname": "work_allocation_history",
+      "seq_scan": 174,
+      "idx_scan": 15866,
+      "seq_tup_read": 108611,
+      "idx_tup_fetch": 18565,
+      "n_live_tup": 725
+    },
+    {
+      "relname": "washroom_fixtures",
+      "seq_scan": 5640,
+      "idx_scan": 595,
+      "seq_tup_read": 95400,
+      "idx_tup_fetch": 1274,
+      "n_live_tup": 66
+    },
+    {
+      "relname": "companies",
+      "seq_scan": 10593,
+      "idx_scan": 8947,
+      "seq_tup_read": 92852,
+      "idx_tup_fetch": 8935,
+      "n_live_tup": 12
+    },
+    {
+      "relname": "beds",
+      "seq_scan": 684,
+      "idx_scan": 13430,
+      "seq_tup_read": 77522,
+      "idx_tup_fetch": 63141,
+      "n_live_tup": 115
+    },
+    {
+      "relname": "template_generations",
+      "seq_scan": 137,
+      "idx_scan": 1039,
+      "seq_tup_read": 20374,
+      "idx_tup_fetch": 418,
+      "n_live_tup": 161
+    },
+    {
+      "relname": "task_completion_submissions",
+      "seq_scan": 362,
+      "idx_scan": 1320,
+      "seq_tup_read": 19098,
+      "idx_tup_fetch": 25,
+      "n_live_tup": 105
+    },
+    {
+      "relname": "users",
+      "seq_scan": 380,
+      "idx_scan": 9758,
+      "seq_tup_read": 16513,
+      "idx_tup_fetch": 9603,
+      "n_live_tup": 55
+    },
+    {
+      "relname": "task_history_events",
+      "seq_scan": 309,
+      "idx_scan": 4029,
+      "seq_tup_read": 12046,
+      "idx_tup_fetch": 1048,
+      "n_live_tup": 1413
+    },
+    {
+      "relname": "work_templates",
+      "seq_scan": 3911,
+      "idx_scan": 11809,
+      "seq_tup_read": 11699,
+      "idx_tup_fetch": 16519,
+      "n_live_tup": 3
+    },
+    {
+      "relname": "dorms",
+      "seq_scan": 471,
+      "idx_scan": 12562,
+      "seq_tup_read": 9557,
+      "idx_tup_fetch": 31896,
+      "n_live_tup": 21
+    },
+    {
+      "relname": "employees",
+      "seq_scan": 177,
+      "idx_scan": 3267,
+      "seq_tup_read": 6705,
+      "idx_tup_fetch": 7204,
+      "n_live_tup": 42
+    },
+    {
+      "relname": "properties",
+      "seq_scan": 697,
+      "idx_scan": 101179,
+      "seq_tup_read": 5620,
+      "idx_tup_fetch": 94013,
+      "n_live_tup": 11
+    },
+    {
+      "relname": "schema_migrations",
+      "seq_scan": 79,
+      "idx_scan": 75,
+      "seq_tup_read": 3628,
+      "idx_tup_fetch": 0,
+      "n_live_tup": 82
+    },
+    {
+      "relname": "work_allocation_batches",
+      "seq_scan": 13,
+      "idx_scan": 3450,
+      "seq_tup_read": 2972,
+      "idx_tup_fetch": 21621,
+      "n_live_tup": 632
+    },
+    {
+      "relname": "notifications",
+      "seq_scan": 86,
+      "idx_scan": 10422,
+      "seq_tup_read": 2622,
+      "idx_tup_fetch": 15824,
+      "n_live_tup": 280
+    },
+    {
+      "relname": "zone_allocation_state",
+      "seq_scan": 119,
+      "idx_scan": 108,
+      "seq_tup_read": 793,
+      "idx_tup_fetch": 95,
+      "n_live_tup": 7
+    },
+    {
+      "relname": "mobile_releases",
+      "seq_scan": 64,
+      "idx_scan": 286,
+      "seq_tup_read": 644,
+      "idx_tup_fetch": 2031,
+      "n_live_tup": 13
+    },
+    {
+      "relname": "task_completion_images",
+      "seq_scan": 15,
+      "idx_scan": 1505,
+      "seq_tup_read": 362,
+      "idx_tup_fetch": 27,
+      "n_live_tup": 352
+    },
+    {
+      "relname": "allocation_events",
+      "seq_scan": 7,
+      "idx_scan": 398,
+      "seq_tup_read": 253,
+      "idx_tup_fetch": 199,
+      "n_live_tup": 231
+    },
+    {
+      "relname": "migrations",
+      "seq_scan": 5,
+      "idx_scan": 1,
+      "seq_tup_read": 219,
+      "idx_tup_fetch": 1,
+      "n_live_tup": 74
+    },
+    {
+      "relname": "refresh_tokens",
+      "seq_scan": 6,
+      "idx_scan": 539,
+      "seq_tup_read": 202,
+      "idx_tup_fetch": 253,
+      "n_live_tup": 183
+    },
+    {
+      "relname": "schema_migrations",
+      "seq_scan": 3,
+      "idx_scan": 0,
+      "seq_tup_read": 176,
+      "idx_tup_fetch": 0,
+      "n_live_tup": 88
+    },
+    {
+      "relname": "audit_events",
+      "seq_scan": 10,
+      "idx_scan": 86,
+      "seq_tup_read": 152,
+      "idx_tup_fetch": 8,
+      "n_live_tup": 144
+    }
+  ],
+  "index_inventory": [
+    {
+      "tablename": "alembic_version",
+      "indexname": "alembic_version_pkc",
+      "indexdef": "CREATE UNIQUE INDEX alembic_version_pkc ON public.alembic_version USING btree (version_num)"
+    },
+    {
+      "tablename": "allocation_events",
+      "indexname": "allocation_events_pkey",
+      "indexdef": "CREATE UNIQUE INDEX allocation_events_pkey ON public.allocation_events USING btree (id)"
+    },
+    {
+      "tablename": "allocation_events",
+      "indexname": "ix_allocation_events_entity_id",
+      "indexdef": "CREATE INDEX ix_allocation_events_entity_id ON public.allocation_events USING btree (entity_id)"
+    },
+    {
+      "tablename": "allocation_events",
+      "indexname": "ix_allocation_events_entity_type",
+      "indexdef": "CREATE INDEX ix_allocation_events_entity_type ON public.allocation_events USING btree (entity_type)"
+    },
+    {
+      "tablename": "allocation_events",
+      "indexname": "ix_allocation_events_property_id",
+      "indexdef": "CREATE INDEX ix_allocation_events_property_id ON public.allocation_events USING btree (property_id)"
+    },
+    {
+      "tablename": "area_allocation_state",
+      "indexname": "area_allocation_state_pkey",
+      "indexdef": "CREATE UNIQUE INDEX area_allocation_state_pkey ON public.area_allocation_state USING btree (id)"
+    },
+    {
+      "tablename": "area_allocation_state",
+      "indexname": "ix_area_allocation_state_area_id",
+      "indexdef": "CREATE INDEX ix_area_allocation_state_area_id ON public.area_allocation_state USING btree (area_id)"
+    },
+    {
+      "tablename": "area_allocation_state",
+      "indexname": "ix_area_allocation_state_property_id",
+      "indexdef": "CREATE INDEX ix_area_allocation_state_property_id ON public.area_allocation_state USING btree (property_id)"
+    },
+    {
+      "tablename": "area_allocation_state",
+      "indexname": "uq_area_allocation_state_area",
+      "indexdef": "CREATE UNIQUE INDEX uq_area_allocation_state_area ON public.area_allocation_state USING btree (area_id)"
+    },
+    {
+      "tablename": "areas",
+      "indexname": "areas_pkey",
+      "indexdef": "CREATE UNIQUE INDEX areas_pkey ON public.areas USING btree (id)"
+    },
+    {
+      "tablename": "areas",
+      "indexname": "ix_areas_property_id",
+      "indexdef": "CREATE INDEX ix_areas_property_id ON public.areas USING btree (property_id)"
+    },
+    {
+      "tablename": "areas",
+      "indexname": "uq_areas_property_name",
+      "indexdef": "CREATE UNIQUE INDEX uq_areas_property_name ON public.areas USING btree (property_id, name)"
+    },
+    {
+      "tablename": "attendance_breaks",
+      "indexname": "attendance_breaks_pkey",
+      "indexdef": "CREATE UNIQUE INDEX attendance_breaks_pkey ON public.attendance_breaks USING btree (id)"
+    },
+    {
+      "tablename": "attendance_breaks",
+      "indexname": "ix_attendance_breaks_attendance_day_id",
+      "indexdef": "CREATE INDEX ix_attendance_breaks_attendance_day_id ON public.attendance_breaks USING btree (attendance_day_id)"
+    },
+    {
+      "tablename": "attendance_breaks",
+      "indexname": "uq_break_open",
+      "indexdef": "CREATE UNIQUE INDEX uq_break_open ON public.attendance_breaks USING btree (attendance_day_id) WHERE (ended_at IS NULL)"
+    },
+    {
+      "tablename": "attendance_days",
+      "indexname": "attendance_days_pkey",
+      "indexdef": "CREATE UNIQUE INDEX attendance_days_pkey ON public.attendance_days USING btree (id)"
+    },
+    {
+      "tablename": "attendance_days",
+      "indexname": "ix_attendance_days_employee_id",
+      "indexdef": "CREATE INDEX ix_attendance_days_employee_id ON public.attendance_days USING btree (employee_id)"
+    },
+    {
+      "tablename": "attendance_days",
+      "indexname": "ix_attendance_days_property_id",
+      "indexdef": "CREATE INDEX ix_attendance_days_property_id ON public.attendance_days USING btree (property_id)"
+    },
+    {
+      "tablename": "attendance_days",
+      "indexname": "ix_attendance_property_date",
+      "indexdef": "CREATE INDEX ix_attendance_property_date ON public.attendance_days USING btree (property_id, attendance_date)"
+    },
+    {
+      "tablename": "attendance_days",
+      "indexname": "uq_attendance_employee_date",
+      "indexdef": "CREATE UNIQUE INDEX uq_attendance_employee_date ON public.attendance_days USING btree (employee_id, attendance_date)"
+    },
+    {
+      "tablename": "attendance_days",
+      "indexname": "uq_attendance_open_session",
+      "indexdef": "CREATE UNIQUE INDEX uq_attendance_open_session ON public.attendance_days USING btree (employee_id) WHERE (((status)::text = 'present'::text) AND (ended_at IS NULL))"
+    },
+    {
+      "tablename": "attendance_requests",
+      "indexname": "attendance_requests_pkey",
+      "indexdef": "CREATE UNIQUE INDEX attendance_requests_pkey ON public.attendance_requests USING btree (id)"
+    },
+    {
+      "tablename": "attendance_requests",
+      "indexname": "ex_request_no_overlap",
+      "indexdef": "CREATE INDEX ex_request_no_overlap ON public.attendance_requests USING gist (employee_id, leave_range) WHERE ((status)::text = ANY ((ARRAY['pending'::character varying, 'approved'::character varying])::text[]))"
+    },
+    {
+      "tablename": "attendance_requests",
+      "indexname": "ix_attendance_requests_property_id",
+      "indexdef": "CREATE INDEX ix_attendance_requests_property_id ON public.attendance_requests USING btree (property_id)"
+    },
+    {
+      "tablename": "attendance_requests",
+      "indexname": "ix_request_employee_status",
+      "indexdef": "CREATE INDEX ix_request_employee_status ON public.attendance_requests USING btree (employee_id, status)"
+    },
+    {
+      "tablename": "attendance_requests",
+      "indexname": "ix_request_property_from",
+      "indexdef": "CREATE INDEX ix_request_property_from ON public.attendance_requests USING btree (property_id, from_date)"
+    },
+    {
+      "tablename": "attendance_requests",
+      "indexname": "ix_request_property_to",
+      "indexdef": "CREATE INDEX ix_request_property_to ON public.attendance_requests USING btree (property_id, to_date)"
+    },
+    {
+      "tablename": "audit_events",
+      "indexname": "audit_events_pkey",
+      "indexdef": "CREATE UNIQUE INDEX audit_events_pkey ON public.audit_events USING btree (id)"
+    },
+    {
+      "tablename": "audit_events",
+      "indexname": "ix_audit_entity",
+      "indexdef": "CREATE INDEX ix_audit_entity ON public.audit_events USING btree (entity_type, entity_id)"
+    },
+    {
+      "tablename": "audit_events",
+      "indexname": "ix_audit_events_action",
+      "indexdef": "CREATE INDEX ix_audit_events_action ON public.audit_events USING btree (action)"
+    },
+    {
+      "tablename": "audit_events",
+      "indexname": "ix_audit_events_actor_user_id",
+      "indexdef": "CREATE INDEX ix_audit_events_actor_user_id ON public.audit_events USING btree (actor_user_id)"
+    },
+    {
+      "tablename": "audit_events",
+      "indexname": "ix_audit_events_created_at",
+      "indexdef": "CREATE INDEX ix_audit_events_created_at ON public.audit_events USING btree (created_at)"
+    },
+    {
+      "tablename": "audit_events",
+      "indexname": "ix_audit_events_entity_type",
+      "indexdef": "CREATE INDEX ix_audit_events_entity_type ON public.audit_events USING btree (entity_type)"
+    },
+    {
+      "tablename": "audit_events",
+      "indexname": "ix_audit_events_property_id",
+      "indexdef": "CREATE INDEX ix_audit_events_property_id ON public.audit_events USING btree (property_id)"
+    },
+    {
+      "tablename": "beds",
+      "indexname": "beds_pkey",
+      "indexdef": "CREATE UNIQUE INDEX beds_pkey ON public.beds USING btree (id)"
+    },
+    {
+      "tablename": "beds",
+      "indexname": "ix_beds_dorm_id",
+      "indexdef": "CREATE INDEX ix_beds_dorm_id ON public.beds USING btree (dorm_id)"
+    },
+    {
+      "tablename": "beds",
+      "indexname": "ix_beds_property_id",
+      "indexdef": "CREATE INDEX ix_beds_property_id ON public.beds USING btree (property_id)"
+    },
+    {
+      "tablename": "beds",
+      "indexname": "uq_beds_dorm_number",
+      "indexdef": "CREATE UNIQUE INDEX uq_beds_dorm_number ON public.beds USING btree (dorm_id, bed_number)"
+    },
+    {
+      "tablename": "companies",
+      "indexname": "companies_pkey",
+      "indexdef": "CREATE UNIQUE INDEX companies_pkey ON public.companies USING btree (id)"
+    },
+    {
+      "tablename": "device_registrations",
+      "indexname": "device_registrations_pkey",
+      "indexdef": "CREATE UNIQUE INDEX device_registrations_pkey ON public.device_registrations USING btree (id)"
+    },
+    {
+      "tablename": "device_registrations",
+      "indexname": "ix_device_employee_active",
+      "indexdef": "CREATE INDEX ix_device_employee_active ON public.device_registrations USING btree (employee_id, is_active)"
+    },
+    {
+      "tablename": "device_registrations",
+      "indexname": "uq_device_employee_device",
+      "indexdef": "CREATE UNIQUE INDEX uq_device_employee_device ON public.device_registrations USING btree (employee_id, device_id)"
+    },
+    {
+      "tablename": "dorms",
+      "indexname": "dorms_pkey",
+      "indexdef": "CREATE UNIQUE INDEX dorms_pkey ON public.dorms USING btree (id)"
+    },
+    {
+      "tablename": "dorms",
+      "indexname": "ix_dorms_area_id",
+      "indexdef": "CREATE INDEX ix_dorms_area_id ON public.dorms USING btree (area_id)"
+    },
+    {
+      "tablename": "dorms",
+      "indexname": "ix_dorms_property_id",
+      "indexdef": "CREATE INDEX ix_dorms_property_id ON public.dorms USING btree (property_id)"
+    },
+    {
+      "tablename": "dorms",
+      "indexname": "ix_dorms_zone_id",
+      "indexdef": "CREATE INDEX ix_dorms_zone_id ON public.dorms USING btree (zone_id)"
+    },
+    {
+      "tablename": "employee_shift_assignments",
+      "indexname": "employee_shift_assignments_pkey",
+      "indexdef": "CREATE UNIQUE INDEX employee_shift_assignments_pkey ON public.employee_shift_assignments USING btree (id)"
+    },
+    {
+      "tablename": "employee_shift_assignments",
+      "indexname": "ix_employee_shift_assignments_employee_id",
+      "indexdef": "CREATE INDEX ix_employee_shift_assignments_employee_id ON public.employee_shift_assignments USING btree (employee_id)"
+    },
+    {
+      "tablename": "employee_shift_assignments",
+      "indexname": "ix_employee_shift_assignments_shift_id",
+      "indexdef": "CREATE INDEX ix_employee_shift_assignments_shift_id ON public.employee_shift_assignments USING btree (shift_id)"
+    },
+    {
+      "tablename": "employees",
+      "indexname": "employees_pkey",
+      "indexdef": "CREATE UNIQUE INDEX employees_pkey ON public.employees USING btree (id)"
+    },
+    {
+      "tablename": "employees",
+      "indexname": "ix_employees_area_id",
+      "indexdef": "CREATE INDEX ix_employees_area_id ON public.employees USING btree (area_id)"
+    },
+    {
+      "tablename": "employees",
+      "indexname": "ix_employees_company_id",
+      "indexdef": "CREATE INDEX ix_employees_company_id ON public.employees USING btree (company_id)"
+    },
+    {
+      "tablename": "employees",
+      "indexname": "ix_employees_property_id",
+      "indexdef": "CREATE INDEX ix_employees_property_id ON public.employees USING btree (property_id)"
+    },
+    {
+      "tablename": "employees",
+      "indexname": "ix_employees_zone_id",
+      "indexdef": "CREATE INDEX ix_employees_zone_id ON public.employees USING btree (zone_id)"
+    },
+    {
+      "tablename": "location_events",
+      "indexname": "ix_location_employee_time",
+      "indexdef": "CREATE INDEX ix_location_employee_time ON public.location_events USING btree (employee_id, recorded_at)"
+    },
+    {
+      "tablename": "location_events",
+      "indexname": "ix_location_events_property_id",
+      "indexdef": "CREATE INDEX ix_location_events_property_id ON public.location_events USING btree (property_id)"
+    },
+    {
+      "tablename": "location_events",
+      "indexname": "ix_location_property_time",
+      "indexdef": "CREATE INDEX ix_location_property_time ON public.location_events USING btree (property_id, recorded_at)"
+    },
+    {
+      "tablename": "location_events",
+      "indexname": "location_events_pkey",
+      "indexdef": "CREATE UNIQUE INDEX location_events_pkey ON public.location_events USING btree (id)"
+    },
+    {
+      "tablename": "location_tracking_sessions",
+      "indexname": "ix_location_tracking_sessions_employee_id",
+      "indexdef": "CREATE INDEX ix_location_tracking_sessions_employee_id ON public.location_tracking_sessions USING btree (employee_id)"
+    },
+    {
+      "tablename": "location_tracking_sessions",
+      "indexname": "location_tracking_sessions_pkey",
+      "indexdef": "CREATE UNIQUE INDEX location_tracking_sessions_pkey ON public.location_tracking_sessions USING btree (id)"
+    },
+    {
+      "tablename": "maintenance_ticket_attachments",
+      "indexname": "ix_maintenance_ticket_attachments_ticket_id",
+      "indexdef": "CREATE INDEX ix_maintenance_ticket_attachments_ticket_id ON public.maintenance_ticket_attachments USING btree (ticket_id)"
+    },
+    {
+      "tablename": "maintenance_ticket_attachments",
+      "indexname": "maintenance_ticket_attachments_pkey",
+      "indexdef": "CREATE UNIQUE INDEX maintenance_ticket_attachments_pkey ON public.maintenance_ticket_attachments USING btree (id)"
+    },
+    {
+      "tablename": "maintenance_ticket_events",
+      "indexname": "ix_maintenance_ticket_events_ticket_id",
+      "indexdef": "CREATE INDEX ix_maintenance_ticket_events_ticket_id ON public.maintenance_ticket_events USING btree (ticket_id)"
+    },
+    {
+      "tablename": "maintenance_ticket_events",
+      "indexname": "maintenance_ticket_events_pkey",
+      "indexdef": "CREATE UNIQUE INDEX maintenance_ticket_events_pkey ON public.maintenance_ticket_events USING btree (id)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_allocation_batch_id",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_allocation_batch_id ON public.maintenance_tickets USING btree (allocation_batch_id)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_assigned_to",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_assigned_to ON public.maintenance_tickets USING btree (assigned_to)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_bed_id",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_bed_id ON public.maintenance_tickets USING btree (bed_id)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_company_id",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_company_id ON public.maintenance_tickets USING btree (company_id)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_dorm_id",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_dorm_id ON public.maintenance_tickets USING btree (dorm_id)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_property_id",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_property_id ON public.maintenance_tickets USING btree (property_id)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_room_id",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_room_id ON public.maintenance_tickets USING btree (room_id)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_status",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_status ON public.maintenance_tickets USING btree (status)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_template_id",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_template_id ON public.maintenance_tickets USING btree (template_id)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_ticket_number",
+      "indexdef": "CREATE UNIQUE INDEX ix_maintenance_tickets_ticket_number ON public.maintenance_tickets USING btree (ticket_number)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_washroom_fixture_id",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_washroom_fixture_id ON public.maintenance_tickets USING btree (washroom_fixture_id)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_washroom_id",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_washroom_id ON public.maintenance_tickets USING btree (washroom_id)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "ix_maintenance_tickets_zone_id",
+      "indexdef": "CREATE INDEX ix_maintenance_tickets_zone_id ON public.maintenance_tickets USING btree (zone_id)"
+    },
+    {
+      "tablename": "maintenance_tickets",
+      "indexname": "maintenance_tickets_pkey",
+      "indexdef": "CREATE UNIQUE INDEX maintenance_tickets_pkey ON public.maintenance_tickets USING btree (id)"
+    },
+    {
+      "tablename": "mobile_releases",
+      "indexname": "ix_mobile_releases_is_active",
+      "indexdef": "CREATE INDEX ix_mobile_releases_is_active ON public.mobile_releases USING btree (is_active)"
+    },
+    {
+      "tablename": "mobile_releases",
+      "indexname": "ix_mobile_releases_platform",
+      "indexdef": "CREATE INDEX ix_mobile_releases_platform ON public.mobile_releases USING btree (platform)"
+    },
+    {
+      "tablename": "mobile_releases",
+      "indexname": "mobile_releases_pkey",
+      "indexdef": "CREATE UNIQUE INDEX mobile_releases_pkey ON public.mobile_releases USING btree (id)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "ix_notif_employee_created",
+      "indexdef": "CREATE INDEX ix_notif_employee_created ON public.notifications USING btree (employee_id, created_at)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "ix_notif_employee_read",
+      "indexdef": "CREATE INDEX ix_notif_employee_read ON public.notifications USING btree (employee_id, is_read)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "ix_notif_property_created",
+      "indexdef": "CREATE INDEX ix_notif_property_created ON public.notifications USING btree (property_id, created_at)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "ix_notifications_property_id",
+      "indexdef": "CREATE INDEX ix_notifications_property_id ON public.notifications USING btree (property_id)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "ix_notifications_type",
+      "indexdef": "CREATE INDEX ix_notifications_type ON public.notifications USING btree (type)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "notifications_pkey",
+      "indexdef": "CREATE UNIQUE INDEX notifications_pkey ON public.notifications USING btree (id)"
+    },
+    {
+      "tablename": "occupancies",
+      "indexname": "ix_occupancies_bed_id",
+      "indexdef": "CREATE INDEX ix_occupancies_bed_id ON public.occupancies USING btree (bed_id)"
+    },
+    {
+      "tablename": "occupancies",
+      "indexname": "ix_occupancies_property_id",
+      "indexdef": "CREATE INDEX ix_occupancies_property_id ON public.occupancies USING btree (property_id)"
+    },
+    {
+      "tablename": "occupancies",
+      "indexname": "ix_occupancies_room_id",
+      "indexdef": "CREATE INDEX ix_occupancies_room_id ON public.occupancies USING btree (room_id)"
+    },
+    {
+      "tablename": "occupancies",
+      "indexname": "occupancies_pkey",
+      "indexdef": "CREATE UNIQUE INDEX occupancies_pkey ON public.occupancies USING btree (id)"
+    },
+    {
+      "tablename": "occupancies",
+      "indexname": "uq_occupancies_open_bed",
+      "indexdef": "CREATE UNIQUE INDEX uq_occupancies_open_bed ON public.occupancies USING btree (bed_id) WHERE (checked_out_at IS NULL)"
+    },
+    {
+      "tablename": "occupancies",
+      "indexname": "uq_occupancies_open_room",
+      "indexdef": "CREATE UNIQUE INDEX uq_occupancies_open_room ON public.occupancies USING btree (room_id) WHERE (checked_out_at IS NULL)"
+    },
+    {
+      "tablename": "properties",
+      "indexname": "ix_properties_company_id",
+      "indexdef": "CREATE INDEX ix_properties_company_id ON public.properties USING btree (company_id)"
+    },
+    {
+      "tablename": "properties",
+      "indexname": "properties_pkey",
+      "indexdef": "CREATE UNIQUE INDEX properties_pkey ON public.properties USING btree (id)"
+    },
+    {
+      "tablename": "refresh_tokens",
+      "indexname": "ix_refresh_tokens_user_id",
+      "indexdef": "CREATE INDEX ix_refresh_tokens_user_id ON public.refresh_tokens USING btree (user_id)"
+    },
+    {
+      "tablename": "refresh_tokens",
+      "indexname": "refresh_tokens_pkey",
+      "indexdef": "CREATE UNIQUE INDEX refresh_tokens_pkey ON public.refresh_tokens USING btree (id)"
+    },
+    {
+      "tablename": "refresh_tokens",
+      "indexname": "refresh_tokens_token_hash_key",
+      "indexdef": "CREATE UNIQUE INDEX refresh_tokens_token_hash_key ON public.refresh_tokens USING btree (token_hash)"
+    },
+    {
+      "tablename": "resource_state_events",
+      "indexname": "ix_resource_state_events_property_id",
+      "indexdef": "CREATE INDEX ix_resource_state_events_property_id ON public.resource_state_events USING btree (property_id)"
+    },
+    {
+      "tablename": "resource_state_events",
+      "indexname": "ix_resource_state_events_resource_id",
+      "indexdef": "CREATE INDEX ix_resource_state_events_resource_id ON public.resource_state_events USING btree (resource_id)"
+    },
+    {
+      "tablename": "resource_state_events",
+      "indexname": "ix_resource_state_events_resource_type",
+      "indexdef": "CREATE INDEX ix_resource_state_events_resource_type ON public.resource_state_events USING btree (resource_type)"
+    },
+    {
+      "tablename": "resource_state_events",
+      "indexname": "resource_state_events_pkey",
+      "indexdef": "CREATE UNIQUE INDEX resource_state_events_pkey ON public.resource_state_events USING btree (id)"
+    },
+    {
+      "tablename": "rooms",
+      "indexname": "ix_rooms_area_id",
+      "indexdef": "CREATE INDEX ix_rooms_area_id ON public.rooms USING btree (area_id)"
+    },
+    {
+      "tablename": "rooms",
+      "indexname": "ix_rooms_property_id",
+      "indexdef": "CREATE INDEX ix_rooms_property_id ON public.rooms USING btree (property_id)"
+    },
+    {
+      "tablename": "rooms",
+      "indexname": "ix_rooms_zone_id",
+      "indexdef": "CREATE INDEX ix_rooms_zone_id ON public.rooms USING btree (zone_id)"
+    },
+    {
+      "tablename": "rooms",
+      "indexname": "rooms_pkey",
+      "indexdef": "CREATE UNIQUE INDEX rooms_pkey ON public.rooms USING btree (id)"
+    },
+    {
+      "tablename": "rooms",
+      "indexname": "uq_rooms_property_number",
+      "indexdef": "CREATE UNIQUE INDEX uq_rooms_property_number ON public.rooms USING btree (property_id, room_number)"
+    },
+    {
+      "tablename": "shifts",
+      "indexname": "ix_shifts_company_id",
+      "indexdef": "CREATE INDEX ix_shifts_company_id ON public.shifts USING btree (company_id)"
+    },
+    {
+      "tablename": "shifts",
+      "indexname": "ix_shifts_property_id",
+      "indexdef": "CREATE INDEX ix_shifts_property_id ON public.shifts USING btree (property_id)"
+    },
+    {
+      "tablename": "shifts",
+      "indexname": "shifts_pkey",
+      "indexdef": "CREATE UNIQUE INDEX shifts_pkey ON public.shifts USING btree (id)"
+    },
+    {
+      "tablename": "task_completion_images",
+      "indexname": "ix_task_completion_images_created_by_id",
+      "indexdef": "CREATE INDEX ix_task_completion_images_created_by_id ON public.task_completion_images USING btree (created_by_id)"
+    },
+    {
+      "tablename": "task_completion_images",
+      "indexname": "ix_task_completion_images_history_event_id",
+      "indexdef": "CREATE INDEX ix_task_completion_images_history_event_id ON public.task_completion_images USING btree (history_event_id)"
+    },
+    {
+      "tablename": "task_completion_images",
+      "indexname": "ix_task_completion_images_submission_id",
+      "indexdef": "CREATE INDEX ix_task_completion_images_submission_id ON public.task_completion_images USING btree (submission_id)"
+    },
+    {
+      "tablename": "task_completion_images",
+      "indexname": "ix_task_completion_images_task_id",
+      "indexdef": "CREATE INDEX ix_task_completion_images_task_id ON public.task_completion_images USING btree (task_id)"
+    },
+    {
+      "tablename": "task_completion_images",
+      "indexname": "task_completion_images_pkey",
+      "indexdef": "CREATE UNIQUE INDEX task_completion_images_pkey ON public.task_completion_images USING btree (id)"
+    },
+    {
+      "tablename": "task_completion_submissions",
+      "indexname": "ix_task_completion_submissions_employee_id",
+      "indexdef": "CREATE INDEX ix_task_completion_submissions_employee_id ON public.task_completion_submissions USING btree (employee_id)"
+    },
+    {
+      "tablename": "task_completion_submissions",
+      "indexname": "ix_task_completion_submissions_status",
+      "indexdef": "CREATE INDEX ix_task_completion_submissions_status ON public.task_completion_submissions USING btree (status)"
+    },
+    {
+      "tablename": "task_completion_submissions",
+      "indexname": "ix_task_completion_submissions_task_id",
+      "indexdef": "CREATE INDEX ix_task_completion_submissions_task_id ON public.task_completion_submissions USING btree (task_id)"
+    },
+    {
+      "tablename": "task_completion_submissions",
+      "indexname": "task_completion_submissions_pkey",
+      "indexdef": "CREATE UNIQUE INDEX task_completion_submissions_pkey ON public.task_completion_submissions USING btree (id)"
+    },
+    {
+      "tablename": "task_completion_submissions",
+      "indexname": "uq_completion_submission_event",
+      "indexdef": "CREATE UNIQUE INDEX uq_completion_submission_event ON public.task_completion_submissions USING btree (history_event_id)"
+    },
+    {
+      "tablename": "task_completion_submissions",
+      "indexname": "uq_task_attempt",
+      "indexdef": "CREATE UNIQUE INDEX uq_task_attempt ON public.task_completion_submissions USING btree (task_id, attempt_number)"
+    },
+    {
+      "tablename": "task_history_events",
+      "indexname": "ix_task_history_events_task_id",
+      "indexdef": "CREATE INDEX ix_task_history_events_task_id ON public.task_history_events USING btree (task_id)"
+    },
+    {
+      "tablename": "task_history_events",
+      "indexname": "task_history_events_pkey",
+      "indexdef": "CREATE UNIQUE INDEX task_history_events_pkey ON public.task_history_events USING btree (id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_allocation_batch_id",
+      "indexdef": "CREATE INDEX ix_tasks_allocation_batch_id ON public.tasks USING btree (allocation_batch_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_area_id",
+      "indexdef": "CREATE INDEX ix_tasks_area_id ON public.tasks USING btree (area_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_dorm_id",
+      "indexdef": "CREATE INDEX ix_tasks_dorm_id ON public.tasks USING btree (dorm_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_employee_id",
+      "indexdef": "CREATE INDEX ix_tasks_employee_id ON public.tasks USING btree (employee_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_expires_at",
+      "indexdef": "CREATE INDEX ix_tasks_expires_at ON public.tasks USING btree (expires_at) WHERE (expires_at IS NOT NULL)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_property_id",
+      "indexdef": "CREATE INDEX ix_tasks_property_id ON public.tasks USING btree (property_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_room_id",
+      "indexdef": "CREATE INDEX ix_tasks_room_id ON public.tasks USING btree (room_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_series_id",
+      "indexdef": "CREATE INDEX ix_tasks_series_id ON public.tasks USING btree (series_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_supervisor_id",
+      "indexdef": "CREATE INDEX ix_tasks_supervisor_id ON public.tasks USING btree (supervisor_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_template_id",
+      "indexdef": "CREATE INDEX ix_tasks_template_id ON public.tasks USING btree (template_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_ticket_number",
+      "indexdef": "CREATE UNIQUE INDEX ix_tasks_ticket_number ON public.tasks USING btree (ticket_number)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_washroom_fixture_id",
+      "indexdef": "CREATE INDEX ix_tasks_washroom_fixture_id ON public.tasks USING btree (washroom_fixture_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_washroom_id",
+      "indexdef": "CREATE INDEX ix_tasks_washroom_id ON public.tasks USING btree (washroom_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "ix_tasks_zone_id",
+      "indexdef": "CREATE INDEX ix_tasks_zone_id ON public.tasks USING btree (zone_id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "tasks_pkey",
+      "indexdef": "CREATE UNIQUE INDEX tasks_pkey ON public.tasks USING btree (id)"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "uq_tasks_open_room_title",
+      "indexdef": "CREATE UNIQUE INDEX uq_tasks_open_room_title ON public.tasks USING btree (property_id, room_id, title) WHERE ((room_id IS NOT NULL) AND ((status)::text <> ALL ((ARRAY['completed'::character varying, 'cancelled'::character varying, 'abandoned'::character varying])::text[])))"
+    },
+    {
+      "tablename": "tasks",
+      "indexname": "uq_tasks_series_due",
+      "indexdef": "CREATE UNIQUE INDEX uq_tasks_series_due ON public.tasks USING btree (series_id, due_date) WHERE (((task_type)::text = 'repetitive'::text) AND (series_id IS NOT NULL) AND (due_date IS NOT NULL))"
+    },
+    {
+      "tablename": "template_generations",
+      "indexname": "ix_template_generations_template_id",
+      "indexdef": "CREATE INDEX ix_template_generations_template_id ON public.template_generations USING btree (template_id)"
+    },
+    {
+      "tablename": "template_generations",
+      "indexname": "template_generations_pkey",
+      "indexdef": "CREATE UNIQUE INDEX template_generations_pkey ON public.template_generations USING btree (id)"
+    },
+    {
+      "tablename": "template_generations",
+      "indexname": "uq_template_generation",
+      "indexdef": "CREATE UNIQUE INDEX uq_template_generation ON public.template_generations USING btree (template_id, occurrence_key)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "ix_users_company_id",
+      "indexdef": "CREATE INDEX ix_users_company_id ON public.users USING btree (company_id)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "ix_users_email",
+      "indexdef": "CREATE UNIQUE INDEX ix_users_email ON public.users USING btree (email)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "ix_users_username",
+      "indexdef": "CREATE UNIQUE INDEX ix_users_username ON public.users USING btree (username)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "users_pkey",
+      "indexdef": "CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)"
+    },
+    {
+      "tablename": "washroom_fixtures",
+      "indexname": "ix_washroom_fixtures_fixture_type",
+      "indexdef": "CREATE INDEX ix_washroom_fixtures_fixture_type ON public.washroom_fixtures USING btree (fixture_type)"
+    },
+    {
+      "tablename": "washroom_fixtures",
+      "indexname": "ix_washroom_fixtures_property_id",
+      "indexdef": "CREATE INDEX ix_washroom_fixtures_property_id ON public.washroom_fixtures USING btree (property_id)"
+    },
+    {
+      "tablename": "washroom_fixtures",
+      "indexname": "ix_washroom_fixtures_washroom_id",
+      "indexdef": "CREATE INDEX ix_washroom_fixtures_washroom_id ON public.washroom_fixtures USING btree (washroom_id)"
+    },
+    {
+      "tablename": "washroom_fixtures",
+      "indexname": "uq_washroom_fixtures_type_number",
+      "indexdef": "CREATE UNIQUE INDEX uq_washroom_fixtures_type_number ON public.washroom_fixtures USING btree (washroom_id, fixture_type, fixture_number)"
+    },
+    {
+      "tablename": "washroom_fixtures",
+      "indexname": "washroom_fixtures_pkey",
+      "indexdef": "CREATE UNIQUE INDEX washroom_fixtures_pkey ON public.washroom_fixtures USING btree (id)"
+    },
+    {
+      "tablename": "washrooms",
+      "indexname": "ix_washrooms_area_id",
+      "indexdef": "CREATE INDEX ix_washrooms_area_id ON public.washrooms USING btree (area_id)"
+    },
+    {
+      "tablename": "washrooms",
+      "indexname": "ix_washrooms_dorm_id",
+      "indexdef": "CREATE INDEX ix_washrooms_dorm_id ON public.washrooms USING btree (dorm_id)"
+    },
+    {
+      "tablename": "washrooms",
+      "indexname": "ix_washrooms_property_id",
+      "indexdef": "CREATE INDEX ix_washrooms_property_id ON public.washrooms USING btree (property_id)"
+    },
+    {
+      "tablename": "washrooms",
+      "indexname": "ix_washrooms_zone_id",
+      "indexdef": "CREATE INDEX ix_washrooms_zone_id ON public.washrooms USING btree (zone_id)"
+    },
+    {
+      "tablename": "washrooms",
+      "indexname": "uq_washrooms_dorm_id",
+      "indexdef": "CREATE UNIQUE INDEX uq_washrooms_dorm_id ON public.washrooms USING btree (dorm_id)"
+    },
+    {
+      "tablename": "washrooms",
+      "indexname": "uq_washrooms_property_name",
+      "indexdef": "CREATE UNIQUE INDEX uq_washrooms_property_name ON public.washrooms USING btree (property_id, name)"
+    },
+    {
+      "tablename": "washrooms",
+      "indexname": "washrooms_pkey",
+      "indexdef": "CREATE UNIQUE INDEX washrooms_pkey ON public.washrooms USING btree (id)"
+    },
+    {
+      "tablename": "work_allocation_batches",
+      "indexname": "ix_work_allocation_batches_batch_number",
+      "indexdef": "CREATE UNIQUE INDEX ix_work_allocation_batches_batch_number ON public.work_allocation_batches USING btree (batch_number)"
+    },
+    {
+      "tablename": "work_allocation_batches",
+      "indexname": "ix_work_allocation_batches_company_id",
+      "indexdef": "CREATE INDEX ix_work_allocation_batches_company_id ON public.work_allocation_batches USING btree (company_id)"
+    },
+    {
+      "tablename": "work_allocation_batches",
+      "indexname": "ix_work_allocation_batches_employee_id",
+      "indexdef": "CREATE INDEX ix_work_allocation_batches_employee_id ON public.work_allocation_batches USING btree (employee_id)"
+    },
+    {
+      "tablename": "work_allocation_batches",
+      "indexname": "ix_work_allocation_batches_property_id",
+      "indexdef": "CREATE INDEX ix_work_allocation_batches_property_id ON public.work_allocation_batches USING btree (property_id)"
+    },
+    {
+      "tablename": "work_allocation_batches",
+      "indexname": "ix_work_allocation_batches_zone_id",
+      "indexdef": "CREATE INDEX ix_work_allocation_batches_zone_id ON public.work_allocation_batches USING btree (zone_id)"
+    },
+    {
+      "tablename": "work_allocation_batches",
+      "indexname": "work_allocation_batches_pkey",
+      "indexdef": "CREATE UNIQUE INDEX work_allocation_batches_pkey ON public.work_allocation_batches USING btree (id)"
+    },
+    {
+      "tablename": "work_allocation_history",
+      "indexname": "ix_work_allocation_history_batch_id",
+      "indexdef": "CREATE INDEX ix_work_allocation_history_batch_id ON public.work_allocation_history USING btree (batch_id)"
+    },
+    {
+      "tablename": "work_allocation_history",
+      "indexname": "ix_work_allocation_history_property_id",
+      "indexdef": "CREATE INDEX ix_work_allocation_history_property_id ON public.work_allocation_history USING btree (property_id)"
+    },
+    {
+      "tablename": "work_allocation_history",
+      "indexname": "ix_work_allocation_history_ticket_id",
+      "indexdef": "CREATE INDEX ix_work_allocation_history_ticket_id ON public.work_allocation_history USING btree (ticket_id)"
+    },
+    {
+      "tablename": "work_allocation_history",
+      "indexname": "ix_work_allocation_history_zone_id",
+      "indexdef": "CREATE INDEX ix_work_allocation_history_zone_id ON public.work_allocation_history USING btree (zone_id)"
+    },
+    {
+      "tablename": "work_allocation_history",
+      "indexname": "work_allocation_history_pkey",
+      "indexdef": "CREATE UNIQUE INDEX work_allocation_history_pkey ON public.work_allocation_history USING btree (id)"
+    },
+    {
+      "tablename": "work_template_versions",
+      "indexname": "ix_work_template_versions_template_id",
+      "indexdef": "CREATE INDEX ix_work_template_versions_template_id ON public.work_template_versions USING btree (template_id)"
+    },
+    {
+      "tablename": "work_template_versions",
+      "indexname": "uq_template_version",
+      "indexdef": "CREATE UNIQUE INDEX uq_template_version ON public.work_template_versions USING btree (template_id, version)"
+    },
+    {
+      "tablename": "work_template_versions",
+      "indexname": "work_template_versions_pkey",
+      "indexdef": "CREATE UNIQUE INDEX work_template_versions_pkey ON public.work_template_versions USING btree (id)"
+    },
+    {
+      "tablename": "work_templates",
+      "indexname": "ix_work_templates_company_id",
+      "indexdef": "CREATE INDEX ix_work_templates_company_id ON public.work_templates USING btree (company_id)"
+    },
+    {
+      "tablename": "work_templates",
+      "indexname": "ix_work_templates_next_run_at",
+      "indexdef": "CREATE INDEX ix_work_templates_next_run_at ON public.work_templates USING btree (next_run_at)"
+    },
+    {
+      "tablename": "work_templates",
+      "indexname": "ix_work_templates_property_id",
+      "indexdef": "CREATE INDEX ix_work_templates_property_id ON public.work_templates USING btree (property_id)"
+    },
+    {
+      "tablename": "work_templates",
+      "indexname": "ix_work_templates_status",
+      "indexdef": "CREATE INDEX ix_work_templates_status ON public.work_templates USING btree (status)"
+    },
+    {
+      "tablename": "work_templates",
+      "indexname": "ix_work_templates_template_type",
+      "indexdef": "CREATE INDEX ix_work_templates_template_type ON public.work_templates USING btree (template_type)"
+    },
+    {
+      "tablename": "work_templates",
+      "indexname": "work_templates_pkey",
+      "indexdef": "CREATE UNIQUE INDEX work_templates_pkey ON public.work_templates USING btree (id)"
+    },
+    {
+      "tablename": "zone_allocation_state",
+      "indexname": "ix_zone_allocation_state_property_id",
+      "indexdef": "CREATE INDEX ix_zone_allocation_state_property_id ON public.zone_allocation_state USING btree (property_id)"
+    },
+    {
+      "tablename": "zone_allocation_state",
+      "indexname": "ix_zone_allocation_state_zone_id",
+      "indexdef": "CREATE INDEX ix_zone_allocation_state_zone_id ON public.zone_allocation_state USING btree (zone_id)"
+    },
+    {
+      "tablename": "zone_allocation_state",
+      "indexname": "uq_zone_allocation_state_zone",
+      "indexdef": "CREATE UNIQUE INDEX uq_zone_allocation_state_zone ON public.zone_allocation_state USING btree (zone_id)"
+    },
+    {
+      "tablename": "zone_allocation_state",
+      "indexname": "zone_allocation_state_pkey",
+      "indexdef": "CREATE UNIQUE INDEX zone_allocation_state_pkey ON public.zone_allocation_state USING btree (id)"
+    },
+    {
+      "tablename": "zones",
+      "indexname": "ix_zones_area_id",
+      "indexdef": "CREATE INDEX ix_zones_area_id ON public.zones USING btree (area_id)"
+    },
+    {
+      "tablename": "zones",
+      "indexname": "ix_zones_property_id",
+      "indexdef": "CREATE INDEX ix_zones_property_id ON public.zones USING btree (property_id)"
+    },
+    {
+      "tablename": "zones",
+      "indexname": "uq_zones_property_name",
+      "indexdef": "CREATE UNIQUE INDEX uq_zones_property_name ON public.zones USING btree (property_id, name)"
+    },
+    {
+      "tablename": "zones",
+      "indexname": "zones_pkey",
+      "indexdef": "CREATE UNIQUE INDEX zones_pkey ON public.zones USING btree (id)"
+    }
+  ],
+  "unindexed_foreign_keys": [
+    {
+      "table": "attendance_requests",
+      "column": "reviewed_by_id",
+      "refs": "users"
+    },
+    {
+      "table": "auth.mfa_challenges",
+      "column": "factor_id",
+      "refs": "auth.mfa_factors"
+    },
+    {
+      "table": "auth.oauth_authorizations",
+      "column": "client_id",
+      "refs": "auth.oauth_clients"
+    },
+    {
+      "table": "auth.oauth_authorizations",
+      "column": "user_id",
+      "refs": "auth.users"
+    },
+    {
+      "table": "auth.saml_relay_states",
+      "column": "flow_state_id",
+      "refs": "auth.flow_state"
+    },
+    {
+      "table": "device_registrations",
+      "column": "user_id",
+      "refs": "users"
+    },
+    {
+      "table": "employee_shift_assignments",
+      "column": "created_by_id",
+      "refs": "users"
+    },
+    {
+      "table": "occupancies",
+      "column": "checked_out_by",
+      "refs": "users"
+    },
+    {
+      "table": "occupancies",
+      "column": "checked_in_by",
+      "refs": "users"
+    },
+    {
+      "table": "resource_state_events",
+      "column": "actor_user_id",
+      "refs": "users"
+    },
+    {
+      "table": "storage.s3_multipart_uploads_parts",
+      "column": "bucket_id",
+      "refs": "storage.buckets"
+    },
+    {
+      "table": "storage.s3_multipart_uploads_parts",
+      "column": "upload_id",
+      "refs": "storage.s3_multipart_uploads"
+    },
+    {
+      "table": "storage.vector_indexes",
+      "column": "bucket_id",
+      "refs": "storage.buckets_vectors"
+    },
+    {
+      "table": "task_completion_submissions",
+      "column": "reviewed_by_id",
+      "refs": "users"
+    }
+  ],
+  "top_queries_total_time": [
+    {
+      "calls": "7",
+      "total_ms": "27977.9",
+      "mean_ms": "3996.8",
+      "max_ms": "16392.9",
+      "rows": "9",
+      "query": "SELECT tasks.id, tasks.property_id, tasks.zone_id, tasks.area_id, tasks.employee_id, tasks.ticket_number, tasks.room_id, tasks.room_number, tasks.dorm_id, tasks.dorm_name, tasks.bed_ids, tasks.washroom_id, tasks.washroom"
+    },
+    {
+      "calls": "44881",
+      "total_ms": "24510.7",
+      "mean_ms": "0.5",
+      "max_ms": "49.9",
+      "rows": "44881",
+      "query": "SELECT * FROM pgbouncer.get_auth($1)"
+    },
+    {
+      "calls": "101",
+      "total_ms": "6478.4",
+      "mean_ms": "64.1",
+      "max_ms": "2726.7",
+      "rows": "100",
+      "query": "SELECT zone_allocation_state.id, zone_allocation_state.property_id, zone_allocation_state.zone_id, zone_allocation_state.last_assigned_employee_id, zone_allocation_state.last_assigned_at, zone_allocation_state.version, z"
+    },
+    {
+      "calls": "91981",
+      "total_ms": "5659.0",
+      "mean_ms": "0.1",
+      "max_ms": "4.7",
+      "rows": "65094",
+      "query": "SELECT tasks.id, tasks.property_id, tasks.zone_id, tasks.area_id, tasks.employee_id, tasks.ticket_number, tasks.room_id, tasks.room_number, tasks.dorm_id, tasks.dorm_name, tasks.bed_ids, tasks.washroom_id, tasks.washroom"
+    },
+    {
+      "calls": "11",
+      "total_ms": "3401.6",
+      "mean_ms": "309.2",
+      "max_ms": "610.4",
+      "rows": "858",
+      "query": "SELECT e.name, n.nspname AS schema, e.default_version, x.extversion AS installed_version, e.comment, ev.schema AS default_version_schema FROM pg_available_extensions e LEFT JOIN pg_extension x ON e.name = x.extname LEFT "
+    },
+    {
+      "calls": "10515",
+      "total_ms": "3232.2",
+      "mean_ms": "0.3",
+      "max_ms": "10.0",
+      "rows": "335138",
+      "query": "SELECT tasks.id, tasks.property_id, tasks.zone_id, tasks.area_id, tasks.employee_id, tasks.ticket_number, tasks.room_id, tasks.room_number, tasks.dorm_id, tasks.dorm_name, tasks.bed_ids, tasks.washroom_id, tasks.washroom"
+    },
+    {
+      "calls": "21031",
+      "total_ms": "2986.0",
+      "mean_ms": "0.1",
+      "max_ms": "34.6",
+      "rows": "101",
+      "query": "SELECT tasks.id, tasks.property_id, tasks.zone_id, tasks.area_id, tasks.employee_id, tasks.ticket_number, tasks.room_id, tasks.room_number, tasks.dorm_id, tasks.dorm_name, tasks.bed_ids, tasks.washroom_id, tasks.washroom"
+    },
+    {
+      "calls": "11",
+      "total_ms": "2489.9",
+      "mean_ms": "226.4",
+      "max_ms": "299.6",
+      "rows": "6578",
+      "query": "SELECT name FROM pg_timezone_names"
+    },
+    {
+      "calls": "10",
+      "total_ms": "2223.1",
+      "mean_ms": "222.3",
+      "max_ms": "313.0",
+      "rows": "10",
+      "query": "SELECT case when pg_is_in_recovery() then $2 else (pg_walfile_name_offset(lsn)).file_name end, lsn::text, pg_is_in_recovery() FROM pg_backup_start($1, $3) lsn"
+    },
+    {
+      "calls": "2",
+      "total_ms": "2094.5",
+      "mean_ms": "1047.2",
+      "max_ms": "2093.2",
+      "rows": "2",
+      "query": "SELECT tasks.id, tasks.property_id, tasks.zone_id, tasks.area_id, tasks.employee_id, tasks.ticket_number, tasks.room_id, tasks.room_number, tasks.dorm_id, tasks.dorm_name, tasks.bed_ids, tasks.washroom_id, tasks.washroom"
+    },
+    {
+      "calls": "102",
+      "total_ms": "1793.8",
+      "mean_ms": "17.6",
+      "max_ms": "47.0",
+      "rows": "102",
+      "query": "UPDATE tasks SET status=$1::VARCHAR, abandoned_at=$2::TIMESTAMP WITH TIME ZONE, abandoned_reason=$3::VARCHAR, abandoned_from_status=$4::VARCHAR, operational_date=$5::VARCHAR, updated_at=now() WHERE tasks.id = $6::UUID AN"
+    },
+    {
+      "calls": "2",
+      "total_ms": "1235.4",
+      "mean_ms": "617.7",
+      "max_ms": "632.8",
+      "rows": "194",
+      "query": "SELECT tc.table_schema, tc.table_name, kcu.column_name, ccu.table_schema, ccu.table_name, ccu.column_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_name = "
+    },
+    {
+      "calls": "33714",
+      "total_ms": "1107.7",
+      "mean_ms": "0.0",
+      "max_ms": "1.7",
+      "rows": "0",
+      "query": "SELECT tasks.bed_ids FROM tasks WHERE tasks.dorm_id = $1::UUID AND tasks.status IN ($2::VARCHAR, $3::VARCHAR, $4::VARCHAR)"
+    },
+    {
+      "calls": "64737",
+      "total_ms": "1086.8",
+      "mean_ms": "0.0",
+      "max_ms": "3.1",
+      "rows": "0",
+      "query": "SELECT maintenance_tickets.id FROM maintenance_tickets WHERE maintenance_tickets.status IN ($3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR) AND maintenance_tickets.dorm_id = $1::UUID AND maintenance_tick"
+    },
+    {
+      "calls": "160",
+      "total_ms": "905.2",
+      "mean_ms": "5.7",
+      "max_ms": "20.4",
+      "rows": "160",
+      "query": "INSERT INTO work_allocation_batches (id, batch_number, company_id, property_id, zone_id, zone_name, employee_id, employee_name, work_type, allocation_status, allocation_reason, created_by, created_by_name) VALUES ($1::UU"
+    },
+    {
+      "calls": "171",
+      "total_ms": "883.3",
+      "mean_ms": "5.2",
+      "max_ms": "18.4",
+      "rows": "171",
+      "query": "INSERT INTO tasks (id, property_id, zone_id, area_id, employee_id, ticket_number, room_id, room_number, dorm_id, dorm_name, bed_ids, washroom_id, washroom_name, washroom_fixture_id, washroom_fixture_label, supervisor_id,"
+    },
+    {
+      "calls": "44259",
+      "total_ms": "839.4",
+      "mean_ms": "0.0",
+      "max_ms": "2.5",
+      "rows": "472",
+      "query": "SELECT occupancies.id FROM occupancies WHERE occupancies.room_id = $1::UUID AND occupancies.checked_out_at IS NULL LIMIT $2::INTEGER"
+    },
+    {
+      "calls": "292",
+      "total_ms": "834.4",
+      "mean_ms": "2.9",
+      "max_ms": "18.5",
+      "rows": "141322",
+      "query": "SELECT tasks.id, tasks.property_id, tasks.zone_id, tasks.area_id, tasks.employee_id, tasks.ticket_number, tasks.room_id, tasks.room_number, tasks.dorm_id, tasks.dorm_name, tasks.bed_ids, tasks.washroom_id, tasks.washroom"
+    },
+    {
+      "calls": "54612",
+      "total_ms": "811.8",
+      "mean_ms": "0.0",
+      "max_ms": "2.9",
+      "rows": "0",
+      "query": "SELECT maintenance_tickets.id FROM maintenance_tickets WHERE maintenance_tickets.status IN ($3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR) AND maintenance_tickets.bed_id = $1::UUID LIMIT $2::INTEGER"
+    },
+    {
+      "calls": "187",
+      "total_ms": "766.9",
+      "mean_ms": "4.1",
+      "max_ms": "15.1",
+      "rows": "187",
+      "query": "INSERT INTO work_allocation_history (id, property_id, zone_id, batch_id, batch_number, ticket_kind, ticket_id, ticket_number, employee_id, employee_name, previous_employee_id, previous_employee_name, allocation_method, r"
+    }
+  ],
+  "top_queries_mean_time": [
+    {
+      "calls": "101",
+      "mean_ms": "64.1",
+      "max_ms": "2726.7",
+      "query": "SELECT zone_allocation_state.id, zone_allocation_state.property_id, zone_allocation_state.zone_id, zone_allocation_state.last_assigned_employee_id, zone_allocation_state.last_assigned_at, zone_allocation_state.version, z"
+    },
+    {
+      "calls": "102",
+      "mean_ms": "17.6",
+      "max_ms": "47.0",
+      "query": "UPDATE tasks SET status=$1::VARCHAR, abandoned_at=$2::TIMESTAMP WITH TIME ZONE, abandoned_reason=$3::VARCHAR, abandoned_from_status=$4::VARCHAR, operational_date=$5::VARCHAR, updated_at=now() WHERE tasks.id = $6::UUID AN"
+    },
+    {
+      "calls": "31",
+      "mean_ms": "13.7",
+      "max_ms": "31.3",
+      "query": "SELECT work_allocation_history.employee_id FROM work_allocation_history JOIN work_allocation_batches ON work_allocation_batches.id = work_allocation_history.batch_id WHERE work_allocation_history.property_id = $1::UUID A"
+    },
+    {
+      "calls": "34",
+      "mean_ms": "9.8",
+      "max_ms": "16.2",
+      "query": "INSERT INTO task_history_events (id, task_id, type, actor_name, note) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR), ($6::UUID, $7::UUID, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR) RETURNING task_histor"
+    },
+    {
+      "calls": "27",
+      "mean_ms": "8.3",
+      "max_ms": "22.3",
+      "query": "INSERT INTO location_tracking_sessions (id, employee_id, status, started_at, ended_at, point_count, created_at) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::TIMESTAMP WITH TIME ZONE, $5::TIMESTAMP WITH TIME ZONE, $6::INT"
+    },
+    {
+      "calls": "29",
+      "mean_ms": "7.1",
+      "max_ms": "17.6",
+      "query": "select t.oid, case when nsp.nspname in ($1, $2) then t.typname else nsp.nspname||$3||t.typname end from pg_type t left join pg_type base_type on t.typelem=base_type.oid left join pg_class base_cls ON base_type.typrelid ="
+    },
+    {
+      "calls": "27",
+      "mean_ms": "7.1",
+      "max_ms": "22.1",
+      "query": "SELECT attendance_requests.id, attendance_requests.property_id, attendance_requests.employee_id, attendance_requests.employee_name, attendance_requests.from_date, attendance_requests.to_date, attendance_requests.request_"
+    },
+    {
+      "calls": "44",
+      "mean_ms": "6.0",
+      "max_ms": "20.0",
+      "query": "UPDATE users SET last_login_at=$1::TIMESTAMP WITH TIME ZONE, updated_at=now() WHERE users.id = $2::UUID"
+    },
+    {
+      "calls": "160",
+      "mean_ms": "5.7",
+      "max_ms": "20.4",
+      "query": "INSERT INTO work_allocation_batches (id, batch_number, company_id, property_id, zone_id, zone_name, employee_id, employee_name, work_type, allocation_status, allocation_reason, created_by, created_by_name) VALUES ($1::UU"
+    },
+    {
+      "calls": "45",
+      "mean_ms": "5.6",
+      "max_ms": "20.4",
+      "query": "INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, revoked) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::TIMESTAMP WITH TIME ZONE, $5::BOOLEAN) RETURNING refresh_tokens.created_at"
+    },
+    {
+      "calls": "60",
+      "mean_ms": "5.3",
+      "max_ms": "35.2",
+      "query": "INSERT INTO audit_events (id, property_id, actor_user_id, actor_name, entity_type, entity_id, entity_name, action, detail) VALUES ($1::UUID, $2::UUID, $3::UUID, $4::VARCHAR, $5::VARCHAR, $6::UUID, $7::VARCHAR, $8::VARCHA"
+    },
+    {
+      "calls": "171",
+      "mean_ms": "5.2",
+      "max_ms": "18.4",
+      "query": "INSERT INTO tasks (id, property_id, zone_id, area_id, employee_id, ticket_number, room_id, room_number, dorm_id, dorm_name, bed_ids, washroom_id, washroom_name, washroom_fixture_id, washroom_fixture_label, supervisor_id,"
+    },
+    {
+      "calls": "187",
+      "mean_ms": "4.1",
+      "max_ms": "15.1",
+      "query": "INSERT INTO work_allocation_history (id, property_id, zone_id, batch_id, batch_number, ticket_kind, ticket_id, ticket_number, employee_id, employee_name, previous_employee_id, previous_employee_name, allocation_method, r"
+    },
+    {
+      "calls": "68",
+      "mean_ms": "3.8",
+      "max_ms": "8.1",
+      "query": "UPDATE work_templates SET next_run_at=$1::TIMESTAMP WITH TIME ZONE, last_run_at=$2::TIMESTAMP WITH TIME ZONE, generated_count=$3::INTEGER, updated_at=now() WHERE work_templates.id = $4::UUID"
+    },
+    {
+      "calls": "49",
+      "mean_ms": "3.3",
+      "max_ms": "38.7",
+      "query": "UPDATE tasks SET status=$1::VARCHAR, abandoned_at=$2::TIMESTAMP WITH TIME ZONE, abandoned_reason=$3::VARCHAR, abandoned_from_status=$4::VARCHAR, operational_date=$5::VARCHAR, updated_at=now() WHERE tasks.id = $6::UUID AN"
+    }
+  ],
+  "hot_reads": [
+    {
+      "label": "list_rooms (company join)",
+      "rows_returned": 15,
+      "n": 5,
+      "min_ms": 14.0,
+      "median_ms": 15.9,
+      "p95_ms": 47.1,
+      "max_ms": 47.1,
+      "mean_ms": 22.3
+    },
+    {
+      "label": "list_rooms (property scope)",
+      "rows_returned": 15,
+      "n": 5,
+      "min_ms": 16.5,
+      "median_ms": 19.5,
+      "p95_ms": 51.5,
+      "max_ms": 51.5,
+      "mean_ms": 27.8
+    },
+    {
+      "label": "list_dorms + beds (property)",
+      "rows_returned": 6,
+      "n": 5,
+      "min_ms": 14.3,
+      "median_ms": 16.0,
+      "p95_ms": 43.8,
+      "max_ms": 43.8,
+      "mean_ms": 21.7
+    },
+    {
+      "label": "list_tasks (company join, desc created_at)",
+      "rows_returned": 16,
+      "n": 5,
+      "min_ms": 19.0,
+      "median_ms": 24.6,
+      "p95_ms": 45.2,
+      "max_ms": 45.2,
+      "mean_ms": 27.5
+    },
+    {
+      "label": "open_occupancy stamp (property rooms)",
+      "rows_returned": 0,
+      "n": 5,
+      "min_ms": 12.8,
+      "median_ms": 14.3,
+      "p95_ms": 19.0,
+      "max_ms": 19.0,
+      "mean_ms": 15.2
+    },
+    {
+      "label": "list_employees (company)",
+      "rows_returned": 3,
+      "n": 5,
+      "min_ms": 13.4,
+      "median_ms": 17.8,
+      "p95_ms": 21.5,
+      "max_ms": 21.5,
+      "mean_ms": 17.5
+    },
+    {
+      "label": "auth user lookup (by pk)",
+      "rows_returned": 1,
+      "n": 8,
+      "min_ms": 13.7,
+      "median_ms": 16.2,
+      "p95_ms": 20.1,
+      "max_ms": 20.1,
+      "mean_ms": 16.3
+    },
+    {
+      "label": "list_maintenance (company join)",
+      "rows_returned": 2,
+      "n": 5,
+      "min_ms": 13.1,
+      "median_ms": 15.7,
+      "p95_ms": 22.2,
+      "max_ms": 22.2,
+      "mean_ms": 16.7
+    }
+  ]
+}
