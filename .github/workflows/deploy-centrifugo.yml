@@ -126,11 +126,11 @@ jobs:
           PID: ${{ steps.ids.outputs.project_id }}
         run: |
           set -e
-          railway api 'query { domains(projectId: "'"$PID"'", environmentId: "'"$SA_ENVIRONMENT_ID"'", serviceId: "'"$CF_ID"'") }' > /tmp/doms.json || echo '{}' > /tmp/doms.json
+          railway domain list --service centrifugo --json > /tmp/doms.json || echo '[]' > /tmp/doms.json
           D=$(python3 -c 'import json
-          d=json.load(open("/tmp/doms.json")).get("data",{}).get("domains") or {}
-          s=d.get("serviceDomains") or []
-          print(s[0]["domain"] if s else "")')
+          d=json.load(open("/tmp/doms.json"))
+          items = d if isinstance(d, list) else (d.get("serviceDomains") or d.get("domains") or [])
+          print(items[0]["domain"] if items else "")')
           if [ -z "$D" ]; then
             railway api 'mutation { serviceDomainCreate(input: { serviceId: "'"$CF_ID"'", environmentId: "'"$SA_ENVIRONMENT_ID"'", targetPort: 8000 }) { domain } }' | tee /tmp/dom.json
             D=$(python3 -c 'import json;print(json.load(open("/tmp/dom.json"))["data"]["serviceDomainCreate"]["domain"])')
