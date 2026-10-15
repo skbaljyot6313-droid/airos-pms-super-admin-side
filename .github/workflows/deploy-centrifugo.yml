@@ -1,0 +1,262 @@
+name: Deploy Centrifugo realtime service
+
+# Creates/updates the dedicated Centrifugo service on Railway from the
+# checked-in deploy/centrifugo/ config, generates fresh HMAC/API secrets,
+# publishes the public WebSocket domain, and writes the matching
+# CENTRIFUGO_* variables onto the SA backend and employee-api services.
+#
+# Idempotent: an existing "centrifugo" service is reused; secrets are only
+# rotated when ROTATE_SECRETS=true is passed (otherwise existing backend
+# values would be orphaned).
+
+on:
+  workflow_dispatch:
+    inputs:
+      rotate_secrets:
+        description: "Rotate HMAC secret + API key on all three services"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: centrifugo-deploy
+  cancel-in-progress: false
+
+env:
+  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+  SA_SERVICE_ID: dc288dfb-c372-4bf3-aae8-a5c99f479767
+  SA_ENVIRONMENT_ID: 7a18babb-4b19-4cf1-9c9d-c2d9747cc319
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Railway CLI
+        run: npm install --global @railway/cli
+
+      - name: Resolve project + service ids
+        id: ids
+        run: |
+          set -e
+          railway api 'query { projects(first: 50) { edges { node { id name environments { edges { node { id name } } } services { edges { node { id name } } } } } } }' > /tmp/projects.json
+          python3 - <<'PY'
+          import json, os
+          data = json.load(open("/tmp/projects.json"))["data"]["projects"]["edges"]
+          sa_sid = os.environ["SA_SERVICE_ID"]
+          proj = env = env_name = cf_sid = eb = None
+          for e in data:
+              p = e["node"]
+              svcs = {s["node"]["name"]: s["node"]["id"] for s in p["services"]["edges"]}
+              envs = {x["node"]["name"]: x["node"]["id"] for x in p["environments"]["edges"]}
+              env_names = {x["node"]["id"]: x["node"]["name"] for x in p["environments"]["edges"]}
+              if sa_sid in {s["node"]["id"] for s in p["services"]["edges"]}:
+                  proj, env = p["id"], os.environ["SA_ENVIRONMENT_ID"]
+                  env_name = env_names.get(env) or "production"
+                  cf_sid = svcs.get("centrifugo")
+                  print("project:", p["name"], p["id"], "env:", env_name)
+              if "employee-api" in svcs:
+                  prod = envs.get("production") or next(iter(envs.values()))
+                  eb = {"projectId": p["id"], "serviceId": svcs["employee-api"],
+                        "environmentId": prod, "sameProject": proj == p["id"]}
+                  print("employee-api in project:", p["name"], p["id"], "env", prod)
+          if not proj:
+              raise SystemExit("SA service not visible to this token")
+          out = open(os.environ["GITHUB_OUTPUT"], "a")
+          out.write(f"project_id={proj}\nenvironment_id={env}\nenvironment_name={env_name}\n")
+          out.write(f"cf_service_id={cf_sid or ''}\n")
+          if eb:
+              out.write(f"eb_project_id={eb['projectId']}\neb_service_id={eb['serviceId']}\n")
+              out.write(f"eb_environment_id={eb['environmentId']}\neb_same_project={'true' if eb['sameProject'] else 'false'}\n")
+          PY
+
+      - name: Create Centrifugo service (if absent)
+        id: svc
+        run: |
+          set -e
+          if [ -n "${{ steps.ids.outputs.cf_service_id }}" ]; then
+            echo "service_id=${{ steps.ids.outputs.cf_service_id }}" >> "$GITHUB_OUTPUT"
+            echo "centrifugo service already exists"
+          else
+            python3 -c 'import json,os;print(json.dumps({"input":{"projectId":os.environ["PID"],"name":"centrifugo"}}))' > /tmp/vars.json
+            railway api 'mutation($i: ServiceCreateInput!){ serviceCreate(input: $i) { id name } }' \
+              --variables @/tmp/vars.json | tee /tmp/svc.json
+            SID=$(python3 -c 'import json;print(json.load(open("/tmp/svc.json"))["data"]["serviceCreate"]["id"])')
+            echo "service_id=$SID" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          PID: ${{ steps.ids.outputs.project_id }}
+
+      - name: Deploy deploy/centrifugo to the service
+        working-directory: deploy/centrifugo
+        env:
+          RAILWAY_PROJECT_ID: ${{ steps.ids.outputs.project_id }}
+          RAILWAY_ENVIRONMENT: ${{ steps.ids.outputs.environment_name }}
+        run: railway up --service centrifugo --environment "${{ steps.ids.outputs.environment_name }}" --ci
+
+      - name: Wait for deployment success
+        run: |
+          set -e
+          for i in 1 2 3 4 5 6; do
+            sleep 30
+            DEP=$(railway api 'query { deployments(first: 1, input: { serviceId: "'"${{ steps.svc.outputs.service_id }}"'", environmentId: "'"${{ steps.ids.outputs.environment_id }}"'" }) { edges { node { id status } } } }' \
+              | python3 -c 'import json,sys; n=json.load(sys.stdin)["data"]["deployments"]["edges"][0]["node"]; print(n["id"], n["status"])')
+            echo "poll $i: $DEP"
+            case "$DEP" in
+              *SUCCESS) exit 0 ;;
+              *FAILED|*CRASHED) echo "deployment failed" && exit 1 ;;
+            esac
+          done
+          echo "deployment did not succeed in time" && exit 1
+
+      - name: Ensure public service domain
+        id: dom
+        run: |
+          set -e
+          D=$(railway api 'query { domains(projectId: "'"${{ steps.ids.outputs.project_id }}"'", environmentId: "'"${{ steps.ids.outputs.environment_id }}"'", serviceId: "'"${{ steps.svc.outputs.service_id }}"'" }) }' \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin)["data"]["domains"]; s=d.get("serviceDomains") or []; print(s[0]["domain"] if s else "")' || true)
+          if [ -z "$D" ]; then
+            railway api 'mutation { serviceDomainCreate(serviceId: "'"${{ steps.svc.outputs.service_id }}"'", environmentId: "'"${{ steps.ids.outputs.environment_id }}"'" ) { domain } }' | tee /tmp/dom.json
+            D=$(python3 -c 'import json;print(json.load(open("/tmp/dom.json"))["data"]["serviceDomainCreate"]["domain"])')
+          fi
+          echo "domain=$D" >> "$GITHUB_OUTPUT"
+          echo "public domain: $D"
+
+      - name: Health check
+        run: |
+          set -e
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            R=$(curl -sf "https://${{ steps.dom.outputs.domain }}/health" || true)
+            [ "$R" = "{}" ] && { echo "healthy: $R"; exit 0; }
+            echo "health poll $i: $R"; sleep 15
+          done
+          exit 1
+
+      - name: Generate secrets (first run or rotation)
+        id: secrets
+        env:
+          ROTATE: ${{ inputs.rotate_secrets }}
+          EXISTING_CF: ${{ steps.ids.outputs.cf_service_id }}
+        run: |
+          set -e
+          if [ -n "$EXISTING_CF" ] && [ "$ROTATE" != "true" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "service pre-existed and rotate_secrets=false -> keeping existing secrets"
+          else
+            HMAC=$(openssl rand -hex 32); APIKEY=$(openssl rand -hex 32)
+            echo "::add-mask::$HMAC"; echo "::add-mask::$APIKEY"
+            { echo "hmac=$HMAC"; echo "apikey=$APIKEY"; } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve Vercel production origins
+        id: vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -e
+          ORIGINS="capacitor://localhost http://localhost http://localhost:3000"
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            EXTRA=$(curl -sf -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID" \
+              | python3 -c 'import json,sys
+          d=json.load(sys.stdin)
+          domains=set()
+          for a in d.get("alias") or []: domains.add("https://"+a["domain"])
+          t=(d.get("targets") or {}).get("production") or {}
+          for a in t.get("alias") or []: domains.add("https://"+a)
+          print(" ".join(sorted(domains)))' || true)
+            ORIGINS="$ORIGINS $EXTRA"
+          fi
+          echo "origins=$ORIGINS" >> "$GITHUB_OUTPUT"
+          echo "allowed_origins: $ORIGINS"
+
+      - name: Configure Centrifugo + backend variables
+        env:
+          CF_HMAC: ${{ steps.secrets.outputs.hmac }}
+          CF_APIKEY: ${{ steps.secrets.outputs.apikey }}
+          SKIP: ${{ steps.secrets.outputs.skip }}
+          DOMAIN: ${{ steps.dom.outputs.domain }}
+          ORIGINS: ${{ steps.vercel.outputs.origins }}
+          PROJECT: ${{ steps.ids.outputs.project_id }}
+          ENV: ${{ steps.ids.outputs.environment_id }}
+          CF_SVC: ${{ steps.svc.outputs.service_id }}
+          EB_PROJECT: ${{ steps.ids.outputs.eb_project_id }}
+          EB_SVC: ${{ steps.ids.outputs.eb_service_id }}
+          EB_ENV: ${{ steps.ids.outputs.eb_environment_id }}
+          EB_SAME: ${{ steps.ids.outputs.eb_same_project }}
+        run: |
+          set -e
+          python3 - <<'PY'
+          import json, os, subprocess, sys
+          PROJECT, ENV = os.environ["PROJECT"], os.environ["ENV"]
+          CF_SVC, DOMAIN = os.environ["CF_SVC"], os.environ["DOMAIN"]
+          SKIP = os.environ["SKIP"] == "true"
+          INTERNAL = "http://centrifugo.railway.internal:8000"
+          WS_URL = f"wss://{DOMAIN}/connection/websocket"
+
+          def upsert(project, env, service, variables):
+              payload = {"input": {"projectId": project, "environmentId": env,
+                                   "serviceId": service, "variables": variables}}
+              with open("/tmp/vars.json", "w") as f:
+                  json.dump(payload, f)
+              r = subprocess.run(
+                  ["railway", "api",
+                   "mutation($i: VariableCollectionUpsertInput!)"
+                   "{ variableCollectionUpsert(input: $i) }",
+                   "--variables", "@/tmp/vars.json"],
+                  capture_output=True, text=True)
+              print(r.stdout or r.stderr)
+              if r.returncode or '"errors"' in r.stdout:
+                  sys.exit(1)
+
+          if not SKIP:
+              upsert(PROJECT, ENV, CF_SVC, {
+                  "CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY": os.environ["CF_HMAC"],
+                  "CENTRIFUGO_HTTP_API_KEY": os.environ["CF_APIKEY"],
+                  "CENTRIFUGO_CLIENT_ALLOWED_ORIGINS": os.environ["ORIGINS"],
+              })
+          sa_vars = {"CENTRIFUGO_URL": INTERNAL, "CENTRIFUGO_WS_URL": WS_URL}
+          eb_url = INTERNAL if os.environ.get("EB_SAME") == "true" else f"https://{DOMAIN}"
+          eb_vars = {"CENTRIFUGO_URL": eb_url, "CENTRIFUGO_WS_URL": WS_URL,
+                     "LOCATION_PUBLISH_MIN_INTERVAL_SECONDS": "8"}
+          if not SKIP:
+              for v in (sa_vars, eb_vars):
+                  v["CENTRIFUGO_API_KEY"] = os.environ["CF_APIKEY"]
+                  v["CENTRIFUGO_TOKEN_SECRET"] = os.environ["CF_HMAC"]
+          upsert(PROJECT, ENV, os.environ["SA_SERVICE_ID"], sa_vars)
+          if os.environ.get("EB_SVC"):
+              upsert(os.environ["EB_PROJECT"], os.environ["EB_ENV"],
+                     os.environ["EB_SVC"], eb_vars)
+          else:
+              print("employee-api not visible to token; set EB vars manually")
+          PY
+
+      - name: Publish smoke test
+        env:
+          CF_APIKEY: ${{ steps.secrets.outputs.apikey }}
+          SKIP: ${{ steps.secrets.outputs.skip }}
+          DOMAIN: ${{ steps.dom.outputs.domain }}
+        run: |
+          set -e
+          [ "$SKIP" = "true" ] && { echo "skipped — secrets unchanged, already validated"; exit 0; }
+          sleep 30  # let variable-triggered restarts settle
+          for i in 1 2 3 4 5 6 7 8; do
+            R=$(curl -sf "https://$DOMAIN/health" || true); [ "$R" = "{}" ] && break; sleep 15
+          done
+          R=$(curl -s -X POST "https://$DOMAIN/api/publish" \
+            -H "X-API-Key: $CF_APIKEY" -H "Content-Type: application/json" \
+            -d '{"channel":"priv:prop:smoke:tasks","data":{"type":"smoke","data":{}}}')
+          echo "publish: $R"
+          [ "$R" = "{}" ] || [ "${R#*result}" != "$R" ] || exit 1
+          R=$(curl -s -X POST "https://$DOMAIN/api/publish" \
+            -H "X-API-Key: wrong" -H "Content-Type: application/json" \
+            -d '{"channel":"priv:prop:smoke:tasks","data":{}}')
+          echo "bad key rejected: $R"
+          [ "${R#*error}" != "$R" ] || exit 1
+          echo "CENTRIFUGO_URL=wss://$DOMAIN/connection/websocket" >> "$GITHUB_STEP_SUMMARY"
