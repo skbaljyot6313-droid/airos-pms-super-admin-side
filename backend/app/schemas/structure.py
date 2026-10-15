@@ -305,6 +305,11 @@ class TaskCreateRequest(BaseModel):
     employee_uid: uuid.UUID | None = None
     supervisor_uid: uuid.UUID | None = None
     room_uid: uuid.UUID | None = None
+    dorm_uid: uuid.UUID | None = None
+    # Bed-level targeting — every uid must belong to dorm_uid (same
+    # semantics as checkout-generated cleaning tasks: bed_ids ties the
+    # task's completion/release to exactly the covered beds)
+    bed_uids: list[uuid.UUID] | None = None
     washroom_uid: uuid.UUID | None = None
     # Fixture-level task targeting — must belong to washroom_uid
     washroom_fixture_uid: uuid.UUID | None = None

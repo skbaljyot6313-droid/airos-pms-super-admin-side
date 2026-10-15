@@ -310,6 +310,38 @@ class TaskService:
             raise ValidationErr("Room not found in this property.", field="room_uid")
         return room.id, room.room_number
 
+    async def _dorm_or_none(self, dorm_id, property_id):
+        if dorm_id is None:
+            return None, None
+        res = await self.session.execute(
+            select(Dorm).where(Dorm.id == dorm_id, Dorm.property_id == property_id)
+        )
+        dorm = res.scalar_one_or_none()
+        if dorm is None:
+            raise ValidationErr("Dorm not found in this property.", field="dorm_uid")
+        return dorm.id, dorm.name
+
+    async def _beds_in_dorm(self, bed_uids, dorm_id):
+        """Validate that every requested bed belongs to the target dorm —
+        same linkage generated cleaning tasks rely on for bed release."""
+        if not bed_uids:
+            return None
+        if dorm_id is None:
+            raise ValidationErr(
+                "Bed targets require dorm_uid.", field="bed_uids"
+            )
+        res = await self.session.execute(
+            select(Bed.id).where(
+                Bed.id.in_(bed_uids), Bed.dorm_id == dorm_id
+            )
+        )
+        found = {row for row in res.scalars()}
+        if len(found) != len(set(bed_uids)):
+            raise ValidationErr(
+                "One or more beds not found in this dorm.", field="bed_uids"
+            )
+        return [str(u) for u in bed_uids]
+
     async def _washroom_or_none(self, washroom_id, property_id):
         if washroom_id is None:
             return None, None
@@ -493,11 +525,15 @@ class TaskService:
             payload.supervisor_uid, prop.id
         )
         zone_id = await self._zone_or_none(payload.zone_uid, prop.id)
-        if sum(1 for uid in (payload.room_uid, payload.washroom_uid) if uid) > 1:
+        if sum(1 for uid in (
+            payload.room_uid, payload.washroom_uid, payload.dorm_uid
+        ) if uid) > 1:
             raise ValidationErr(
                 "Provide at most one task resource target.", field="room_uid"
             )
         room_id, room_number = await self._room_or_none(payload.room_uid, prop.id)
+        dorm_id, dorm_name = await self._dorm_or_none(payload.dorm_uid, prop.id)
+        bed_ids = await self._beds_in_dorm(payload.bed_uids, dorm_id)
         washroom_id, washroom_name = await self._washroom_or_none(
             payload.washroom_uid, prop.id
         )
@@ -517,7 +553,7 @@ class TaskService:
 
         location = await resolve_task_location(
             self.session, property_id=prop.id, room_id=room_id,
-            washroom_id=washroom_id, zone_id=zone_id,
+            dorm_id=dorm_id, washroom_id=washroom_id, zone_id=zone_id,
         )
         zone_id = location.zone_id
         area_id = location.area_id
@@ -554,6 +590,9 @@ class TaskService:
             area_id=area_id,
             room_id=room_id,
             room_number=room_number,
+            dorm_id=dorm_id,
+            dorm_name=dorm_name,
+            bed_ids=bed_ids,
             washroom_id=washroom_id,
             washroom_name=washroom_name,
             washroom_fixture_id=fixture_id,

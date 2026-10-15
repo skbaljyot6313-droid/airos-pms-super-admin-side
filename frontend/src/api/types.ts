@@ -412,6 +412,9 @@ export interface TaskCreateRequest {
   employee_uid?: string;
   supervisor_uid?: string | null;
   room_uid?: string | null;
+  dorm_uid?: string | null;
+  /** Bed-level target — each uid must belong to dorm_uid */
+  bed_uids?: string[] | null;
   washroom_uid?: string | null;
   /** Fixture-level task target — must belong to washroom_uid */
   washroom_fixture_uid?: string | null;

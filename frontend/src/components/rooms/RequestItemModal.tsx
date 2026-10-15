@@ -3,7 +3,7 @@ import { ConciergeBell } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { Room } from '../../types';
+import { Bed, Dorm, Room } from '../../types';
 
 // Guest amenity request catalogue — the picked label lands in the task
 // title so both this dashboard and the employee app read it directly.
@@ -26,16 +26,24 @@ const OTHER = 'Other';
 
 interface RequestItemModalProps {
   isOpen: boolean;
-  room: Room;
+  /** Exactly one target: a room, or a bed inside a dorm. */
+  room?: Room;
+  dorm?: Dorm;
+  bed?: Bed;
   onClose: () => void;
 }
 
 export const RequestItemModal: React.FC<RequestItemModalProps> = ({
   isOpen,
   room,
+  dorm,
+  bed,
   onClose,
 }) => {
   const { createTask, addToast } = useApp();
+  const targetLabel = room
+    ? `Room ${room.room_number}`
+    : `${dorm?.name ?? 'Dorm'} — ${bed?.bed_number ?? 'Bed'}`;
   const [item, setItem] = useState('');
   const [otherText, setOtherText] = useState('');
   const [notes, setNotes] = useState('');
@@ -54,18 +62,20 @@ export const RequestItemModal: React.FC<RequestItemModalProps> = ({
         title: `Guest Request — ${resolvedItem}`,
         task_type: 'fixed',
         work_type: 'housekeeping',
-        room_uid: room.room_uid,
+        room_uid: room?.room_uid,
+        dorm_uid: room ? undefined : dorm?.dorm_uid,
+        bed_uids: room ? undefined : bed ? [bed.bed_uid] : undefined,
         priority: 'urgent',
         is_guest_request: true,
         description:
-          [`Room ${room.room_number} — ${resolvedItem}`, notes.trim() || null]
+          [`${targetLabel} — ${resolvedItem}`, notes.trim() || null]
             .filter(Boolean)
             .join('\n'),
       });
       addToast({
         type: 'success',
         title: 'Request Raised',
-        description: `${resolvedItem} for Room ${room.room_number} — marked urgent.`,
+        description: `${resolvedItem} for ${targetLabel} — marked urgent.`,
       });
       onClose();
     } catch {
@@ -79,7 +89,7 @@ export const RequestItemModal: React.FC<RequestItemModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`New Request — Room ${room.room_number}`}
+      title={`New Request — ${targetLabel}`}
       description="Guest requests are created as urgent tasks and surface first for staff."
       maxWidth="md"
     >
