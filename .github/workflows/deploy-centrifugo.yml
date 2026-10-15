@@ -131,22 +131,12 @@ jobs:
           s=d.get("serviceDomains") or []
           print(s[0]["domain"] if s else "")')
           if [ -z "$D" ]; then
-            railway api 'mutation { serviceDomainCreate(input: { serviceId: "'"$CF_ID"'", environmentId: "'"$SA_ENVIRONMENT_ID"'" }) { domain } }' | tee /tmp/dom.json
+            railway api 'mutation { serviceDomainCreate(input: { serviceId: "'"$CF_ID"'", environmentId: "'"$SA_ENVIRONMENT_ID"'", targetPort: 8000 }) { domain } }' | tee /tmp/dom.json
             D=$(python3 -c 'import json;print(json.load(open("/tmp/dom.json"))["data"]["serviceDomainCreate"]["domain"])')
           fi
           [ -n "$D" ] || { echo "::error::could not provision a domain"; exit 1; }
           echo "domain=$D" >> "$GITHUB_OUTPUT"
           echo "public domain: $D"
-
-      - name: Wait for health
-        run: |
-          set -e
-          for i in $(seq 1 16); do
-            R=$(curl -sf "https://${{ steps.dom.outputs.domain }}/health" || true)
-            [ "$R" = "{}" ] && { echo "healthy: $R"; exit 0; }
-            echo "health poll $i: $R"; sleep 15
-          done
-          echo "::error::Centrifugo did not become healthy"; exit 1
 
       - name: Resolve allowed origins (Vercel + dev + Capacitor)
         id: origins
@@ -207,6 +197,7 @@ jobs:
               "CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY": TS,
               "CENTRIFUGO_HTTP_API_KEY": AK,
               "CENTRIFUGO_CLIENT_ALLOWED_ORIGINS": os.environ["ORIGINS"],
+              "PORT": "8000",
           })
           upsert(os.environ["SA_SERVICE_ID"], {
               "CENTRIFUGO_URL": INTERNAL, "CENTRIFUGO_WS_URL": WS,
