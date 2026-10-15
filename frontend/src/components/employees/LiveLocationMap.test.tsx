@@ -324,7 +324,7 @@ describe('LiveLocationMap', () => {
       locations: [emp('e1'), emp('e2', { latitude: 28.6, longitude: 77.2 })],
     });
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(10_000);
+      await vi.advanceTimersByTimeAsync(30_000);
     });
     expect(mapFitBounds).not.toHaveBeenCalled();
 
@@ -376,7 +376,7 @@ describe('LiveLocationMap', () => {
       locations: [emp('e1', { latitude: 21.5, longitude: 88.1 })],
     });
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(10_000);
+      await vi.advanceTimersByTimeAsync(30_000);
     });
     expect(markerFactory).toHaveBeenCalledTimes(1);
     expect(markerSetLatLng).toHaveBeenCalledWith([21.5, 88.1]);
@@ -389,7 +389,7 @@ describe('LiveLocationMap', () => {
 
     liveLocations.mockResolvedValue({ locations: [] });
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(10_000);
+      await vi.advanceTimersByTimeAsync(30_000);
     });
     expect(clusterRemoveLayer).toHaveBeenCalled();
     expect(

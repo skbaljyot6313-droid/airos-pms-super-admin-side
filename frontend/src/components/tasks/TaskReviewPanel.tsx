@@ -11,6 +11,7 @@ import { Task, TaskCompletionImage } from '../../types';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { CompletionEvidenceLightbox, EvidenceImage } from './CompletionEvidenceLightbox';
+import { useRealtimeChannel, propChannel } from '../../realtime/useRealtimeChannel';
 import { fmtDateTimeIST } from '../../lib/datetime';
 
 const inputCls =
@@ -62,7 +63,12 @@ export const TaskReviewPanel: React.FC<Props> = ({ onOpenTask }) => {
   useEffect(() => {
     load();
   }, [load]);
-  usePolling(() => load(true), 30000, !!activePropertyUid, 'task-review');
+  useRealtimeChannel(
+    activePropertyUid ? propChannel(activePropertyUid, 'tasks') : null,
+    !!activePropertyUid,
+    () => void load(true),
+  );
+  usePolling(() => load(true), 120000, !!activePropertyUid, 'task-review');
 
   const decide = async (task: Task, approve: boolean) => {
     const note = (noteByTask[task.task_uid] || '').trim() || undefined;

@@ -20,6 +20,7 @@ from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.centrifugo import prop_channel, queue_event
 from app.models.employee import Employee
 from app.models.maintenance import (
     MaintenanceTicket,
@@ -71,6 +72,24 @@ class MaintenanceService:
         self.session = session
         self.structure = StructureService(session)
         self.alloc = WorkAllocationService(session)
+
+    def _emit_ticket(self, ticket: MaintenanceTicket, event_type: str) -> None:
+        """Queue a minimal ticket event — published post-commit to the
+        property's maintenance channel (hint only; clients refetch)."""
+        queue_event(
+            self.session,
+            prop_channel(ticket.property_id, "maintenance"),
+            event_type,
+            {
+                "ticket_uid": str(ticket.id),
+                "ticket_number": ticket.ticket_number,
+                "property_uid": str(ticket.property_id),
+                "status": ticket.status,
+                "employee_uid": (
+                    str(ticket.assigned_to) if ticket.assigned_to else None
+                ),
+            },
+        )
 
     # ------------------------------------------------------------------
     # Fetch helpers
@@ -401,6 +420,7 @@ class MaintenanceService:
         # ticket and the resource state are committed in ONE transaction.
 
         await self.flag_ticket_resource(ticket, user=user, dorm=dorm)
+        self._emit_ticket(ticket, "maintenance.created")
         if commit:
             await self.session.commit()
             return await self._get_ticket(user, ticket.id)
@@ -576,6 +596,7 @@ class MaintenanceService:
         for k, v in data.items():
             setattr(ticket, k, v)
         self._event(ticket, "edited", user)
+        self._emit_ticket(ticket, "maintenance.updated")
         await self.session.commit()
         return await self._get_ticket(user, ticket.id)
 
@@ -595,6 +616,7 @@ class MaintenanceService:
             self._event(ticket, "cancelled", user, comment="Ticket deleted")
             await self.session.flush()
             await self._refresh_target(user, ticket, release_to="available")
+        self._emit_ticket(ticket, "maintenance.deleted")
         await self.session.delete(ticket)
         await self.session.commit()
 
@@ -652,6 +674,7 @@ class MaintenanceService:
         if ticket.status in {"resolved", "closed", "cancelled"}:
             raise ConflictErr(f"Cannot assign a {ticket.status} ticket.")
         await self._assign_employee(user, ticket, employee_uid)
+        self._emit_ticket(ticket, "maintenance.assigned")
         await self.session.commit()
         return await self._get_ticket(user, ticket.id)
 
@@ -688,6 +711,7 @@ class MaintenanceService:
             raise ConflictErr(f"Cannot start work on a {ticket.status} ticket.")
         ticket.status = "in_progress"
         self._event(ticket, "started", user)
+        self._emit_ticket(ticket, "maintenance.updated")
         await self.session.commit()
         return await self._get_ticket(user, ticket.id)
 
@@ -697,6 +721,7 @@ class MaintenanceService:
             raise ConflictErr(f"Cannot put a {ticket.status} ticket on hold.")
         ticket.status = "on_hold"
         self._event(ticket, "held", user, comment=note)
+        self._emit_ticket(ticket, "maintenance.updated")
         await self.session.commit()
         return await self._get_ticket(user, ticket.id)
 
@@ -781,6 +806,7 @@ class MaintenanceService:
         self._event(ticket, "resolved", user, comment=payload.resolution_notes.strip())
         # Employee completion does NOT release the resource — a "resolved"
         # ticket still blocks until the supervisor closes (acknowledges) it.
+        self._emit_ticket(ticket, "maintenance.updated")
         await self.session.commit()
         return await self._get_ticket(user, ticket.id)
 
@@ -799,6 +825,7 @@ class MaintenanceService:
         # The ticket is blocking again — re-flag any target whose
         # projection drifted (e.g. a fixture released by legacy resolve).
         await self.flag_ticket_resource(ticket, user=user)
+        self._emit_ticket(ticket, "maintenance.updated")
         await self.session.commit()
         return await self._get_ticket(user, ticket.id)
 
@@ -816,5 +843,6 @@ class MaintenanceService:
         # remaining blocking work; a free target goes straight back to
         # 'available' once the PM approves the work.
         await self._refresh_target(user, ticket, release_to="available")
+        self._emit_ticket(ticket, "maintenance.updated")
         await self.session.commit()
         return await self._get_ticket(user, ticket.id)

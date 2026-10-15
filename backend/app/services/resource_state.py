@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.centrifugo import prop_channel, queue_event
 from app.domain.resource_events import (
     SRC_ADMIN_OVERRIDE,
     SRC_DERIVE,
@@ -238,6 +239,20 @@ class ResourceStateService:
             occupancy_id=occupancy_id,
         ))
         await self.session.flush()
+        # Real-time hint — published post-commit to the property's units
+        # channel; unit polls become slow reconciliation only.
+        queue_event(
+            self.session,
+            prop_channel(row.property_id, "units"),
+            "resource.state_changed",
+            {
+                "resource_type": resource_type,
+                "resource_uid": str(row.id),
+                "property_uid": str(row.property_id),
+                "previous_state": prev,
+                "state": to,
+            },
+        )
         return row, prev, to
 
     async def _open_occupancy(
@@ -448,6 +463,18 @@ class ResourceStateService:
             ticket_id=ticket_id,
             occupancy_id=occupancy_id,
         ))
+        queue_event(
+            self.session,
+            prop_channel(row.property_id, "units"),
+            "resource.state_changed",
+            {
+                "resource_type": resource_type,
+                "resource_uid": str(row.id),
+                "property_uid": str(row.property_id),
+                "previous_state": prev,
+                "state": target,
+            },
+        )
         return target
 
     async def derive(

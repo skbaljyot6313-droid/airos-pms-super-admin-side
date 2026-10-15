@@ -172,6 +172,41 @@ def _eb_events_after_commit(session) -> None:
         )
 
 
+@event.listens_for(_SyncSession, "after_commit")
+def _rt_events_after_commit(session) -> None:
+    """Centrifugo events queued via queue_event() publish ONLY post-commit
+    — a rolled-back mutation never emits a success event."""
+    if session.in_nested_transaction():
+        return
+    from app.core.centrifugo import (
+        RT_EVENTS,
+        dispatch_realtime_events,
+    )
+    events = session.info.pop(RT_EVENTS, None)
+    if not events:
+        return
+    try:
+        try:
+            asyncio.get_running_loop().create_task(
+                dispatch_realtime_events(list(events))
+            )
+        except RuntimeError:
+            from sqlalchemy.util.concurrency import await_only
+            await_only(dispatch_realtime_events(list(events)))
+    except Exception as exc:
+        logger.warning(
+            "realtime-event dispatch failed: %s", type(exc).__name__
+        )
+
+
+@event.listens_for(_SyncSession, "after_rollback")
+def _rt_events_after_rollback(session) -> None:
+    if session.in_nested_transaction():
+        return
+    from app.core.centrifugo import RT_EVENTS
+    session.info.pop(RT_EVENTS, None)
+
+
 @event.listens_for(_SyncSession, "after_rollback")
 def _eb_events_after_rollback(session) -> None:
     if session.in_nested_transaction():

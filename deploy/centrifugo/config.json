@@ -1,0 +1,40 @@
+{
+  "client": {
+    "allowed_origins": [
+      "http://localhost:3000",
+      "capacitor://localhost",
+      "http://localhost"
+    ]
+  },
+  "channel": {
+    "without_namespace": {
+      "allow_subscribe_for_client": false,
+      "allow_subscribe_for_anonymous": false,
+      "allow_publish_for_client": false
+    },
+    "namespaces": [
+      {
+        "name": "priv",
+        "allow_subscribe_for_client": false,
+        "allow_subscribe_for_anonymous": false,
+        "allow_publish_for_client": false,
+        "allow_presence_for_client": false,
+        "presence": false,
+        "join_leave": false
+      }
+    ]
+  },
+  "http_api": {},
+  "admin": {
+    "enabled": false
+  },
+  "health": {
+    "enabled": true
+  },
+  "prometheus": {
+    "enabled": true
+  },
+  "log": {
+    "level": "info"
+  }
+}

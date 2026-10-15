@@ -5,6 +5,7 @@ import { usePolling } from '../../hooks/usePolling';
 import * as tasksApi from '../../api/tasks';
 import { AbandonedTaskItem, TodayTasksResponse } from '../../api/types';
 import { Badge } from '../ui/Badge';
+import { useRealtimeChannel, propChannel } from '../../realtime/useRealtimeChannel';
 import { fmtTimeIST, fmtDateLongIST } from '../../lib/datetime';
 
 const inputCls =
@@ -54,7 +55,12 @@ export const AbandonedTodayView: React.FC<Props> = ({ onOpenTask }) => {
   useEffect(() => {
     void load();
   }, [load]);
-  usePolling(() => load(true), 10000, true, 'AbandonedTodayView');
+  useRealtimeChannel(
+    activePropertyUid ? propChannel(activePropertyUid, 'tasks') : null,
+    !!activePropertyUid,
+    () => void load(true),
+  );
+  usePolling(() => load(true), 120000, true, 'AbandonedTodayView');
 
   const rows = useMemo(() => {
     const items = data?.abandoned_today || [];

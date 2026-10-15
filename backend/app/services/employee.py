@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import auth_cache
+from app.core.centrifugo import prop_channel, queue_event
 from app.core.security import hash_password, slugify_username
 from app.models.allocation import AllocationEvent
 from app.models.employee import (
@@ -40,6 +41,21 @@ class EmployeeService:
         self.users = UserRepository(session)
         self.structure = StructureService(session)
         self.audit = AuditService(session)
+
+    def _emit_employee(self, emp: Employee, event_type: str) -> None:
+        """Queue a minimal employee event — published post-commit to the
+        property's employees topic (attendance channel subscribers care
+        about roster changes like deactivation too)."""
+        queue_event(
+            self.session,
+            prop_channel(emp.property_id, "employees"),
+            event_type,
+            {
+                "employee_uid": str(emp.id),
+                "property_uid": str(emp.property_id),
+                "status": emp.status,
+            },
+        )
 
     async def _get_employee(self, user: User, employee_id: uuid.UUID) -> Employee:
         res = await self.session.execute(
@@ -142,6 +158,7 @@ class EmployeeService:
                 property_id=prop.id,
                 detail={"department": emp.department, "job_title": emp.job_title},
             )
+            self._emit_employee(emp, "employee.created")
             await self.session.commit()
             return emp
         except IntegrityError as exc:
@@ -177,6 +194,7 @@ class EmployeeService:
             property_id=emp.property_id,
             detail={"fields": sorted(data)},
         )
+        self._emit_employee(emp, "employee.updated")
         await self.session.commit()
         return emp
 
@@ -234,6 +252,7 @@ class EmployeeService:
                 "to_area_id": str(area_id) if area_id else None,
             },
         )
+        self._emit_employee(emp, "employee.updated")
         await self.session.commit()
         return emp
 
@@ -273,6 +292,7 @@ class EmployeeService:
                     from_area_id=from_area, to_area_id=None,
                     actor_user_id=user.id, actor_name=user.name,
                 ))
+            self._emit_employee(emp, "employee.deactivated")
             await self.session.commit()
         return emp
 
@@ -303,6 +323,7 @@ class EmployeeService:
                 to_zone_id=None, to_area_id=None,
                 actor_user_id=user.id, actor_name=user.name,
             ))
+        self._emit_employee(emp, "employee.updated")
         await self.session.commit()
         return emp
 

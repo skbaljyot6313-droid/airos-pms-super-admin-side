@@ -9,6 +9,7 @@ from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.centrifugo import prop_channel, queue_event
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.storage import storage_key_from_url
@@ -181,6 +182,24 @@ class TaskService:
         self.structure = StructureService(session)
         from app.services.work_allocation import WorkAllocationService
         self.alloc = WorkAllocationService(session)
+
+    def _emit_task(self, task: Task, event_type: str) -> None:
+        """Queue a minimal task event — published to the property's tasks
+        channel post-commit. Hint only; clients refetch, never apply it
+        as state."""
+        queue_event(
+            self.session,
+            prop_channel(task.property_id, "tasks"),
+            event_type,
+            {
+                "task_uid": str(task.id),
+                "property_uid": str(task.property_id),
+                "status": task.status,
+                "employee_uid": (
+                    str(task.employee_id) if task.employee_id else None
+                ),
+            },
+        )
 
     async def _get_task(self, user: User, task_id: uuid.UUID) -> Task:
         res = await self.session.execute(
@@ -609,6 +628,7 @@ class TaskService:
                 reason=auto_alloc.reason if auto_alloc else None,
                 actor_name=user.name,
             )
+        self._emit_task(task, "task.created")
         await self.session.commit()
         return await self._get_task(user, task.id)
 
@@ -748,6 +768,7 @@ class TaskService:
         for k, v in data.items():
             setattr(task, k, v)
         self._history(task, "edited", user)
+        self._emit_task(task, "task.updated")
         await self.session.commit()
         return task
 
@@ -774,6 +795,7 @@ class TaskService:
                 await state.derive("washroom", washroom_id,
                                    release_to="available", user=user,
                                    reason=trig)
+        self._emit_task(task, "task.deleted")
         await self.session.commit()
 
     # ------------------------------------------------------------------
@@ -794,6 +816,7 @@ class TaskService:
         # resource to CLEANING — queued/scheduled tasks never do.
         if await self._task_work_type(task) == "cleaning":
             await self._flag_resource_cleaning(task, user)
+        self._emit_task(task, "task.updated")
         await self.session.commit()
         return task
 
@@ -881,6 +904,7 @@ class TaskService:
         generated = None
         if task.recurrence and task.task_type == "repetitive":
             generated = await self._next_instance(user, task)
+        self._emit_task(task, "task.completed")
         await self.session.commit()
         result = {"task": task}
         if generated:
@@ -1062,6 +1086,7 @@ class TaskService:
                 method=amethod or "manual", reason=areason,
                 actor_name=actor,
             )
+        self._emit_task(new_task, "task.created")
         return new_task
 
     async def run_due_repetitive(self, now: datetime | None = None) -> dict:
@@ -1149,6 +1174,7 @@ class TaskService:
         self._history(task, "reopened", user, note=note)
         if task.room_id or task.dorm_id or task.washroom_id:
             await self._refresh_unit(task, user, "task reopened")
+        self._emit_task(task, "task.updated")
         await self.session.commit()
         return task
 
@@ -1172,6 +1198,7 @@ class TaskService:
         self._history(task, "redo_requested", user, note=note)
         if task.room_id or task.dorm_id or task.washroom_id:
             await self._refresh_unit(task, user, "redo requested")
+        self._emit_task(task, "task.updated")
         await self.session.commit()
         return task
 
@@ -1319,6 +1346,7 @@ class TaskService:
         if not already_completed and task.recurrence \
                 and task.task_type == "repetitive":
             generated = await self._next_instance(user, task)
+        self._emit_task(task, "task.completed")
         await self.session.commit()
         result = {"task": task}
         if generated:
@@ -1351,6 +1379,7 @@ class TaskService:
             await self._refresh_unit(
                 task, user, "work rejected — reopened"
             )
+        self._emit_task(task, "task.updated")
         await self.session.commit()
         return task
 
@@ -1438,5 +1467,6 @@ class TaskService:
             previous_employee_id=prev_id, previous_employee_name=prev_name,
             method=task.allocation_method, actor_name=user.name,
         )
+        self._emit_task(task, "task.assigned")
         await self.session.commit()
         return task

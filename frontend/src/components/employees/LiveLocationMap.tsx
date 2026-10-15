@@ -15,6 +15,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { useApp } from '../../context/AppContext';
 import { usePolling } from '../../hooks/usePolling';
+import { useRealtimeChannel, propChannel } from '../../realtime/useRealtimeChannel';
 import { ApiError } from '../../api/client';
 import {
   locationsApi,
@@ -27,7 +28,7 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { isEmployeeDeactivated } from '../../lib/employeeUtils';
 
-const POLL_MS = 10_000; // matches the ~10s device fix cadence
+const POLL_MS = 30_000; // reconciliation only — Centrifugo events are the hot path
 const HISTORY_MAX_MS = 31 * 24 * 3600 * 1000; // upstream limit
 
 // ---------------------------------------------------------------------------
@@ -255,12 +256,27 @@ export const LiveLocationMap: React.FC = () => {
   const liveIdsRef = useRef<Set<string>>(new Set());
   const manualViewRef = useRef(false);
   const pollRef = useRef<() => Promise<void>>(async () => {});
+  // Realtime handlers are filled by the map-init effect (they need
+  // markers/cluster internals); no-ops until then.
+  const locationEventRef = useRef<(data: unknown) => void>(() => {});
+  const attendanceEventRef = useRef<() => void>(() => {});
 
-  // 10 s live poll — pauses on hidden tabs, never overlaps, and fires
-  // once on visibility restore. pollRef is filled by the map-init
-  // effect and reset to a no-op on cleanup, so the timer is safe at
-  // component scope.
+  // Reconciliation poll — Centrifugo location/attendance events drive
+  // the hot path; this interval only repairs misses after disconnects.
+  // Pauses on hidden tabs, never overlaps, fires once on restore.
   usePolling(() => pollRef.current(), POLL_MS, true, 'LiveLocationMap');
+  const propUid = activeProperty?.property_uid ?? null;
+  useRealtimeChannel(
+    propUid ? propChannel(propUid, 'locations') : null,
+    !!propUid,
+    (ev) => locationEventRef.current(ev?.data),
+  );
+  // Clock-in/out changes who is on duty → membership may change.
+  useRealtimeChannel(
+    propUid ? propChannel(propUid, 'attendance') : null,
+    !!propUid,
+    () => attendanceEventRef.current(),
+  );
 
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -533,6 +549,74 @@ export const LiveLocationMap: React.FC = () => {
     };
     pollRef.current = poll;
 
+    // -- realtime location events ------------------------------------------
+    // Employee fixes arrive on priv:prop:{uid}:locations. An event for a
+    // marker already on the map moves it in place (no refit, no
+    // membership churn); an event for an unknown employee — or any
+    // attendance event — may signal a duty-state change, so a trailing
+    // debounced poll re-pulls the full filtered list. Out-of-order fixes
+    // are dropped by comparing device/capture timestamps.
+    let eventPollTimer: ReturnType<typeof setTimeout> | null = null;
+    const schedulePoll = (ms = 1500) => {
+      if (eventPollTimer) return; // coalesce bursts into one poll
+      eventPollTimer = setTimeout(() => {
+        eventPollTimer = null;
+        if (!cancelled) void pollRef.current();
+      }, ms);
+    };
+    attendanceEventRef.current = () => schedulePoll();
+    locationEventRef.current = (raw: unknown) => {
+      const d = raw as Partial<LiveLocationEmployee> | undefined;
+      const empId = d?.employee_id;
+      if (!empId || d?.latitude == null || d?.longitude == null) return;
+      const f = filtersRef.current;
+      if (f.employeeId && f.employeeId !== empId) return;
+      if (f.zoneId) {
+        const emp = employeeFor(empId);
+        if (!emp || emp.zone_uid !== f.zoneId) return;
+      }
+      const list = liveRef.current;
+      const idx = list.findIndex((e) => e.employee_id === empId);
+      if (idx < 0) {
+        // Not on the map — may be a newly on-duty employee. Membership
+        // changes need the server-filtered list (on-duty gating).
+        schedulePoll();
+        return;
+      }
+      const cur = list[idx];
+      const evtTs =
+        d.device_timestamp ??
+        (d.captured_at ? Date.parse(d.captured_at) / 1000 : 0);
+      const curTs =
+        cur.device_timestamp ??
+        (cur.captured_at ? Date.parse(cur.captured_at) / 1000 : 0);
+      if (evtTs && curTs && evtTs <= curTs) return; // stale/out-of-order
+      const merged: LiveLocationEmployee = {
+        ...cur,
+        latitude: d.latitude,
+        longitude: d.longitude,
+        captured_at: d.captured_at ?? cur.captured_at,
+        device_timestamp: evtTs || cur.device_timestamp,
+        accuracy_m: d.accuracy_m ?? cur.accuracy_m,
+        speed_mps: d.speed_mps ?? cur.speed_mps,
+        bearing_deg: d.bearing_deg ?? cur.bearing_deg,
+        is_live: true,
+        is_stale: false,
+      };
+      const next = list.slice();
+      next[idx] = merged;
+      liveRef.current = next;
+      setLive(next);
+      const handle = markers.get(empId);
+      if (handle) {
+        handle.setPosition(d.latitude, d.longitude);
+        handle.setLabel(tooltipFor(merged));
+      } else {
+        syncLiveMarkers(markers, next, tooltipFor, createMarker);
+      }
+      setLastSyncAt(Date.now());
+    };
+
     void poll();
     // Network polling is driven by the component-level usePolling hook
     // (visibility pause + in-flight guard + restore tick). This timer
@@ -542,11 +626,14 @@ export const LiveLocationMap: React.FC = () => {
       if (document.visibilityState === 'visible') {
         setNowSec(Math.floor(Date.now() / 1000));
       }
-    }, POLL_MS);
+    }, 10_000);
 
     return () => {
       cancelled = true;
       pollRef.current = async () => {};
+      locationEventRef.current = () => {};
+      attendanceEventRef.current = () => {};
+      if (eventPollTimer) clearTimeout(eventPollTimer);
       if (timer) clearInterval(timer);
       for (const marker of markers.values()) marker.remove();
       markers.clear();

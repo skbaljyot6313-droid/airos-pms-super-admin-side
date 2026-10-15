@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ClipboardList, RefreshCw, TriangleAlert } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { usePolling } from '../../hooks/usePolling';
+import { useRealtimeChannel, propChannel } from '../../realtime/useRealtimeChannel';
 import { ApiError } from '../../api/client';
 import {
   attendanceApi,
@@ -81,9 +82,14 @@ export const AttendanceBoard: React.FC = () => {
     void load();
   }, [load]);
 
-  // 60 s refresh of today's board only — pauses on hidden tabs and
-  // fires once on visibility restore (was a raw setInterval).
-  usePolling(load, 60_000, !!board?.is_today, 'AttendanceBoard');
+  // Attendance events refresh today's board instantly; the residual
+  // poll is reconciliation-only for events missed while disconnected.
+  useRealtimeChannel(
+    propertyUid ? propChannel(propertyUid, 'attendance') : null,
+    !!board?.is_today,
+    () => void load(),
+  );
+  usePolling(load, 120_000, !!board?.is_today, 'AttendanceBoard');
 
   const onFloor = (board?.employees ?? []).filter(
     (e) => e.floor_eligible

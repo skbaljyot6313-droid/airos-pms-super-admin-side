@@ -33,6 +33,8 @@ import { generateId } from '../lib/utils';
 import { can } from '../lib/permissions';
 import { isEmployeeDeactivated } from '../lib/employeeUtils';
 import { ApiError, getAuthToken, setUnauthorizedHandler } from '../api/client';
+import { useRealtimeChannel, propChannel } from '../realtime/useRealtimeChannel';
+import { disconnectRealtime } from '../realtime/client';
 import * as authApi from '../api/auth';
 import * as companiesApi from '../api/companies';
 import * as propertiesApi from '../api/properties';
@@ -409,6 +411,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     washrooms?: boolean;
     tasks?: boolean;
     maintenance?: boolean;
+    employees?: boolean;
   };
   const FULL_UNIT_SCOPE: UnitRefreshScope = {
     rooms: true,
@@ -416,6 +419,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     washrooms: true,
     tasks: true,
     maintenance: true,
+    employees: true,
   };
   // --- Container-selection release -------------------------------------
   // Successful task completion / ticket close emits the target uid(s);
@@ -492,6 +496,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       scope.tasks && tasksApi.listTasks({ limit: 500 }).then((t) => setTasks(t.items)),
       scope.maintenance &&
         maintenanceApi.listMaintenance().then((m) => setMaintenanceTickets(m.items)),
+      scope.employees &&
+        employeesApi.listEmployees().then((e) => setEmployees(e.items)),
     ]);
   }, []);
   const refreshUnitsScoped = useCallback(
@@ -578,15 +584,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [maintenanceTickets]);
 
   // -------------------------------------------------------------------
-  // Cross-session synchronization — lightweight unit-state polling.
-  // Canonical resource state changes server-side whenever ANY session
-  // checks in/out, starts work, or approves/closes tickets; without a
-  // refresh this client would render stale projections until its next
-  // own mutation. Poll the three unit lists on a conservative interval
-  // and pause while the tab is hidden — SSE/WebSockets can replace this.
+  // Cross-session synchronization — Centrifugo events refresh the
+  // affected collection immediately; the residual poll is RECONCILIATION
+  // ONLY (catches events missed during disconnects). Realtime events
+  // ride the same refreshUnitsScoped dedup, so an event burst collapses
+  // into at most one refetch + one queued follow-up.
   // -------------------------------------------------------------------
-  const UNIT_POLL_INTERVAL_MS = 20_000;
+  const UNIT_POLL_INTERVAL_MS = 120_000;
   usePolling(refreshUnits, UNIT_POLL_INTERVAL_MS, !!currentUser, 'AppContext.units');
+  useRealtimeChannel(
+    activePropertyUid ? propChannel(activePropertyUid, 'tasks') : null,
+    !!currentUser && !!activePropertyUid,
+    () => void refreshUnitsScoped({ tasks: true }),
+  );
+  useRealtimeChannel(
+    activePropertyUid ? propChannel(activePropertyUid, 'units') : null,
+    !!currentUser && !!activePropertyUid,
+    () => void refreshUnitsScoped({ rooms: true, dorms: true, washrooms: true }),
+  );
+  useRealtimeChannel(
+    activePropertyUid ? propChannel(activePropertyUid, 'maintenance') : null,
+    !!currentUser && !!activePropertyUid,
+    () => void refreshUnitsScoped({ maintenance: true }),
+  );
+  useRealtimeChannel(
+    activePropertyUid ? propChannel(activePropertyUid, 'employees') : null,
+    !!currentUser && !!activePropertyUid,
+    () => void refreshUnitsScoped({ employees: true }),
+  );
 
 
   // Wipe every tenant-scoped collection — shared by logout and the
@@ -768,6 +793,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const logout = useCallback(() => {
     void authApi.logout(); // best-effort server-side invalidation
+    disconnectRealtime(); // drop the socket + scoped tokens with the session
     clearSessionState();
     routerNavigate('/');
     addToast({

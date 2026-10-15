@@ -15,6 +15,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.centrifugo import prop_channel, queue_event
 from app.models.attendance import (
     AttendanceBreak,
     AttendanceDay,
@@ -228,6 +229,20 @@ class AttendanceService:
                 "request_type": req.request_type,
                 "leave_type": req.leave_type,
                 "state": req.status,
+            },
+        )
+        queue_event(
+            self.session,
+            prop_channel(req.property_id, "attendance"),
+            "leave.approved" if approve else "leave.rejected",
+            {
+                "request_uid": str(req.id),
+                "property_uid": str(req.property_id),
+                "employee_uid": (
+                    str(req.employee_id) if req.employee_id else None
+                ),
+                "request_type": req.request_type,
+                "status": req.status,
             },
         )
         await self.session.commit()

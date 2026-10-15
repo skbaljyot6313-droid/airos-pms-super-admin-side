@@ -8,6 +8,7 @@ import { usePolling } from '../../hooks/usePolling';
 import * as tasksApi from '../../api/tasks';
 import { TodayTaskItem, TodayTasksResponse } from '../../api/types';
 import { Badge } from '../ui/Badge';
+import { useRealtimeChannel, propChannel } from '../../realtime/useRealtimeChannel';
 import { fmtTimeIST, fmtDateLongIST } from '../../lib/datetime';
 
 const inputCls =
@@ -60,11 +61,14 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
   useEffect(() => {
     void load();
   }, [load]);
-  // Poll for generation transitions — generated work moves
-  // pending_generation → generated automatically; 10s keeps the
-  // Today list live without requiring a browser refresh. Pauses in a
-  // hidden tab and never overlaps an in-flight request.
-  usePolling(() => load(true), 10000, true, 'TodayTasksView');
+  // Task events (Centrifugo) refresh the list instantly; the residual
+  // poll is reconciliation-only for events missed while disconnected.
+  useRealtimeChannel(
+    activePropertyUid ? propChannel(activePropertyUid, 'tasks') : null,
+    !!activePropertyUid,
+    () => void load(true),
+  );
+  usePolling(() => load(true), 120000, true, 'TodayTasksView');
 
   const generate = async (item: TodayTaskItem) => {
     if (!item.template_uid || !item.occurrence_key) return;

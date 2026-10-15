@@ -106,6 +106,24 @@ class Settings(BaseSettings):
     # mutations invalidate immediately. 0 disables (fresh DB read/request).
     AUTH_CACHE_TTL_SECONDS: float = 60.0
 
+    # Centrifugo real-time delivery (server-side only — these secrets
+    # must NEVER reach the browser/VITE_* env).
+    #   CENTRIFUGO_URL           — Centrifugo HTTP API base, e.g.
+    #                              https://centrifugo-xxx.up.railway.app
+    #   CENTRIFUGO_API_KEY       — X-API-Key for /api/publish
+    #   CENTRIFUGO_TOKEN_SECRET  — HMAC key for connection/subscription
+    #                              JWTs (separate from JWT_SECRET_KEY)
+    # Real-time is optional: unset → endpoints 503, publishes no-op,
+    # frontend falls back to plain polling.
+    CENTRIFUGO_URL: str | None = None
+    CENTRIFUGO_API_KEY: str | None = None
+    CENTRIFUGO_TOKEN_SECRET: str | None = None
+    CENTRIFUGO_CONN_TOKEN_TTL_SECONDS: int = 300
+    CENTRIFUGO_SUB_TOKEN_TTL_SECONDS: int = 600
+    # Public WebSocket endpoint handed to clients (defaults to
+    # CENTRIFUGO_URL + /connection/websocket).
+    CENTRIFUGO_WS_URL: str | None = None
+
     # Media storage — "auto" picks durable object storage when credentials
     # exist (S3_BUCKET+keys, else the Supabase service key) and falls back to
     # UPLOAD_DIR otherwise. "local"/"s3"/"supabase" force a backend.

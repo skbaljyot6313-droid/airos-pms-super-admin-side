@@ -14,12 +14,13 @@ main.py                 # dev launcher: frees :8000/:3000, runs uvicorn --reload
 backend/                # FastAPI + SQLAlchemy 2 async + asyncpg + Alembic
   app/main.py           # lifespan, middleware, /health /ready, embedded scheduler
   app/api/v1/           # router.py mounts: auth, workspace, media, work_batches,
-                        #   templates, attendance, locations — all under /api/v1
+                        #   templates, attendance, locations, realtime — all under /api/v1
   app/domain/           # pure state-transition rules (resource_states,
                         #   transitions, resource_events)
   app/core/             # config.py (pydantic-settings, single config source), database,
                         #   security (JWT HS256 30min + hashed refresh tokens 30d, argon2),
-                        #   redis, queue (arq), rate_limit, storage (local/s3/supabase)
+                        #   redis, queue (arq), rate_limit, storage (local/s3/supabase),
+                        #   centrifugo (realtime tokens + post-commit publish)
   app/dependencies/auth.py  # get_current_user, require_role; company_id = tenant scope
   app/models/           # see Domain below
   app/services/         # business logic (Router → Service → Repository → SQLAlchemy)
@@ -29,6 +30,8 @@ frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-do
   src/App.tsx           # routes + RequireAuth/RequireRole/PropertyScopedView guards
   src/context/AppContext.tsx  # god-context: session, all collections, all mutations, toasts
   src/api/              # thin wrappers over apiFetch (client.ts: bearer, refresh-on-401 once)
+  src/realtime/         # centrifuge-js client + useRealtimeChannel; events are
+                        #   invalidation hints that refetch/merge — never the truth
   src/lib/permissions.ts      # client-side can() mirror of role rules
 ```
 
@@ -180,6 +183,10 @@ frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-do
   `TemplateService.run_due()` + `TaskService.run_due_repetitive()` every 60s.
 - Redis: rate limit (sliding window, in-memory fallback), arq queue client.
   Optional in dev.
+- Realtime (optional — `CENTRIFUGO_*` unset = disabled): Centrifugo service
+  (`deploy/centrifugo/`), channels in private `priv` namespace gated by
+  per-channel JWTs from `POST /realtime/subscribe`; services queue events on
+  `session.info` → `after_commit` dispatch (see `docs/realtime.md`).
 - Media: `POST /media/uploads` → `STORAGE_BACKEND` local (`/uploads` mounted)
   or S3/Supabase storage (`auto` picks S3 when creds exist).
 
