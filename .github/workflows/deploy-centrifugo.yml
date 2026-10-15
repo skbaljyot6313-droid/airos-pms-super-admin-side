@@ -147,6 +147,7 @@ jobs:
         run: |
           set -e
           ORIGINS="capacitor://localhost http://localhost http://localhost:3000"
+          ORIGINS="$ORIGINS https://airos-super-admin-web.vercel.app"
           if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
             EXTRA=$(curl -sf -H "Authorization: Bearer $VERCEL_TOKEN" \
               "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID" \
@@ -159,6 +160,8 @@ jobs:
           print(" ".join(sorted(domains)))' || true)
             [ -n "$EXTRA" ] && ORIGINS="$ORIGINS $EXTRA"
           fi
+          # wildcard covers Vercel preview deploys and any alias quirks
+          ORIGINS="$ORIGINS https://*.vercel.app"
           echo "origins=$ORIGINS" >> "$GITHUB_OUTPUT"
           echo "allowed_origins: $ORIGINS"
 
