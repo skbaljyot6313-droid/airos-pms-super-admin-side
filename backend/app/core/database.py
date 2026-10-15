@@ -38,19 +38,54 @@ class DatabaseUnavailable(AppError):
     message = "The database is temporarily unavailable. Please try again."
 
 
-def _pgbouncer_connect_args() -> dict:
-    """pgbouncer transaction/statement poolers do not support asyncpg's
-    prepared-statement cache. Disable the cache when the URL points at a
-    Supabase pooler host so migrations and queries work reliably.
+def pooler_mode() -> str:
+    """Effective pooler mode: "transaction" | "session" | "direct".
 
-    asyncpg renamed the connect kwarg in 0.30 (`statement_cache_size` →
-    `prepared_statement_cache_size`) — pass whichever the installed
-    version accepts; the wrong name raises TypeError on connect."""
+    DB_POOLER_MODE wins when set explicitly; otherwise inferred from the
+    URL — Supabase's pooler serves transaction mode on :6543 and session
+    mode on :5432. Anything that doesn't look like a pooler is direct."""
+    mode = (settings.DB_POOLER_MODE or "auto").lower()
+    if mode in ("transaction", "session", "direct"):
+        return mode
     try:
         parsed = make_url(settings.database_url)
-        if not (parsed.host and "pooler" in parsed.host):
-            return {}
+        host = parsed.host or ""
+        if "pooler" not in host:
+            return "direct"
+        return "transaction" if (parsed.port or 5432) == 6543 else "session"
+    except Exception:
+        return "direct"
+
+
+def _pgbouncer_connect_args() -> dict:
+    """pgbouncer transaction/statement poolers do not support prepared
+    statements: the pooler may assign a DIFFERENT backend connection to
+    each transaction, so a statement prepared under a previous assignment
+    fails with `prepared statement "__asyncpg_stmt_N__" does not exist`.
+
+    Only applied in transaction mode — session-mode pooling pins each
+    client to one backend, so caches stay enabled there (~1 round trip
+    saved per query, measured 15.7 → 7.1 ms median in
+    scripts/pooler_compat.py).
+
+    There are TWO caches to disable:
+      * asyncpg's own cache — `statement_cache_size` (renamed
+        `prepared_statement_cache_size` in some releases — pass whichever
+        the installed version accepts).
+      * SQLAlchemy's asyncpg-dialect cache — `prepared_statement_cache_size`
+        (default 100). The dialect calls conn.prepare() for EVERY
+        statement and reuses the PreparedStatement across transactions;
+        that is the layer that produces the intermittent 503s. Setting it
+        to 0 makes the dialect prepare fresh inside each transaction.
+
+    `prepared_statement_name_func` gives every statement a uuid name so a
+    backend that still holds a same-named statement from ANOTHER pooled
+    client can't collide (`does not exist` ↔ `already exists`)."""
+    if pooler_mode() != "transaction":
+        return {}
+    try:
         import inspect
+        import uuid as _uuid
 
         import asyncpg
 
@@ -60,7 +95,13 @@ def _pgbouncer_connect_args() -> dict:
             if "statement_cache_size" in params
             else "prepared_statement_cache_size"
         )
-        return {key: 0}
+        return {
+            key: 0,
+            "prepared_statement_cache_size": 0,
+            "prepared_statement_name_func": (
+                lambda: f"__asyncpg_{_uuid.uuid4().hex}__"
+            ),
+        }
     except Exception:
         pass
     return {}
@@ -137,6 +178,42 @@ def _eb_events_after_rollback(session) -> None:
         return
     from app.services.employee_events import EB_ALLOC_EVENTS
     session.info.pop(EB_ALLOC_EVENTS, None)
+
+
+# Worst-case row-lock wait inside one transaction (B-07). Must stay under
+# the frontend's 20 s fetch abort so a contended write fails cleanly with
+# a real error instead of a hung request the client already gave up on.
+LOCK_TIMEOUT_MS = 10_000
+
+
+async def bounded_lock_wait(session: AsyncSession) -> None:
+    """SET LOCAL lock_timeout for the current transaction.
+
+    Caps the time any FOR UPDATE statement in this tx may wait on row
+    locks — the 16.4 s sweep observed in pg_stat becomes a bounded wait +
+    a clean conflict error. Must run inside an open transaction (any
+    session.execute autobegins one, so calling it first is fine).
+    Harmless on SQLite — SET LOCAL is simply unsupported there."""
+    try:
+        await session.execute(
+            text(f"SET LOCAL lock_timeout = '{LOCK_TIMEOUT_MS}'")
+        )
+    except Exception:  # noqa: BLE001 — non-Postgres dialect
+        logger.debug("lock_timeout not supported on this dialect")
+
+
+def is_lock_timeout(exc: BaseException) -> bool:
+    """True when the failure is a Postgres lock_timeout (55P03)."""
+    root: BaseException | None = exc
+    seen: set[int] = set()
+    while root is not None and id(root) not in seen:
+        seen.add(id(root))
+        if getattr(root, "sqlstate", None) == "55P03":
+            return True
+        if type(root).__name__ == "LockNotAvailableError":
+            return True
+        root = getattr(root, "orig", None) or getattr(root, "__cause__", None)
+    return False
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

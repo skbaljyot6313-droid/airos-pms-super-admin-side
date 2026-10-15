@@ -20,6 +20,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.database import bounded_lock_wait, is_lock_timeout
 from app.core.exceptions import AppError
 from app.models.allocation import AllocationEvent
 from app.models.employee import Employee
@@ -1471,13 +1472,25 @@ class StructureService:
             scope.append(Task.washroom_id.in_(washroom_ids))
         if fixture_ids:
             scope.append(Task.washroom_fixture_id.in_(fixture_ids))
-        res = await self.session.execute(
-            select(Task).where(
-                Task.property_id == prop.id,
-                or_(*scope),
-                Task.status.not_in(("completed", "cancelled", "abandoned")),
-            ).with_for_update()
-        )
+        # B-07 — bound the lock wait (a contended task row once held this
+        # sweep for 16.4 s, outliving the client's 20 s abort). 10 s cap →
+        # a clean 409 the operator can retry instead of a hung request.
+        await bounded_lock_wait(self.session)
+        try:
+            res = await self.session.execute(
+                select(Task).where(
+                    Task.property_id == prop.id,
+                    or_(*scope),
+                    Task.status.not_in(("completed", "cancelled", "abandoned")),
+                ).with_for_update()
+            )
+        except Exception as exc:
+            if is_lock_timeout(exc):
+                raise ConflictErr(
+                    "Another update is holding these work records — "
+                    "retry the release in a few seconds."
+                )
+            raise
         tasks = list(res.scalars())
 
         dorms = {}
@@ -1577,13 +1590,22 @@ class StructureService:
             scope.append(MaintenanceTicket.washroom_id.in_(washroom_ids))
         if fixture_ids:
             scope.append(MaintenanceTicket.washroom_fixture_id.in_(fixture_ids))
-        res = await self.session.execute(
-            select(MaintenanceTicket).where(
-                MaintenanceTicket.property_id == prop.id,
-                or_(*scope),
-                MaintenanceTicket.status.in_(BLOCKING_MAINTENANCE),
-            ).with_for_update()
-        )
+        await bounded_lock_wait(self.session)
+        try:
+            res = await self.session.execute(
+                select(MaintenanceTicket).where(
+                    MaintenanceTicket.property_id == prop.id,
+                    or_(*scope),
+                    MaintenanceTicket.status.in_(BLOCKING_MAINTENANCE),
+                ).with_for_update()
+            )
+        except Exception as exc:
+            if is_lock_timeout(exc):
+                raise ConflictErr(
+                    "Another update is holding these maintenance tickets — "
+                    "retry the release in a few seconds."
+                )
+            raise
         now = datetime.now(timezone.utc)
         for ticket in res.scalars():
             if ticket.status != "resolved":

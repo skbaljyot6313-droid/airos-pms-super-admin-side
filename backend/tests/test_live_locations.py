@@ -850,3 +850,55 @@ class TestWorkStatuses:
             _StatusSession(), USER, []
         )
         assert out == {}
+
+
+class TestSharedEBClient:
+    """B-03 — the EB proxy must reuse ONE pooled httpx.AsyncClient
+    (app/core/http_client.py), not construct one per request."""
+
+    async def test_same_instance_reused(self):
+        from app.core.http_client import close_eb_client, get_eb_client
+
+        c1 = get_eb_client()
+        c2 = get_eb_client()
+        assert c1 is c2
+        await close_eb_client()
+        c3 = get_eb_client()
+        assert c3 is not c1
+        await close_eb_client()
+
+    @respx.mock
+    async def test_requests_ride_the_shared_client(self):
+        from app.core.http_client import get_eb_client, set_eb_client
+
+        route = respx.get(LIVE_URL).mock(
+            return_value=httpx.Response(200, json={"locations": []})
+        )
+        await fetch_live_locations()
+        await fetch_live_locations()
+        assert route.call_count == 2
+        # both calls went through the one pooled client
+        assert get_eb_client() is get_eb_client()
+        # injected client is honored (test override hook)
+        injected = httpx.AsyncClient(transport=httpx.MockTransport(
+            lambda req: httpx.Response(200, json={"locations": []})
+        ))
+        try:
+            set_eb_client(injected)
+            assert get_eb_client() is injected
+        finally:
+            set_eb_client(None)
+            await injected.aclose()
+
+    async def test_client_limits_and_timeouts(self):
+        from app.core.http_client import (
+            EB_CLIENT_LIMITS, close_eb_client, get_eb_client,
+        )
+
+        client = get_eb_client()
+        try:
+            # keep-alive expiry must exceed the 10 s live-location poll
+            assert EB_CLIENT_LIMITS.keepalive_expiry >= 30
+            assert client.timeout.connect == 4.0
+        finally:
+            await close_eb_client()

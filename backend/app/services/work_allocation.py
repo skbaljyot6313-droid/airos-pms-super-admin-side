@@ -18,6 +18,7 @@ from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import bounded_lock_wait, is_lock_timeout
 from app.core.logging import get_logger
 from app.models.employee import Employee, employee_is_assignable
 from app.services.employee_events import queue_allocation_notice
@@ -302,11 +303,24 @@ class WorkAllocationService:
         self, property_id: uuid.UUID, zone_id: uuid.UUID
     ) -> ZoneAllocationState:
         """Get-or-create the zone pointer row and lock it for this txn."""
-        res = await self.session.execute(
-            select(ZoneAllocationState)
-            .where(ZoneAllocationState.zone_id == zone_id)
-            .with_for_update()
-        )
+        # B-07 — a contended pointer row once held an allocation for 2.7 s;
+        # bound the wait so a stuck writer fails the batch cleanly instead
+        # of hanging the request past the client's abort deadline.
+        await bounded_lock_wait(self.session)
+        try:
+            res = await self.session.execute(
+                select(ZoneAllocationState)
+                .where(ZoneAllocationState.zone_id == zone_id)
+                .with_for_update()
+            )
+        except Exception as exc:
+            if is_lock_timeout(exc):
+                from app.services.structure import ConflictErr
+                raise ConflictErr(
+                    "Zone allocation is busy — another batch is assigning "
+                    "this zone; retry."
+                )
+            raise
         state = res.scalar_one_or_none()
         if state is None:
             state = ZoneAllocationState(property_id=property_id, zone_id=zone_id)
@@ -316,11 +330,20 @@ class WorkAllocationService:
                     await self.session.flush()
             except IntegrityError:
                 # Concurrent creator won — roll back the savepoint and lock theirs
-                res = await self.session.execute(
-                    select(ZoneAllocationState)
-                    .where(ZoneAllocationState.zone_id == zone_id)
-                    .with_for_update()
-                )
+                try:
+                    res = await self.session.execute(
+                        select(ZoneAllocationState)
+                        .where(ZoneAllocationState.zone_id == zone_id)
+                        .with_for_update()
+                    )
+                except Exception as exc:
+                    if is_lock_timeout(exc):
+                        from app.services.structure import ConflictErr
+                        raise ConflictErr(
+                            "Zone allocation is busy — another batch is "
+                            "assigning this zone; retry."
+                        )
+                    raise
                 state = res.scalar_one()
         return state
 

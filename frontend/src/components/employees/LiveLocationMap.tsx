@@ -14,6 +14,7 @@ import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { useApp } from '../../context/AppContext';
+import { usePolling } from '../../hooks/usePolling';
 import { ApiError } from '../../api/client';
 import {
   locationsApi,
@@ -254,6 +255,12 @@ export const LiveLocationMap: React.FC = () => {
   const liveIdsRef = useRef<Set<string>>(new Set());
   const manualViewRef = useRef(false);
   const pollRef = useRef<() => Promise<void>>(async () => {});
+
+  // 10 s live poll — pauses on hidden tabs, never overlaps, and fires
+  // once on visibility restore. pollRef is filled by the map-init
+  // effect and reset to a no-op on cleanup, so the timer is safe at
+  // component scope.
+  usePolling(() => pollRef.current(), POLL_MS, true, 'LiveLocationMap');
 
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -527,9 +534,14 @@ export const LiveLocationMap: React.FC = () => {
     pollRef.current = poll;
 
     void poll();
+    // Network polling is driven by the component-level usePolling hook
+    // (visibility pause + in-flight guard + restore tick). This timer
+    // only advances the "last seen Ns ago" clock — pointless while the
+    // tab is hidden.
     timer = setInterval(() => {
-      setNowSec(Math.floor(Date.now() / 1000));
-      void poll();
+      if (document.visibilityState === 'visible') {
+        setNowSec(Math.floor(Date.now() / 1000));
+      }
     }, POLL_MS);
 
     return () => {

@@ -7,10 +7,11 @@ Routes stay thin: HTTP concerns only; logic lives in AuthService.
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import auth_cache
 from app.core.database import get_db
 from app.core.exceptions import AppError
 from app.core.rate_limit import rate_limit
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import Unauthenticated, get_current_user
 from app.models.user import User
 from app.schemas.auth import (
     AuthResponse,
@@ -88,8 +89,14 @@ async def update_me(
         existing = await service.users.get_by_email(payload.email)
         if existing is not None:
             raise EmailAlreadyExists()
+    # get_current_user may return a detached cached snapshot (B-05) —
+    # re-fetch a persistent instance before mutating + flushing.
+    db_user = await session.get(User, user.id)
+    if db_user is None:
+        raise Unauthenticated()
     await service.users.update_profile(
-        user, name=payload.name, phone_number=payload.phone, email=payload.email
+        db_user, name=payload.name, phone_number=payload.phone, email=payload.email
     )
     await session.commit()
-    return user_to_out(user)
+    auth_cache.invalidate(user.id)
+    return user_to_out(db_user)

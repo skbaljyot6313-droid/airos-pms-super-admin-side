@@ -23,6 +23,7 @@ from app.core.database import (
     describe_db_error,
 )
 from app.core.exceptions import register_exception_handlers
+from app.core.http_client import close_eb_client, init_eb_client
 from app.core.logging import get_logger, setup_logging
 from app.core.middleware import (
     AccessLogMiddleware,
@@ -149,12 +150,18 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Embedded scheduler disabled — arq worker owns generation ticks")
 
+    # Shared Employee-Backend HTTP client — pooled keep-alive connections
+    # for the /live-locations proxy and post-commit allocation notices
+    # (B-03: a fresh client per call paid DNS+TCP+TLS every poll).
+    init_eb_client()
+
     yield
 
     # Shutdown — SIGTERM path: stop new work, let in-flight requests finish
     # (uvicorn), then release pools/connections.
     if scheduler is not None:
         scheduler.cancel()
+    await close_eb_client()
     await close_queue()
     await close_redis()
     await close_db()
@@ -341,3 +348,11 @@ async def api_health() -> JSONResponse:
 
 
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+
+# Per-request DB/external timing accumulation (see app/core/timing.py) —
+# feeds db_ms/db_queries/ext_ms on the access log + X-*-Time headers.
+if settings.REQUEST_TIMING_ENABLED:
+    from app.core.database import engine as _engine
+    from app.core.timing import install_engine_listeners
+
+    install_engine_listeners(_engine)

@@ -35,8 +35,36 @@ def _company_scope(query, model, user: User, company_fk=None):
     return query.where(model.property_id == user.property_id)
 
 
-def _paged(items, page: int, limit: int) -> dict[str, Any]:
-    return {"items": items, "total": len(items), "page": page, "limit": limit}
+async def _paged(
+    session: AsyncSession, query, page: int, limit: int | None
+) -> dict[str, Any]:
+    """Real SQL pagination (B-08).
+
+    limit=None → full list (the historical behavior — used by internal
+    callers and by endpoints that never declared a paging contract, so
+    nothing is silently truncated).
+    Integer limit → deterministic page slice: COUNT over the same
+    filters + LIMIT/OFFSET on the ordered query."""
+    if limit is None:
+        items = list((await session.execute(query)).unique().scalars())
+        return {
+            "items": items, "total": len(items), "page": 1,
+            "limit": len(items),
+        }
+    total = (
+        await session.execute(
+            select(func.count()).select_from(
+                query.order_by(None).subquery()
+            )
+        )
+    ).scalar_one()
+    res = await session.execute(
+        query.limit(limit).offset((page - 1) * limit)
+    )
+    return {
+        "items": list(res.unique().scalars()),
+        "total": total, "page": page, "limit": limit,
+    }
 
 
 class WorkspaceRepository:
@@ -44,7 +72,7 @@ class WorkspaceRepository:
         self.session = session
 
     async def list_properties(
-        self, user: User, *, search=None, status=None, page=1, limit=20
+        self, user: User, *, search=None, status=None, page=1, limit=None
     ) -> dict:
         q = select(Property)
         if user.role == UserRole.SUPER_ADMIN:
@@ -62,8 +90,8 @@ class WorkspaceRepository:
             )
         if status:
             q = q.where(Property.status == status)
-        res = await self.session.execute(q.order_by(Property.created_at.desc()))
-        return _paged(list(res.scalars()), page, limit)
+        q = q.order_by(Property.created_at.desc(), Property.id)
+        return await _paged(self.session, q, page, limit)
 
     async def get_property(self, user: User, property_id: uuid.UUID) -> Property | None:
         q = select(Property).where(Property.id == property_id)
@@ -74,22 +102,22 @@ class WorkspaceRepository:
         res = await self.session.execute(q)
         return res.scalar_one_or_none()
 
-    async def list_areas(self, user: User, *, property_id=None, page=1, limit=20) -> dict:
+    async def list_areas(self, user: User, *, property_id=None, page=1, limit=None) -> dict:
         q = _company_scope(select(Area), Area, user)
         if property_id:
             q = q.where(Area.property_id == property_id)
-        res = await self.session.execute(q.order_by(Area.level_number, Area.created_at))
-        return _paged(list(res.scalars()), page, limit)
+        q = q.order_by(Area.level_number, Area.created_at, Area.id)
+        return await _paged(self.session, q, page, limit)
 
-    async def list_zones(self, user: User, *, property_id=None, page=1, limit=20) -> dict:
+    async def list_zones(self, user: User, *, property_id=None, page=1, limit=None) -> dict:
         q = _company_scope(select(Zone), Zone, user)
         if property_id:
             q = q.where(Zone.property_id == property_id)
-        res = await self.session.execute(q.order_by(Zone.created_at))
-        return _paged(list(res.scalars()), page, limit)
+        q = q.order_by(Zone.created_at, Zone.id)
+        return await _paged(self.session, q, page, limit)
 
     async def list_rooms(
-        self, user: User, *, property_id=None, zone_id=None, status=None, search=None, page=1, limit=20
+        self, user: User, *, property_id=None, zone_id=None, status=None, search=None, page=1, limit=None
     ) -> dict:
         q = _company_scope(select(Room), Room, user)
         if property_id:
@@ -100,11 +128,11 @@ class WorkspaceRepository:
             q = q.where(Room.status == status)
         if search:
             q = q.where(Room.room_number.ilike(f"%{search}%"))
-        res = await self.session.execute(q.order_by(Room.room_number))
-        return _paged(list(res.scalars()), page, limit)
+        q = q.order_by(Room.room_number, Room.id)
+        return await _paged(self.session, q, page, limit)
 
     async def list_dorms(
-        self, user: User, *, property_id=None, zone_id=None, page=1, limit=20
+        self, user: User, *, property_id=None, zone_id=None, page=1, limit=None
     ) -> dict:
         q = _company_scope(
             select(Dorm).options(selectinload(Dorm.beds)), Dorm, user
@@ -113,12 +141,12 @@ class WorkspaceRepository:
             q = q.where(Dorm.property_id == property_id)
         if zone_id:
             q = q.where(Dorm.zone_id == zone_id)
-        res = await self.session.execute(q.order_by(Dorm.name))
-        return _paged(list(res.unique().scalars()), page, limit)
+        q = q.order_by(Dorm.name, Dorm.id)
+        return await _paged(self.session, q, page, limit)
 
     async def list_washrooms(
         self, user: User, *, property_id=None, zone_id=None, status=None,
-        search=None, page=1, limit=20
+        search=None, page=1, limit=None
     ) -> dict:
         q = _company_scope(
             select(Washroom).options(selectinload(Washroom.fixtures)),
@@ -132,8 +160,8 @@ class WorkspaceRepository:
             q = q.where(Washroom.status == status)
         if search:
             q = q.where(Washroom.name.ilike(f"%{search}%"))
-        res = await self.session.execute(q.order_by(Washroom.name))
-        return _paged(list(res.scalars()), page, limit)
+        q = q.order_by(Washroom.name, Washroom.id)
+        return await _paged(self.session, q, page, limit)
 
     async def list_employees(
         self,
@@ -145,7 +173,7 @@ class WorkspaceRepository:
         status=None,
         search=None,
         page=1,
-        limit=20,
+        limit=None,
     ) -> dict:
         q = select(Employee)
         if user.role == UserRole.SUPER_ADMIN:
@@ -170,8 +198,8 @@ class WorkspaceRepository:
                     Employee.job_title.ilike(like),
                 )
             )
-        res = await self.session.execute(q.order_by(Employee.created_at.desc()))
-        return _paged(list(res.scalars()), page, limit)
+        q = q.order_by(Employee.created_at.desc(), Employee.id)
+        return await _paged(self.session, q, page, limit)
 
     async def list_tasks(
         self,
@@ -184,7 +212,7 @@ class WorkspaceRepository:
         task_type=None,
         search=None,
         page=1,
-        limit=20,
+        limit=None,
     ) -> dict:
         # List payloads don't need evidence/history — task_out emits empty
         # collections for unloaded relations, and the Task Detail Drawer
@@ -207,5 +235,5 @@ class WorkspaceRepository:
         if search:
             like = f"%{search}%"
             q = q.where(or_(Task.title.ilike(like), Task.description.ilike(like)))
-        res = await self.session.execute(q.order_by(Task.created_at.desc()))
-        return _paged(list(res.unique().scalars()), page, limit)
+        q = q.order_by(Task.created_at.desc(), Task.id)
+        return await _paged(self.session, q, page, limit)

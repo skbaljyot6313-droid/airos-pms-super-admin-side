@@ -48,28 +48,129 @@ from app.models.task import Task
 _STARTED_TASK = {"in_progress", "submitted", "reopened"}
 
 
-async def _open_occupancy_for(session, *, room_id=None, bed_id=None) -> bool:
-    cond = (
-        Occupancy.room_id == room_id if room_id
-        else Occupancy.bed_id == bed_id
-    )
-    res = await session.execute(
-        select(Occupancy.id).where(cond, Occupancy.checked_out_at.is_(None))
-        .limit(1)
-    )
-    return res.scalar_one_or_none() is not None
+async def _prefetch_blockers(session: AsyncSession, property_id: uuid.UUID):
+    """One grouped query per blocker family — replaces ~3–4 per-resource
+    round trips with set lookups (B-06). Returns the resource->bool
+    predicates reconcile_property consumes.
 
+      open_occ_rooms / open_occ_beds  — resources with an open occupancy
+      dorm_open_occ                   — dorms with ≥1 open bed occupancy
+      task_rooms / task_dorms / task_washrooms / task_bed_cover
+                                        — started-task coverage (bed cover
+                                        is per-dorm: all beds or bed_ids)
+      blocking_task_washrooms         — BLOCKING_TASK coverage (orphan ck)
+      ticket_rooms / ticket_dorm_wide / ticket_beds / ticket_washrooms /
+      ticket_fixtures                 — open-ticket coverage
+    """
+    beds_by_dorm: dict[uuid.UUID, list[uuid.UUID]] = {}
+    for dorm_id, bed_id in (await session.execute(
+        select(Bed.dorm_id, Bed.id)
+        .join(Dorm, Bed.dorm_id == Dorm.id)
+        .where(Dorm.property_id == property_id)
+    )):
+        beds_by_dorm.setdefault(dorm_id, []).append(bed_id)
 
-async def _dorm_open_occupancy(session, dorm_id) -> bool:
-    res = await session.execute(
-        select(Occupancy.id).where(
-            Occupancy.bed_id.in_(
-                select(Bed.id).where(Bed.dorm_id == dorm_id).scalar_subquery()
-            ),
+    open_occ_rooms: set[uuid.UUID] = set()
+    open_occ_beds: set[uuid.UUID] = set()
+    for room_id, bed_id in (await session.execute(
+        select(Occupancy.room_id, Occupancy.bed_id).where(
             Occupancy.checked_out_at.is_(None),
-        ).limit(1)
-    )
-    return res.scalar_one_or_none() is not None
+            # scope via the resource's property — no company join needed,
+            # occupancies are room/bed-scoped
+            Occupancy.room_id.in_(
+                select(Room.id).where(Room.property_id == property_id)
+            ) | Occupancy.bed_id.in_(
+                select(Bed.id)
+                .join(Dorm, Bed.dorm_id == Dorm.id)
+                .where(Dorm.property_id == property_id)
+            ),
+        )
+    )):
+        if room_id:
+            open_occ_rooms.add(room_id)
+        if bed_id:
+            open_occ_beds.add(bed_id)
+    bed_to_dorm = {b: d for d, beds in beds_by_dorm.items() for b in beds}
+    dorm_open_occ = {bed_to_dorm[b] for b in open_occ_beds if b in bed_to_dorm}
+
+    # One task sweep covering both status sets the sweep consults.
+    task_statuses = BLOCKING_TASK | _STARTED_TASK
+    task_rooms: set[uuid.UUID] = set()
+    task_dorms: set[uuid.UUID] = set()
+    task_washrooms: set[uuid.UUID] = set()
+    blocking_task_washrooms: set[uuid.UUID] = set()
+    task_bed_cover: set[uuid.UUID] = set()
+    for t_room, t_dorm, t_washroom, t_bed_ids, t_status in (
+        await session.execute(
+            select(
+                Task.room_id, Task.dorm_id, Task.washroom_id,
+                Task.bed_ids, Task.status,
+            ).where(
+                Task.property_id == property_id,
+                Task.status.in_(task_statuses),
+            )
+        )
+    ):
+        started = t_status in _STARTED_TASK
+        if t_room and started:
+            task_rooms.add(t_room)
+        if t_dorm and started:
+            task_dorms.add(t_dorm)
+            if not t_bed_ids:
+                task_bed_cover.update(beds_by_dorm.get(t_dorm, []))
+            else:
+                task_bed_cover.update(
+                    uuid.UUID(b) for b in t_bed_ids
+                )
+        if t_washroom:
+            if started:
+                task_washrooms.add(t_washroom)
+            if t_status in BLOCKING_TASK:
+                blocking_task_washrooms.add(t_washroom)
+
+    ticket_rooms: set[uuid.UUID] = set()
+    ticket_dorm_wide: set[uuid.UUID] = set()
+    ticket_beds: set[uuid.UUID] = set()
+    ticket_washrooms: set[uuid.UUID] = set()
+    ticket_fixtures: set[uuid.UUID] = set()
+    for m_room, m_dorm, m_bed, m_washroom, m_fixture in (
+        await session.execute(
+            select(
+                MaintenanceTicket.room_id, MaintenanceTicket.dorm_id,
+                MaintenanceTicket.bed_id, MaintenanceTicket.washroom_id,
+                MaintenanceTicket.washroom_fixture_id,
+            ).where(
+                MaintenanceTicket.property_id == property_id,
+                MaintenanceTicket.status.in_(BLOCKING_MAINTENANCE),
+            )
+        )
+    ):
+        if m_room:
+            ticket_rooms.add(m_room)
+        if m_bed:
+            ticket_beds.add(m_bed)
+        elif m_dorm:  # dorm-wide ticket = dorm_id with no bed_id
+            ticket_dorm_wide.add(m_dorm)
+        if m_washroom:
+            ticket_washrooms.add(m_washroom)
+        if m_fixture:
+            ticket_fixtures.add(m_fixture)
+
+    return {
+        "open_occ_rooms": open_occ_rooms,
+        "open_occ_beds": open_occ_beds,
+        "dorm_open_occ": dorm_open_occ,
+        "task_rooms": task_rooms,
+        "task_dorms": task_dorms,
+        "task_washrooms": task_washrooms,
+        "blocking_task_washrooms": blocking_task_washrooms,
+        "task_bed_cover": task_bed_cover,
+        "ticket_rooms": ticket_rooms,
+        "ticket_dorm_wide": ticket_dorm_wide,
+        "ticket_beds": ticket_beds,
+        "ticket_washrooms": ticket_washrooms,
+        "ticket_fixtures": ticket_fixtures,
+    }
 
 
 async def reconcile_property(
@@ -92,47 +193,7 @@ async def reconcile_property(
             "detail": detail,
         })
 
-    async def task_blocker(kind, rid, dorm_id=None, statuses=None):
-        statuses = statuses or BLOCKING_TASK
-        if kind == "room":
-            q = select(Task.id).where(
-                Task.room_id == rid, Task.status.in_(statuses))
-        elif kind == "washroom":
-            q = select(Task.id).where(
-                Task.washroom_id == rid, Task.status.in_(statuses))
-        elif kind == "dorm":
-            q = select(Task.id).where(
-                Task.dorm_id == rid, Task.status.in_(statuses))
-        else:  # bed — dorm task covering it
-            res = await session.execute(
-                select(Task.bed_ids).where(
-                    Task.dorm_id == dorm_id, Task.status.in_(statuses))
-            )
-            return any(not ids or str(rid) in ids for ids in res.scalars())
-        res = await session.execute(q.limit(1))
-        return res.scalar_one_or_none() is not None
-
-    async def ticket_blocker(kind, rid, dorm_id=None, washroom_id=None):
-        q = select(MaintenanceTicket.id).where(
-            MaintenanceTicket.status.in_(BLOCKING_MAINTENANCE))
-        if kind == "room":
-            q = q.where(MaintenanceTicket.room_id == rid)
-        elif kind == "dorm":
-            q = q.where(MaintenanceTicket.dorm_id == rid,
-                        MaintenanceTicket.bed_id.is_(None))
-        elif kind == "bed":
-            q = q.where(
-                (MaintenanceTicket.bed_id == rid)
-                | ((MaintenanceTicket.dorm_id == dorm_id)
-                   & MaintenanceTicket.bed_id.is_(None)))
-        elif kind == "bed_own":   # bed-level ticket only (not dorm-wide)
-            q = q.where(MaintenanceTicket.bed_id == rid)
-        elif kind == "washroom":
-            q = q.where(MaintenanceTicket.washroom_id == rid)
-        else:  # fixture
-            q = q.where(MaintenanceTicket.washroom_fixture_id == rid)
-        res = await session.execute(q.limit(1))
-        return res.scalar_one_or_none() is not None
+    P = await _prefetch_blockers(session, property_id)
 
     # --- rooms -----------------------------------------------------------
     res = await session.execute(
@@ -143,7 +204,7 @@ async def reconcile_property(
                  f"'{r.status}' is not a canonical room status",
                  severity="error")
             continue
-        open_occ = await _open_occupancy_for(session, room_id=r.id)
+        open_occ = r.id in P["open_occ_rooms"]
         if r.status == "occupied":
             if not open_occ:
                 flag("room", r.id, r.room_number, r.status,
@@ -164,14 +225,12 @@ async def reconcile_property(
                      "open occupancy while work blocks the unit",
                      severity="info", recommended_action="none",
                      has_open_occupancy=True)
-        if r.status != "maintenance" \
-                and await ticket_blocker("room", r.id):
+        if r.status != "maintenance" and r.id in P["ticket_rooms"]:
             flag("room", r.id, r.room_number, r.status,
                  "unflagged_ticket",
                  "blocking maintenance ticket but unit is not maintenance")
         if r.status not in ("cleaning", "maintenance") \
-                and await task_blocker("room", r.id,
-                                       statuses=_STARTED_TASK):
+                and r.id in P["task_rooms"]:
             flag("room", r.id, r.room_number, r.status,
                  "unflagged_task",
                  "started task but unit is not cleaning/maintenance")
@@ -185,7 +244,7 @@ async def reconcile_property(
                  f"'{d.status}' is not a canonical dorm status",
                  severity="error")
             continue
-        dorm_occ = await _dorm_open_occupancy(session, d.id)
+        dorm_occ = d.id in P["dorm_open_occ"]
         if d.status == "occupied":
             if not dorm_occ:
                 flag("dorm", d.id, d.name, d.status, "orphan_occupied",
@@ -204,12 +263,11 @@ async def reconcile_property(
                      severity="info", recommended_action="none",
                      has_open_occupancy=True)
         if d.status != "maintenance" \
-                and await ticket_blocker("dorm", d.id):
+                and d.id in P["ticket_dorm_wide"]:
             flag("dorm", d.id, d.name, d.status, "unflagged_ticket",
                  "blocking dorm ticket but dorm is not maintenance")
         if d.status not in ("cleaning", "maintenance") \
-                and await task_blocker("dorm", d.id,
-                                       statuses=_STARTED_TASK):
+                and d.id in P["task_dorms"]:
             flag("dorm", d.id, d.name, d.status, "unflagged_task",
                  "started dorm task but dorm is not cleaning/maintenance")
 
@@ -222,7 +280,7 @@ async def reconcile_property(
                  f"'{b.status}' is not a canonical bed status",
                  severity="error")
             continue
-        open_occ = await _open_occupancy_for(session, bed_id=b.id)
+        open_occ = b.id in P["open_occ_beds"]
         if b.status == "occupied":
             if not open_occ:
                 flag("bed", b.id, b.bed_number, b.status, "orphan_occupied",
@@ -243,17 +301,16 @@ async def reconcile_property(
         # a bed-LEVEL ticket must flag the bed even when occupied; a
         # dorm-wide ticket legitimately skips occupied/inactive beds
         if b.status != "maintenance":
-            if await ticket_blocker("bed_own", b.id) or (
+            if b.id in P["ticket_beds"] or (
                 b.status not in ("occupied", "inactive")
-                and await ticket_blocker("dorm", b.dorm_id)
+                and b.dorm_id in P["ticket_dorm_wide"]
             ):
                 flag("bed", b.id, b.bed_number, b.status,
                      "unflagged_ticket",
                      "blocking maintenance ticket but bed is not "
                      "maintenance")
         if b.status not in ("cleaning", "maintenance", "inactive") \
-                and await task_blocker("bed", b.id, dorm_id=b.dorm_id,
-                                       statuses=_STARTED_TASK):
+                and b.id in P["task_bed_cover"]:
             flag("bed", b.id, b.bed_number, b.status, "unflagged_task",
                  "started covering task but bed is not "
                  "cleaning/maintenance")
@@ -268,20 +325,19 @@ async def reconcile_property(
                  severity="error")
             continue
         if w.status == "cleaning":
-            if not await task_blocker("washroom", w.id):
+            if w.id not in P["blocking_task_washrooms"]:
                 flag("washroom", w.id, w.name, w.status, "orphan_cleaning",
                      "cleaning with no active work")
         elif w.status == "maintenance":
-            if not await ticket_blocker("washroom", w.id):
+            if w.id not in P["ticket_washrooms"]:
                 flag("washroom", w.id, w.name, w.status,
                      "orphan_maintenance", "maintenance with no open ticket")
         if w.status != "maintenance" \
-                and await ticket_blocker("washroom", w.id):
+                and w.id in P["ticket_washrooms"]:
             flag("washroom", w.id, w.name, w.status, "unflagged_ticket",
                  "blocking ticket but washroom is not maintenance")
         if w.status not in ("cleaning", "maintenance", "inactive") \
-                and await task_blocker("washroom", w.id,
-                                       statuses=_STARTED_TASK):
+                and w.id in P["task_washrooms"]:
             flag("washroom", w.id, w.name, w.status, "unflagged_task",
                  "started task but washroom is not cleaning/maintenance")
 
@@ -297,12 +353,12 @@ async def reconcile_property(
                  f"'{f.status}' is not a canonical fixture status",
                  severity="error")
         elif f.status == "maintenance":
-            if not await ticket_blocker("fixture", f.id):
+            if f.id not in P["ticket_fixtures"]:
                 flag("fixture", f.id, f"{f.fixture_type} {f.fixture_number}",
                      f.status, "orphan_maintenance",
                      "fixture in maintenance with no open ticket")
         if f.status == "operational" \
-                and await ticket_blocker("fixture", f.id):
+                and f.id in P["ticket_fixtures"]:
             flag("fixture", f.id, f"{f.fixture_type} {f.fixture_number}",
                  f.status, "unflagged_ticket",
                  "blocking ticket but fixture is operational")

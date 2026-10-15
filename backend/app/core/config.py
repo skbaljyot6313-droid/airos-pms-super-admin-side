@@ -71,6 +71,27 @@ class Settings(BaseSettings):
     # token bucket otherwise (single-process only).
     RATE_LIMIT_ENABLED: bool = True
 
+    # Request timing instrumentation — per-request DB/external time is
+    # accumulated into the access log and X-*-Time response headers.
+    # Negligible overhead; disable to fall back to duration-only logging.
+    REQUEST_TIMING_ENABLED: bool = True
+
+    # Pooler mode for prepared-statement compatibility (B-01/B-02).
+    #   "auto"        — infer from DATABASE_URL: pooler host + :6543 →
+    #                   transaction, pooler host + other port → session,
+    #                   anything else → direct.
+    #   "transaction" — pgbouncer transaction/statement mode: asyncpg and
+    #                   SQLAlchemy statement caches are disabled (a pooled
+    #                   client may get a different backend per transaction,
+    #                   so cached named statements fail intermittently).
+    #   "session"     — session-mode pooling: one backend per client,
+    #                   prepared statements are safe and stay enabled
+    #                   (~1 fewer round trip per query).
+    #   "direct"      — no pooler between the app and Postgres.
+    # Only "transaction" applies the workaround; the other modes keep
+    # default caching. Set explicitly when using a non-Supabase pooler.
+    DB_POOLER_MODE: str = "auto"
+
     # Employee Backend — server-to-server calls (live locations). The API
     # key never reaches the browser: the frontend polls /live-locations on
     # THIS backend, which forwards to the employee service with the key.
@@ -80,6 +101,10 @@ class Settings(BaseSettings):
     EMPLOYEE_BACKEND_URL: str | None = None
     LOCATION_SERVICE_API_KEY: str | None = None
     LOCATION_SERVICE_TIMEOUT_SECONDS: float = 8.0
+    # B-05 — short-TTL auth-user cache. Maximum staleness window for
+    # is_active/role/property changes made by OTHER processes; in-process
+    # mutations invalidate immediately. 0 disables (fresh DB read/request).
+    AUTH_CACHE_TTL_SECONDS: float = 60.0
 
     # Media storage — "auto" picks durable object storage when credentials
     # exist (S3_BUCKET+keys, else the Supabase service key) and falls back to

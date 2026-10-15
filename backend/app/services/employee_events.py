@@ -17,6 +17,7 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.http_client import get_eb_client
 from app.core.logging import get_logger
 from app.services.live_location import _base_url
 
@@ -65,32 +66,29 @@ async def dispatch_allocation_notices(events: list[dict]) -> None:
             "LOCATION_SERVICE_API_KEY not configured"
         )
         return
-    timeout = httpx.Timeout(
-        settings.LOCATION_SERVICE_TIMEOUT_SECONDS, connect=4.0
-    )
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            for ev in events:
-                try:
-                    res = await client.post(
-                        f"{base}/admin/notify-allocation",
-                        json=ev,
-                        headers={"X-Location-Service-Key": key},
+        client = get_eb_client()
+        for ev in events:
+            try:
+                res = await client.post(
+                    f"{base}/admin/notify-allocation",
+                    json=ev,
+                    headers={"X-Location-Service-Key": key},
+                )
+                if res.status_code == 404:
+                    logger.info(
+                        "EB skipped allocation event %s (stale or "
+                        "reassigned)", ev.get("ticket_uid"),
                     )
-                    if res.status_code == 404:
-                        logger.info(
-                            "EB skipped allocation event %s (stale or "
-                            "reassigned)", ev.get("ticket_uid"),
-                        )
-                    elif res.status_code != 200:
-                        logger.warning(
-                            "EB notify-allocation %s -> HTTP %s",
-                            ev.get("ticket_uid"), res.status_code,
-                        )
-                except httpx.HTTPError as exc:
+                elif res.status_code != 200:
                     logger.warning(
-                        "EB notify-allocation %s failed: %s",
-                        ev.get("ticket_uid"), type(exc).__name__,
+                        "EB notify-allocation %s -> HTTP %s",
+                        ev.get("ticket_uid"), res.status_code,
                     )
+            except httpx.HTTPError as exc:
+                logger.warning(
+                    "EB notify-allocation %s failed: %s",
+                    ev.get("ticket_uid"), type(exc).__name__,
+                )
     except Exception as exc:
         logger.warning("allocation-notice dispatch failed: %s", exc)

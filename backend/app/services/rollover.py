@@ -185,8 +185,12 @@ class RolloverService:
         start: time,
         now_utc: datetime,
     ) -> int:
+        # Column-only candidate scan (B-06) — the sweep runs every 60 s
+        # and only needs the anchor fields + id/status for the
+        # conditional update; full rows were pure payload overhead.
         res = await self.session.execute(
-            select(Task)
+            select(Task.id, Task.status, Task.operational_date,
+                   Task.due_date, Task.created_at)
             .join(Property, Task.property_id == Property.id)
             .where(
                 Property.company_id == company.id,
@@ -199,7 +203,7 @@ class RolloverService:
             )
         )
         abandoned = 0
-        for task in res.scalars():
+        for task in res:
             key = _task_anchor_key(task, start)
             if key is None or key >= current_key:
                 continue  # current or future op-day — still live
@@ -281,8 +285,14 @@ class RolloverService:
         window_pred = Task.expires_at <= cutoff
         if include_windowless:
             window_pred = window_pred | Task.expires_at.is_(None)
+        # Column-only scan (B-06) — id/status for the conditional update,
+        # the anchor fields _occurrence_op_key reads, nothing else.
         q = (
-            select(Task, Property.company_id)
+            select(
+                Task.id, Task.status, Task.scheduled_for,
+                Task.operational_date, Task.due_date, Task.created_at,
+                Property.company_id,
+            )
             .join(Property, Task.property_id == Property.id)
             .where(
                 window_pred,
@@ -304,7 +314,8 @@ class RolloverService:
         starts = {cid: parse_day_start(s) for cid, s in cres.all()}
 
         expired = 0
-        for task, company_id in rows:
+        for task in rows:
+            company_id = task.company_id
             from_status = task.status
             # Conditional update — a completion committed after the scan
             # wins; the row simply no longer matches.

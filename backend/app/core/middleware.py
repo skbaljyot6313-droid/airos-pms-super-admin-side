@@ -65,9 +65,18 @@ _SKIP_LOG = {"/health", "/health/db", "/uploads"}
 
 class AccessLogMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        from app.core.timing import TimingBag, request_timing
+
+        timing_on = settings.REQUEST_TIMING_ENABLED
+        token = request_timing.set(TimingBag()) if timing_on else None
         t0 = time.perf_counter()
-        response = await call_next(request)
-        elapsed_ms = (time.perf_counter() - t0) * 1000
+        try:
+            response = await call_next(request)
+        finally:
+            elapsed_ms = (time.perf_counter() - t0) * 1000
+            bag = request_timing.get() if timing_on else None
+            if token is not None:
+                request_timing.reset(token)
 
         path = request.url.path
         if not any(path.startswith(p) for p in _SKIP_LOG):
@@ -77,12 +86,27 @@ class AccessLogMiddleware(BaseHTTPMiddleware):
                 claims = decode_access_token(auth[7:]) or {}
                 user_id = claims.get("sub", "-")
                 company_id = claims.get("company_id", "-")
+            # Route template keeps labels bounded — raw paths would mint a
+            # series per entity id.
+            route = request.scope.get("route")
+            route_path = getattr(route, "path", path) or path
+            timing = (
+                f" db_ms={bag.db_ms:.0f} db_queries={bag.db_queries}"
+                f" ext_ms={bag.ext_ms:.0f} ext_calls={bag.ext_calls}"
+                if bag is not None else ""
+            )
             logger.info(
-                "method=%s path=%s status=%d duration_ms=%.0f user=%s company=%s",
-                request.method, path, response.status_code, elapsed_ms,
-                user_id, company_id,
+                "method=%s route=%s path=%s status=%d duration_ms=%.0f%s "
+                "user=%s company=%s",
+                request.method, route_path, path, response.status_code,
+                elapsed_ms, timing, user_id, company_id,
             )
         response.headers["X-Response-Time"] = f"{elapsed_ms:.0f}ms"
+        if bag is not None:
+            response.headers["X-DB-Time"] = f"{bag.db_ms:.0f}ms"
+            response.headers["X-DB-Queries"] = str(bag.db_queries)
+            if bag.ext_calls:
+                response.headers["X-Ext-Time"] = f"{bag.ext_ms:.0f}ms"
         return response
 
 

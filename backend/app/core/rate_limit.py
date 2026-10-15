@@ -57,9 +57,11 @@ async def check_rate_limit(scope: str, ident: str, limit: int, window_s: int) ->
     redis = await get_redis()
     if redis is not None:
         try:
-            count = await redis.incr(key)
-            if count == 1:
-                await redis.pexpire(key, window_s * 1000)
+            from app.core.timing import track_external
+            with track_external():
+                count = await redis.incr(key)
+                if count == 1:
+                    await redis.pexpire(key, window_s * 1000)
             return count <= limit
         except Exception as exc:
             logger.warning("Redis rate-limit check failed (fail-open): %s",

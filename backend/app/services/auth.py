@@ -8,6 +8,7 @@ from fastapi import status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import auth_cache
 from app.core.exceptions import AppError
 from app.core.security import (
     create_access_token,
@@ -159,6 +160,7 @@ class AuthService:
             raise AccountInactive()
 
         await self.users.touch_last_login(user)
+        auth_cache.invalidate(user.id)
         return await self._auth_response(user)
 
     # ------------------------------------------------------------------

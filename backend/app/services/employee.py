@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import auth_cache
 from app.core.security import hash_password, slugify_username
 from app.models.allocation import AllocationEvent
 from app.models.employee import (
@@ -258,6 +259,7 @@ class EmployeeService:
             for linked in await self._linked_users(emp.id):
                 linked.is_active = False
                 linked.zone_id = None
+                auth_cache.invalidate(linked.id)
             self.audit.record(
                 user, entity_type="employee", entity_id=emp.id,
                 entity_name=emp.name, action="employee_deactivated",
@@ -288,6 +290,7 @@ class EmployeeService:
         for linked in await self._linked_users(emp.id):
             linked.is_active = True
             linked.zone_id = None
+            auth_cache.invalidate(linked.id)
         self.audit.record(
             user, entity_type="employee", entity_id=emp.id,
             entity_name=emp.name, action="employee_activated",

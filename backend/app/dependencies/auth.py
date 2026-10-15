@@ -16,6 +16,7 @@ from fastapi import Depends, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import auth_cache
 from app.core.database import get_db
 from app.core.exceptions import AppError
 from app.core.security import decode_access_token
@@ -51,7 +52,14 @@ async def get_current_user(
     except (KeyError, ValueError):
         raise Unauthenticated()
 
-    user = await UserRepository(session).get_by_id(user_id)
+    user = auth_cache.get(user_id)
+    if user is None:
+        user = await UserRepository(session).get_by_id(user_id)
+        if user is not None:
+            # Detached snapshot — safe to share across requests read-only
+            # (company is eager-loaded so it survives expunge too).
+            session.expunge(user)
+            auth_cache.put(user)
     if user is None or not user.is_active:
         raise Unauthenticated("Your session has expired. Please sign in again.")
     return user

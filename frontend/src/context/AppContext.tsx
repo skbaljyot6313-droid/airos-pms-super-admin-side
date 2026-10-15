@@ -43,6 +43,7 @@ import * as dormsApi from '../api/dorms';
 import * as washroomsApi from '../api/washrooms';
 import * as employeesApi from '../api/employees';
 import * as tasksApi from '../api/tasks';
+import * as workspaceApi from '../api/workspace';
 import * as maintenanceApi from '../api/maintenance';
 import * as mediaApi from '../api/media';
 import {
@@ -351,29 +352,43 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsLoadingData(true);
     setDataError(null);
     try {
-      const [
-        propertiesRes, areasRes, zonesRes, roomsRes, dormsRes,
-        washroomsRes, employeesRes, tasksRes, maintenanceRes,
-      ] = await Promise.all([
-        propertiesApi.listProperties(),
-        areasApi.listAreas(),
-        zonesApi.listZones(),
-        roomsApi.listRooms(),
-        dormsApi.listDorms(),
-        washroomsApi.listWashrooms(),
-        employeesApi.listEmployees(),
-        tasksApi.listTasks({ limit: 500 }),
-        maintenanceApi.listMaintenance(),
-      ]);
-      setProperties(propertiesRes.items);
-      setAreas(areasRes.items);
-      setZones(zonesRes.items);
-      setRooms(roomsRes.items);
-      setDorms(dormsRes.items);
-      setWashrooms(washroomsRes.items);
-      setEmployees(employeesRes.items);
-      setTasks(tasksRes.items);
-      setMaintenanceTickets(maintenanceRes.items);
+      // One aggregate request (B-04) — the server fans the nine
+      // collections out over pooled sessions in parallel, so this keeps
+      // the old burst's parallelism minus its per-request auth +
+      // serialization tax. Per-key shapes mirror the list endpoints.
+      // 404 → the backend predates /workspace (rolling-deploy window or
+      // a backend-only rollback): fall back to the original nine GETs so
+      // sign-in keeps working against either API version.
+      let wsRes;
+      try {
+        wsRes = await workspaceApi.getWorkspace();
+      } catch (err) {
+        if (!(err instanceof ApiError && err.status === 404)) throw err;
+        const [propertiesRes, areasRes, zonesRes, roomsRes, dormsRes,
+          washroomsRes, employeesRes, tasksRes, maintenanceRes] =
+          await Promise.all([
+            propertiesApi.listProperties(), areasApi.listAreas(),
+            zonesApi.listZones(), roomsApi.listRooms(),
+            dormsApi.listDorms(), washroomsApi.listWashrooms(),
+            employeesApi.listEmployees(), tasksApi.listTasks({ limit: 500 }),
+            maintenanceApi.listMaintenance(),
+          ]);
+        wsRes = {
+          properties: propertiesRes, areas: areasRes, zones: zonesRes,
+          rooms: roomsRes, dorms: dormsRes, washrooms: washroomsRes,
+          employees: employeesRes, tasks: tasksRes,
+          maintenance: maintenanceRes,
+        };
+      }
+      setProperties(wsRes.properties.items);
+      setAreas(wsRes.areas.items);
+      setZones(wsRes.zones.items);
+      setRooms(wsRes.rooms.items);
+      setDorms(wsRes.dorms.items);
+      setWashrooms(wsRes.washrooms.items);
+      setEmployees(wsRes.employees.items);
+      setTasks(wsRes.tasks.items);
+      setMaintenanceTickets(wsRes.maintenance.items);
     } catch (err) {
       setDataError(apiErrorMessage(err, 'Unable to load workspace data. Please try again.'));
     } finally {

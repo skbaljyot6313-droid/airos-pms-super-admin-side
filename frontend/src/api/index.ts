@@ -8,6 +8,7 @@ export * as dormsApi from './dorms';
 export * as washroomsApi from './washrooms';
 export * as employeesApi from './employees';
 export * as tasksApi from './tasks';
+export * as workspaceApi from './workspace';
 export * as mediaApi from './media';
 export { ApiError, apiFetch } from './client';
 export * from './types';

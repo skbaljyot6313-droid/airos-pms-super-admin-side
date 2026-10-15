@@ -100,12 +100,12 @@ async def _get(path: str, params: dict | None = None) -> dict:
             "Live locations are not configured (set EMPLOYEE_API_BASE_URL "
             "or EMPLOYEE_BACKEND_URL, and LOCATION_SERVICE_API_KEY)."
         )
-    timeout = httpx.Timeout(
-        settings.LOCATION_SERVICE_TIMEOUT_SECONDS, connect=4.0
-    )
+    from app.core.http_client import get_eb_client
+    from app.core.timing import track_external
+
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            res = await client.get(
+        with track_external():
+            res = await get_eb_client().get(
                 f"{base}{path}",
                 params=params or {},
                 headers={"X-Location-Service-Key": key},

@@ -1079,14 +1079,24 @@ class TaskService:
         from app.services.rollover import RolloverService
         await RolloverService(self.session).expire_due(
             now_l.replace(tzinfo=IST).astimezone(timezone.utc))
+        # Light scan — only the columns the occurrence-grid walk reads
+        # (B-06). Full Task rows were previously pulled for EVERY
+        # repetitive task every 60 s just to decide nothing was due; the
+        # ORM head row is now fetched only when a series actually has a
+        # due occurrence to spawn.
         res = await self.session.execute(
-            select(Task).where(
+            select(
+                Task.id, Task.series_id, Task.status, Task.recurrence,
+                Task.recurrence_start_date, Task.recurrence_end_date,
+                Task.start_time, Task.recurrence_window_end,
+                Task.due_date, Task.due_time, Task.created_at,
+            ).where(
                 Task.task_type == "repetitive",
                 Task.recurrence.is_not(None),
             )
         )
-        series: dict[uuid.UUID, list[Task]] = {}
-        for t in res.scalars():
+        series: dict[uuid.UUID, list] = {}
+        for t in res:
             series.setdefault(t.series_id or t.id, []).append(t)
 
         stats = {"series": 0, "generated": 0}
@@ -1110,8 +1120,12 @@ class TaskService:
             if occ is None:
                 continue
             try:
+                # Full ORM row only now — _spawn_instance clones it.
+                head_task = await self.session.get(Task, head.id)
+                if head_task is None:
+                    continue
                 if await self._spawn_instance(
-                    head, _occurrence_due_string(head, occ),
+                    head_task, _occurrence_due_string(head, occ),
                     actor="Scheduler", occ=occ,
                 ):
                     stats["generated"] += 1
