@@ -310,6 +310,10 @@ class TaskCreateRequest(BaseModel):
     washroom_fixture_uid: uuid.UUID | None = None
     zone_uid: uuid.UUID | None = None
     priority: str | None = "medium"
+    # Guest amenity request (towel, extra mattress, …) — stamped as
+    # origin='guest_request' and forced to the highest priority so the
+    # employee app can surface it above regular work.
+    is_guest_request: bool = False
     due_date: str | None = None
     due_time: str | None = None
     start_time: str | None = None  # HH:MM — when the recurrence schedule begins

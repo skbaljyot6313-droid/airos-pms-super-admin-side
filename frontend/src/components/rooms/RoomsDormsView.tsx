@@ -14,6 +14,7 @@ import {
   Users,
   Bath,
   Sparkles,
+  ConciergeBell,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../ui/Card';
@@ -43,6 +44,7 @@ import {
 } from '../../lib/washroomFixtures';
 import { UnitZoneBoard } from './UnitZoneBoard';
 import { OccupancyToggle } from './OccupancyToggle';
+import { RequestItemModal } from './RequestItemModal';
 import { CreateMaintenanceModal, MaintenanceTarget } from '../maintenance/CreateMaintenanceModal';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 import { Room, Dorm, BedStatus, RoomStatus, MaintenanceTicket, Washroom } from '../../types';
@@ -112,6 +114,9 @@ export const RoomsDormsView: React.FC = () => {
   // Edit modal states
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [editingDorm, setEditingDorm] = useState<Dorm | null>(null);
+
+  // Guest request modal — room-targeted urgent work
+  const [requestRoom, setRequestRoom] = useState<Room | null>(null);
 
   // Washroom facility detail — click the dorm-card washroom tile
   const [detailTarget, setDetailTarget] = useState<{
@@ -831,6 +836,15 @@ export const RoomsDormsView: React.FC = () => {
                           </button>
                           <button
                             type="button"
+                            onClick={() => setRequestRoom(room)}
+                            className="px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#B45309] text-[#9A4C07] border-[#F0D5B8] bg-[#FDF6EE] hover:bg-[#FBEEDA]"
+                            title="Raise a guest request — towel, extra mattress, etc. (urgent priority)"
+                          >
+                            <ConciergeBell className="w-3 h-3" />
+                            Request
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => setMaintenanceRoom(room)}
                             className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#A32A2A] ${
                               activeTicketForRoom(room.room_uid)
@@ -1376,6 +1390,15 @@ export const RoomsDormsView: React.FC = () => {
           entityType="Washroom"
           entityName={washroomToDelete.name}
           impactMessage="Deleting this washroom removes it from its zone and selectors; task and maintenance history remain available."
+        />
+      )}
+
+      {/* Guest request — urgent amenity task on this room */}
+      {requestRoom && (
+        <RequestItemModal
+          isOpen
+          room={requestRoom}
+          onClose={() => setRequestRoom(null)}
         />
       )}
 

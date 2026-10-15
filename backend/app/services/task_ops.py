@@ -262,6 +262,7 @@ class TaskOpsService:
             "work_status": t.status,
             "assignee": t.assigned_to_name,
             "allocation_method": t.allocation_method,
+            "origin": t.origin,
         }
 
     def _task_item(self, t: Task, source: str, zone_name=None) -> dict:

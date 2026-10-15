@@ -417,6 +417,9 @@ export interface TaskCreateRequest {
   washroom_fixture_uid?: string | null;
   zone_uid?: string | null;
   priority?: TaskPriority;
+  /** Guest amenity request — backend stamps origin='guest_request' and
+   *  forces priority to urgent so it surfaces on top for employees. */
+  is_guest_request?: boolean;
   due_date?: string;
   due_time?: string;
   /** HH:MM — time of day each repetitive occurrence starts */
@@ -764,6 +767,8 @@ export interface TodayTaskItem {
   assignee?: string;
   assignment_mode?: string;
   allocation_method?: string;
+  /** task provenance — 'guest_request' items are highest-priority guest asks */
+  origin?: string;
 }
 
 export interface AbandonedTaskItem {

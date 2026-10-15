@@ -547,15 +547,17 @@ class TaskService:
             description=payload.description,
             task_type=payload.task_type,
             work_type=work_type,
-            origin="automation" if payload.task_type == "automated"
-                  else "manual",
+            origin=("guest_request" if payload.is_guest_request
+                    else "automation" if payload.task_type == "automated"
+                    else "manual"),
             # automated rules are templates — scheduled until triggered;
             # a task with an assignee starts 'assigned', otherwise 'pending' (open)
             status=(
                 "scheduled" if payload.task_type == "automated"
                 else "assigned" if emp_id else "pending"
             ),
-            priority=payload.priority or "medium",
+            priority=("urgent" if payload.is_guest_request
+                      else payload.priority or "medium"),
             due_date=payload.due_date,
             due_time=payload.due_time,
             start_time=payload.start_time,

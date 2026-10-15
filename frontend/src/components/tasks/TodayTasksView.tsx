@@ -98,14 +98,16 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
   }, [data, search, zoneFilter, sourceFilter, scope]);
 
   const rows = useMemo(() => {
-    // Chronological day schedule — the next pending occurrence sits on
-    // top, not the farthest-future one. Generated work lands before its
-    // successor occurrences naturally since it generated earlier.
+    // Guest requests pin to the top; the rest stay chronological — the
+    // next pending occurrence sits on top, not the farthest-future one.
+    // Generated work lands before its successor occurrences naturally
+    // since it generated earlier.
     const t = (i: TodayTaskItem) => {
       const d = i.scheduled_at ? new Date(i.scheduled_at).getTime() : NaN;
       return isNaN(d) ? Number.MAX_SAFE_INTEGER : d;
     };
-    return [...filtered].sort((a, b) => t(a) - t(b));
+    const gr = (i: TodayTaskItem) => (i.origin === 'guest_request' ? 0 : 1);
+    return [...filtered].sort((a, b) => gr(a) - gr(b) || t(a) - t(b));
   }, [filtered]);
 
   // Row aging tint — generated = green baseline; open task stale >1h yellow,
@@ -256,9 +258,14 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
                     </td>
                     <td className="px-3.5 py-2.5">
                       <p className="font-semibold text-[13px] text-[#24221F] leading-tight">{item.title}</p>
-                      {item.ticket_number && (
-                        <p className="text-[10.5px] text-[#8C867C]">{item.ticket_number}</p>
-                      )}
+                      <span className="inline-flex items-center gap-1.5 mt-0.5">
+                        {item.origin === 'guest_request' && (
+                          <Badge variant="orange" size="sm">Guest Request</Badge>
+                        )}
+                        {item.ticket_number && (
+                          <span className="text-[10.5px] text-[#8C867C]">{item.ticket_number}</span>
+                        )}
+                      </span>
                     </td>
                     <td className="px-3.5 py-2.5 text-[12px] text-[#58534C]">
                       {item.target_label || item.room_number || 'Property-wide'}

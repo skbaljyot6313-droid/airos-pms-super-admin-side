@@ -147,9 +147,10 @@ export interface Task {
   /** domain work kind (cleaning | maintenance | inspection | housekeeping |
    *  other) — drives department eligibility for allocation */
   work_type?: string;
-  /** provenance: 'manual' | 'checkout' | 'template' | 'automation' —
-   *  checkout-generated cleaning is identified by data, not title text */
-  origin?: 'manual' | 'checkout' | 'template' | 'automation';
+  /** provenance: 'manual' | 'checkout' | 'template' | 'automation' |
+   *  'guest_request' — checkout-generated cleaning and guest amenity
+   *  requests are identified by data, not title text */
+  origin?: 'manual' | 'checkout' | 'template' | 'automation' | 'guest_request';
   status: TaskStatus;
   priority: TaskPriority;
   due_date?: string;
