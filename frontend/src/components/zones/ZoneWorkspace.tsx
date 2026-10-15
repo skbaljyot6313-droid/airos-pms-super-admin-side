@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Wrench,
   Bath,
+  ConciergeBell,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../ui/Card';
@@ -29,7 +30,7 @@ import {
   UNIT_VISUAL_BADGE_VARIANT,
   UNIT_VISUAL_LABEL,
 } from '../ui/Badge';
-import { Dorm, Zone, MaintenanceTicket, Washroom } from '../../types';
+import { Dorm, Room, Zone, MaintenanceTicket, Washroom } from '../../types';
 import { getEffectiveTaskStatus } from '../../lib/taskUtils';
 import { ZONE_TYPE_LABELS, zoneSupportsUnits } from '../../lib/zoneUtils';
 import { isBlockingTicket } from '../../lib/maintenanceUtils';
@@ -38,6 +39,7 @@ import { CreateMaintenanceModal, MaintenanceTarget } from '../maintenance/Create
 import { WashroomDetailModal } from '../rooms/WashroomDetailModal';
 import { WashroomModal, WashroomCreateDefaults } from '../rooms/WashroomModal';
 import { OccupancyToggle } from '../rooms/OccupancyToggle';
+import { RequestItemModal } from '../rooms/RequestItemModal';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 
 interface ZoneWorkspaceProps {
@@ -109,6 +111,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
     [subscribeUnitDeselect]
   );
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [requestRoom, setRequestRoom] = useState<Room | null>(null);
   const [maintenanceTarget, setMaintenanceTarget] = useState<MaintenanceTarget | null>(null);
   const [maintenanceTargetList, setMaintenanceTargetList] = useState<MaintenanceTarget[] | null>(null);
 
@@ -808,6 +811,15 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                           >
                             Checkout
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => setRequestRoom(room)}
+                            className="px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#B45309] text-[#9A4C07] border-[#F0D5B8] bg-[#FDF6EE] hover:bg-[#FBEEDA]"
+                            title="Raise a guest request — towel, extra mattress, etc. (urgent priority)"
+                          >
+                            <ConciergeBell className="w-3 h-3" />
+                            Request
+                          </button>
                             </>
                           )}
                           <button
@@ -1336,6 +1348,15 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
             clearSelection();
             navigate(`/property/${activePropertyUid}/tasks?tab=maintenance`);
           }}
+        />
+      )}
+
+      {/* Guest request flow — same modal as the Rooms view */}
+      {requestRoom && (
+        <RequestItemModal
+          isOpen={!!requestRoom}
+          room={requestRoom}
+          onClose={() => setRequestRoom(null)}
         />
       )}
 
