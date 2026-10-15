@@ -220,3 +220,18 @@ jobs:
             echo "- Public API: \`https://$DOMAIN\`"
             echo "- Internal publish URL: \`http://centrifugo.railway.internal:8000\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report SA backend public domain
+        env:
+          SA_SERVICE: ${{ steps.ids.outputs.sa_service }}
+        run: |
+          railway domain list --service "$SA_SERVICE" --json > /tmp/sadoms.json || echo '[]' > /tmp/sadoms.json
+          python3 - <<'PY'
+          import json
+          d = json.load(open("/tmp/sadoms.json"))
+          items = d if isinstance(d, list) else (d.get("serviceDomains") or d.get("domains") or [])
+          doms = [x.get("domain") for x in items if x.get("domain")]
+          print("sa_backend_domains:", doms)
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(f"- SA backend domain: `{doms[0] if doms else 'unknown'}`\n")
+          PY
