@@ -74,6 +74,7 @@ jobs:
           print("services:", names, "env:", env_name)
           out = open(os.environ["GITHUB_OUTPUT"], "a")
           out.write(f"project_id={proj}\nenvironment_name={env_name}\n")
+          out.write(f"sa_service={node['name']}\n")
           out.write(f"cf_service_id={names.get('centrifugo','')}\n")
           out.write(f"eb_service={'employee-api' if 'employee-api' in names else ''}\n")
           PY
@@ -163,56 +164,35 @@ jobs:
 
       - name: Configure all service variables
         env:
-          PID: ${{ steps.ids.outputs.project_id }}
-          CF_ID: ${{ steps.svc.outputs.service_id }}
           DOMAIN: ${{ steps.dom.outputs.domain }}
           ORIGINS: ${{ steps.origins.outputs.origins }}
+          SA_SERVICE: ${{ steps.ids.outputs.sa_service }}
           EB_SERVICE: ${{ steps.ids.outputs.eb_service }}
         run: |
           set -e
-          python3 - <<'PY'
-          import json, os, subprocess, sys
-          PID, EID = os.environ["PID"], os.environ["SA_ENVIRONMENT_ID"]
-          CF_ID, DOMAIN = os.environ["CF_ID"], os.environ["DOMAIN"]
-          TS, AK = os.environ["CENTRIFUGO_TOKEN_SECRET"], os.environ["CENTRIFUGO_API_KEY"]
-          INTERNAL = "http://centrifugo.railway.internal:8000"
-          WS = f"wss://{DOMAIN}/connection/websocket"
-
-          def upsert(service, variables):
-              payload = {"input": {"projectId": PID, "environmentId": EID,
-                                   "serviceId": service, "variables": variables}}
-              with open("/tmp/v.json", "w") as f:
-                  json.dump(payload, f)
-              r = subprocess.run(
-                  ["railway", "api",
-                   "mutation($i: VariableCollectionUpsertInput!)"
-                   "{ variableCollectionUpsert(input: $i) }",
-                   "--variables", "@/tmp/v.json"],
-                  capture_output=True, text=True)
-              print(r.stdout or r.stderr)
-              if r.returncode or '"errors"' in r.stdout:
-                  sys.exit(1)
-
-          upsert(CF_ID, {
-              "CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY": TS,
-              "CENTRIFUGO_HTTP_API_KEY": AK,
-              "CENTRIFUGO_CLIENT_ALLOWED_ORIGINS": os.environ["ORIGINS"],
-              "PORT": "8000",
-          })
-          upsert(os.environ["SA_SERVICE_ID"], {
-              "CENTRIFUGO_URL": INTERNAL, "CENTRIFUGO_WS_URL": WS,
-              "CENTRIFUGO_API_KEY": AK, "CENTRIFUGO_TOKEN_SECRET": TS,
-          })
-          if os.environ.get("EB_SERVICE"):
-              upsert(os.environ["EB_SERVICE"], {
-                  "CENTRIFUGO_URL": INTERNAL, "CENTRIFUGO_WS_URL": WS,
-                  "CENTRIFUGO_API_KEY": AK, "CENTRIFUGO_TOKEN_SECRET": TS,
-                  "LOCATION_PUBLISH_MIN_INTERVAL_SECONDS": "8",
-              })
-          else:
-              print("employee-api is a different Railway project — set its "
-                    "variables via the employee repo workflow.")
-          PY
+          railway variable set --service centrifugo \
+            "CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY=$CENTRIFUGO_TOKEN_SECRET" \
+            "CENTRIFUGO_HTTP_API_KEY=$CENTRIFUGO_API_KEY" \
+            "CENTRIFUGO_CLIENT_ALLOWED_ORIGINS=$ORIGINS" \
+            "PORT=8000" \
+            --json
+          railway variable set --service "$SA_SERVICE" \
+            "CENTRIFUGO_URL=http://centrifugo.railway.internal:8000" \
+            "CENTRIFUGO_WS_URL=wss://$DOMAIN/connection/websocket" \
+            "CENTRIFUGO_API_KEY=$CENTRIFUGO_API_KEY" \
+            "CENTRIFUGO_TOKEN_SECRET=$CENTRIFUGO_TOKEN_SECRET" \
+            --json
+          if [ -n "$EB_SERVICE" ]; then
+            railway variable set --service "$EB_SERVICE" \
+              "CENTRIFUGO_URL=http://centrifugo.railway.internal:8000" \
+              "CENTRIFUGO_WS_URL=wss://$DOMAIN/connection/websocket" \
+              "CENTRIFUGO_API_KEY=$CENTRIFUGO_API_KEY" \
+              "CENTRIFUGO_TOKEN_SECRET=$CENTRIFUGO_TOKEN_SECRET" \
+              "LOCATION_PUBLISH_MIN_INTERVAL_SECONDS=8" \
+              --json
+          else
+            echo "employee-api is a different Railway project — set its variables via the employee repo workflow."
+          fi
 
       - name: Publish smoke test
         env:
