@@ -131,7 +131,7 @@ jobs:
           s=d.get("serviceDomains") or []
           print(s[0]["domain"] if s else "")')
           if [ -z "$D" ]; then
-            railway api 'mutation { serviceDomainCreate(serviceId: "'"$CF_ID"'", environmentId: "'"$SA_ENVIRONMENT_ID"'") { domain } }' | tee /tmp/dom.json
+            railway api 'mutation { serviceDomainCreate(input: { serviceId: "'"$CF_ID"'", environmentId: "'"$SA_ENVIRONMENT_ID"'" }) { domain } }' | tee /tmp/dom.json
             D=$(python3 -c 'import json;print(json.load(open("/tmp/dom.json"))["data"]["serviceDomainCreate"]["domain"])')
           fi
           [ -n "$D" ] || { echo "::error::could not provision a domain"; exit 1; }
