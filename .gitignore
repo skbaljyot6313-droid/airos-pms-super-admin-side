@@ -20,6 +20,9 @@ dist/
 
 # Runtime artifacts
 uploads/
+tests/load/results/
+tests/load/credentials*.json
+tests/load/credentials*.csv
 *.log
 *.dump
 *.sql

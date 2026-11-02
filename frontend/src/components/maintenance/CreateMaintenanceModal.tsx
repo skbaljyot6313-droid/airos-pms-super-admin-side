@@ -135,7 +135,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
     try {
       const attachment_urls: string[] = [];
       for (const p of photos) {
-        const res = await mediaApi.uploadPhoto(p.file);
+        const res = await mediaApi.uploadPhoto(p.file, activeProperty?.property_uid);
         attachment_urls.push(res.url);
       }
       // One POST — the backend groups by zone and allocates each zone batch

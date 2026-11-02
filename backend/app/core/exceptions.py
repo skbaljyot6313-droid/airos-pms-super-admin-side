@@ -32,6 +32,7 @@ class AppError(Exception):
     code: str = "INTERNAL_ERROR"
     message: str = "An unexpected error occurred."
     field: str | None = None
+    headers: dict | None = None  # e.g. Retry-After on overload responses
 
     def __init__(
         self,
@@ -65,7 +66,8 @@ def register_exception_handlers(app: FastAPI) -> None:
         if exc.field:
             detail["field"] = exc.field
         content["detail"] = detail
-        return JSONResponse(status_code=exc.status_code, content=content)
+        return JSONResponse(status_code=exc.status_code, content=content,
+                            headers=getattr(exc, "headers", None))
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(

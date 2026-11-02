@@ -7,6 +7,16 @@
 
 export const IST = 'Asia/Kolkata';
 
+const AUDIT_TIMESTAMP = new Intl.DateTimeFormat('en-IN', {
+  timeZone: IST, year: 'numeric', month: 'short', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true,
+});
+
+export function fmtAuditDateTimeIST(iso: string): string {
+  const date = parseIso(iso);
+  return date ? AUDIT_TIMESTAMP.format(date) : '—';
+}
+
 const T12 = new Intl.DateTimeFormat('en-IN', {
   timeZone: IST, hour: '2-digit', minute: '2-digit', hour12: true,
 });

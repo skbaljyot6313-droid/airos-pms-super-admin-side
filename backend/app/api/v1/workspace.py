@@ -5,9 +5,12 @@ assigned property (property_manager/employee).
 """
 
 import asyncio
+import re
 import uuid
+from datetime import datetime
+from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -65,6 +68,7 @@ from app.schemas.structure import (
     ZoneUpdateRequest,
 )
 from app.services.employee import EmployeeService
+from app.services.employee_profile import EmployeeProfileService
 from app.services.maintenance import MaintenanceService
 from app.services.property import PropertyService
 from app.services.structure import StructureService
@@ -952,6 +956,138 @@ async def bulk_unit_status(
 
 
 # ------------------------------- Employees --------------------------------
+
+class InvalidDateRange(AppError):
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
+    code = "INVALID_DATE_RANGE"
+
+
+def _validate_date_range(date_from: datetime | None, date_to: datetime | None) -> None:
+    if any(v is not None and v.utcoffset() is None for v in (date_from, date_to)):
+        raise InvalidDateRange("Date filters must include a timezone.")
+    if date_from and date_to and date_from >= date_to:
+        raise InvalidDateRange("The end date must be after the start date.")
+
+
+@router.get("/employees/{employee_id}/profile")
+async def employee_profile(
+    employee_id: uuid.UUID, response: Response, property_id: uuid.UUID | None = None,
+    date_from: datetime | None = None, date_to: datetime | None = None,
+    user: User = Staff, session: AsyncSession = Depends(get_db),
+):
+    _validate_date_range(date_from, date_to)
+    response.headers["Cache-Control"] = "private, no-store"
+    return await EmployeeProfileService(session).profile(
+        user, employee_id, property_id, date_from=date_from, date_to=date_to)
+
+
+@router.get("/employees/{employee_id}/tasks")
+async def employee_task_history(
+    employee_id: uuid.UUID, response: Response, property_id: uuid.UUID | None = None,
+    filter: Literal["all", "allocated", "completed", "abandoned", "rejected", "pending_review", "current_open"] = "all",
+    search: str | None = Query(None, max_length=200),
+    page: int = Query(1, ge=1, le=100000), limit: int = Query(25, ge=1, le=100),
+    date_from: datetime | None = None, date_to: datetime | None = None,
+    user: User = Staff, session: AsyncSession = Depends(get_db),
+):
+    _validate_date_range(date_from, date_to)
+    response.headers["Cache-Control"] = "private, no-store"
+    return await EmployeeProfileService(session).tasks(
+        user, employee_id, property_id=property_id, filter=filter, search=search, page=page,
+        limit=limit, date_from=date_from, date_to=date_to)
+
+
+@router.get("/employees/{employee_id}/analytics")
+async def employee_analytics(
+    employee_id: uuid.UUID, response: Response, property_id: uuid.UUID | None = None,
+    date_from: datetime | None = None, date_to: datetime | None = None,
+    bucket: Literal["day", "week", "month"] = "day",
+    user: User = Staff, session: AsyncSession = Depends(get_db),
+):
+    _validate_date_range(date_from, date_to)
+    response.headers["Cache-Control"] = "private, no-store"
+    return await EmployeeProfileService(session).analytics(
+        user, employee_id, property_id=property_id, date_from=date_from,
+        date_to=date_to, bucket=bucket)
+
+
+@router.get("/employees/{employee_id}/records")
+async def employee_records(
+    employee_id: uuid.UUID, response: Response, kind: Literal["attendance", "leaves", "shifts", "allocations", "submissions", "maintenance"],
+    property_id: uuid.UUID | None = None,
+    page: int = Query(1, ge=1, le=100000), limit: int = Query(25, ge=1, le=100),
+    date_from: datetime | None = None, date_to: datetime | None = None,
+    direction: Literal["received", "away"] | None = None,
+    ticket_kind: Literal["task", "maintenance"] | None = None,
+    user: User = Staff, session: AsyncSession = Depends(get_db),
+):
+    _validate_date_range(date_from, date_to)
+    response.headers["Cache-Control"] = "private, no-store"
+    return await EmployeeProfileService(session).records(
+        user, employee_id, property_id=property_id, kind=kind, page=page, limit=limit,
+        date_from=date_from, date_to=date_to, direction=direction, ticket_kind=ticket_kind)
+
+
+@router.get("/employees/{employee_id}/locations")
+async def employee_locations(
+    employee_id: uuid.UUID, response: Response, property_id: uuid.UUID | None = None,
+    date_from: datetime | None = None, date_to: datetime | None = None,
+    user: User = Staff, session: AsyncSession = Depends(get_db),
+):
+    _validate_date_range(date_from, date_to)
+    response.headers["Cache-Control"] = "private, no-store"
+    return await EmployeeProfileService(session).locations(
+        user, employee_id, property_id=property_id,
+        date_from=date_from, date_to=date_to)
+
+
+@router.get("/employees/{employee_id}/attendance/calendar")
+async def employee_attendance_calendar(
+    employee_id: uuid.UUID, response: Response, month: str,
+    property_id: uuid.UUID | None = None,
+    user: User = Staff, session: AsyncSession = Depends(get_db),
+):
+    if not re.fullmatch(r"\d{4}-\d{2}", month) or not 1 <= int(month[5:7]) <= 12:
+        raise InvalidDateRange("month must be YYYY-MM.")
+    response.headers["Cache-Control"] = "private, no-store"
+    return await EmployeeProfileService(session).attendance_calendar(
+        user, employee_id, property_id=property_id, month=month)
+
+
+@router.get("/employees/{employee_id}/attendance/day")
+async def employee_attendance_day(
+    employee_id: uuid.UUID, response: Response, date: str,
+    property_id: uuid.UUID | None = None,
+    user: User = Staff, session: AsyncSession = Depends(get_db),
+):
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
+        raise InvalidDateRange("date must be YYYY-MM-DD.")
+    response.headers["Cache-Control"] = "private, no-store"
+    return await EmployeeProfileService(session).attendance_day(
+        user, employee_id, property_id=property_id, day=date)
+
+
+@router.get("/employees/team-analytics")
+async def employees_team_analytics(
+    response: Response, property_id: uuid.UUID | None = None,
+    date_from: datetime | None = None, date_to: datetime | None = None,
+    user: User = Staff, session: AsyncSession = Depends(get_db),
+):
+    _validate_date_range(date_from, date_to)
+    response.headers["Cache-Control"] = "private, no-store"
+    return await EmployeeProfileService(session).team_analytics(
+        user, property_id=property_id, date_from=date_from, date_to=date_to)
+
+
+@router.get("/employees/{employee_id}/devices")
+async def employee_devices(
+    employee_id: uuid.UUID, response: Response, property_id: uuid.UUID | None = None,
+    user: User = Staff, session: AsyncSession = Depends(get_db),
+):
+    response.headers["Cache-Control"] = "private, no-store"
+    return await EmployeeProfileService(session).devices(
+        user, employee_id, property_id=property_id)
+
 
 @router.post("/employees", status_code=status.HTTP_201_CREATED)
 async def create_employee(

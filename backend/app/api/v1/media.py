@@ -9,6 +9,7 @@ frontend resolves against this API.
 """
 
 import re
+import uuid
 
 from fastapi import APIRouter, Depends, Request, UploadFile, status
 from fastapi import File
@@ -25,6 +26,10 @@ from app.core.storage import (
 )
 from app.dependencies.auth import get_current_user
 from app.models.user import User
+from app.core.database import get_db
+from app.services.audit import AuditService
+from app.repositories.workspace import WorkspaceRepository
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(tags=["media"])
 
@@ -79,7 +84,12 @@ async def upload_media(
     request: Request,
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+    property_id: uuid.UUID | None = None,
 ):
+    property_id = property_id or user.property_id
+    if property_id and await WorkspaceRepository(session).get_property(user, property_id) is None:
+        raise InvalidUpload("Property is not available.", field="property_id")
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise InvalidUpload("Only JPEG/PNG/WebP images are allowed.", field="photos")
     data = await _read_bounded(file)
@@ -104,6 +114,13 @@ async def upload_media(
     # Local backend returns a relative /uploads/<key> path — the frontend's
     # mediaUrl() resolves it against the API origin. Works identically
     # direct, or behind nginx (absolute proxy-derived URLs lose the port).
+    AuditService(session).record(
+        user, entity_type="media", entity_name=key, action="photo_uploaded",
+        property_id=property_id,
+        detail={"category": "photo", "url": url, "content_type": file.content_type,
+                "size_bytes": len(data)},
+    )
+    await session.commit()
     return {"url": url, "key": key}
 
 

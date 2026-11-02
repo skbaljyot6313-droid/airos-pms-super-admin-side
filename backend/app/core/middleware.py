@@ -93,6 +93,9 @@ class AccessLogMiddleware(BaseHTTPMiddleware):
             timing = (
                 f" db_ms={bag.db_ms:.0f} db_queries={bag.db_queries}"
                 f" ext_ms={bag.ext_ms:.0f} ext_calls={bag.ext_calls}"
+                f" pool_wait_ms={bag.db_pool_wait_ms:.0f}"
+                f" verify_wait_ms={bag.verify_wait_ms:.0f}"
+                f" verify_ms={bag.verify_ms:.0f}"
                 if bag is not None else ""
             )
             logger.info(
@@ -105,6 +108,11 @@ class AccessLogMiddleware(BaseHTTPMiddleware):
         if bag is not None:
             response.headers["X-DB-Time"] = f"{bag.db_ms:.0f}ms"
             response.headers["X-DB-Queries"] = str(bag.db_queries)
+            if bag.db_pool_wait_ms:
+                response.headers["X-DB-Pool-Time"] = f"{bag.db_pool_wait_ms:.0f}ms"
+            if bag.verify_ms or bag.verify_wait_ms:
+                response.headers["X-Verify-Time"] = f"{bag.verify_ms:.0f}ms"
+                response.headers["X-Verify-Wait"] = f"{bag.verify_wait_ms:.0f}ms"
             if bag.ext_calls:
                 response.headers["X-Ext-Time"] = f"{bag.ext_ms:.0f}ms"
         return response

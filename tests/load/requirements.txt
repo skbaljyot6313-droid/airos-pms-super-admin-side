@@ -1,0 +1,4 @@
+httpx>=0.27
+matplotlib>=3.8
+pytest>=8.0
+psutil>=5.9

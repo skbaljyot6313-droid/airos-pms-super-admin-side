@@ -135,7 +135,7 @@ export const TicketDrawer: React.FC<{
     try {
       const urls: string[] = [];
       for (const p of resolvePhotos) {
-        const res = await mediaApi.uploadPhoto(p.file);
+        const res = await mediaApi.uploadPhoto(p.file, activeProperty?.property_uid);
         urls.push(res.url);
       }
       await resolveMaintenanceTicket(ticket.ticket_uid, resolveNotes.trim(), urls);

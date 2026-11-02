@@ -8,6 +8,7 @@ the `get_db` dependency (see app/dependencies/db.py).
 import asyncio
 import socket
 import ssl as ssl_module
+import time
 from collections.abc import AsyncGenerator
 
 from fastapi import status
@@ -107,9 +108,61 @@ def _pgbouncer_connect_args() -> dict:
     return {}
 
 
+# --------------------------------------------------------------------------
+# Pool instrumentation — measures REAL checkout wait (QueuePool semaphore
+# time) per request and lifetime counters. Implemented as a poolclass
+# override of _do_get, which is where acquisition actually blocks; the
+# public PoolEvents (checkout/checkin) fire only AFTER acquisition and
+# cannot measure wait time.
+#
+# Counters are process-local; per-request waits accumulate into the
+# request's TimingBag -> access log + X-DB-Pool-Time header.
+# --------------------------------------------------------------------------
+
+from sqlalchemy.pool import AsyncAdaptedQueuePool  # noqa: E402
+
+pool_metrics: dict = {
+    "checkouts": 0,
+    "checkins": 0,
+    "checkout_wait_ms_total": 0.0,
+    "checkout_failures": 0,
+    "checkout_timeouts": 0,   # QueuePool timeout (pool_timeout exceeded)
+    "checked_out_now": 0,
+}
+
+
+class InstrumentedAsyncQueuePool(AsyncAdaptedQueuePool):
+    """AsyncAdaptedQueuePool that times the blocking acquisition."""
+
+    def _do_get(self):
+        t0 = time.perf_counter()
+        try:
+            conn = super()._do_get()
+        except Exception as exc:
+            pool_metrics["checkout_failures"] += 1
+            # sqlalchemy.exc.TimeoutError = "QueuePool limit ... timed out"
+            from sqlalchemy.exc import TimeoutError as SQTimeout
+            if isinstance(exc, SQTimeout):
+                pool_metrics["checkout_timeouts"] += 1
+            raise
+        wait_ms = (time.perf_counter() - t0) * 1000
+        pool_metrics["checkouts"] += 1
+        pool_metrics["checked_out_now"] += 1
+        pool_metrics["checkout_wait_ms_total"] += wait_ms
+        try:
+            from app.core.timing import request_timing
+            bag = request_timing.get()
+            if bag is not None:
+                bag.db_pool_wait_ms += wait_ms
+        except Exception:
+            pass
+        return conn
+
+
 engine: AsyncEngine = create_async_engine(
     settings.database_url,
     connect_args=_pgbouncer_connect_args(),
+    poolclass=InstrumentedAsyncQueuePool,
     # pool_recycle handles stale connections at checkout — avoids paying an
     # extra DB round trip (~300ms to remote Supabase) on EVERY request.
     pool_pre_ping=False,
@@ -138,6 +191,13 @@ AsyncSessionLocal = async_sessionmaker(
 
 from sqlalchemy import event  # noqa: E402
 from sqlalchemy.orm import Session as _SyncSession  # noqa: E402
+
+
+@event.listens_for(engine.sync_engine.pool, "checkin")
+def _pool_checkin(*_args):
+    pool_metrics["checkins"] += 1
+    pool_metrics["checked_out_now"] = max(
+        0, pool_metrics["checked_out_now"] - 1)
 
 # Session events can't target an async_sessionmaker — the listener
 # receives the underlying sync Session, so register on the Session class

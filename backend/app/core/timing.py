@@ -41,6 +41,10 @@ class TimingBag:
     db_queries: int = 0
     ext_ms: float = 0.0
     ext_calls: int = 0
+    # Auth/pool instrumentation (bounded verify queue + pool checkout wait)
+    db_pool_wait_ms: float = 0.0   # time blocked acquiring a pool connection
+    verify_ms: float = 0.0         # argon2 verify execution time
+    verify_wait_ms: float = 0.0    # time queued waiting for a verify slot
     notes: dict = field(default_factory=dict)
 
 
@@ -111,7 +115,10 @@ def install_engine_listeners(engine) -> None:
         bag = request_timing.get()
         if bag is None:
             return
-        started = ctx.connection.info.pop("_qstart", None)
+        conn = ctx.connection
+        if conn is None:
+            return
+        started = conn.info.pop("_qstart", None)
         if started is not None:
             bag.db_ms += (time.perf_counter() - started) * 1000
             bag.db_queries += 1

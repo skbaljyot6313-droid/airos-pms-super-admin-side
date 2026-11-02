@@ -26,6 +26,9 @@ const RoomsDormsView = React.lazy(() =>
 const EmployeesView = React.lazy(() =>
   import('./components/employees/EmployeesView').then((m) => ({ default: m.EmployeesView }))
 );
+const EmployeeDetailView = React.lazy(() =>
+  import('./components/employees/EmployeeDetailView').then((m) => ({ default: m.EmployeeDetailView }))
+);
 const TasksView = React.lazy(() =>
   import('./components/tasks/TasksView').then((m) => ({ default: m.TasksView }))
 );
@@ -43,6 +46,9 @@ const ProfileView = React.lazy(() =>
 );
 const AdminSettingsView = React.lazy(() =>
   import('./components/admin/AdminSettingsView').then((m) => ({ default: m.AdminSettingsView }))
+);
+const LogsView = React.lazy(() =>
+  import('./components/admin/LogsView').then((m) => ({ default: m.LogsView }))
 );
 
 /**
@@ -99,7 +105,7 @@ const WorkspaceGate: React.FC<{ children: React.ReactNode }> = ({ children }) =>
  * Handles property-scoped views while ensuring activePropertyUid is synchronized
  */
 const PropertyScopedView: React.FC<{
-  view: 'zones' | 'rooms' | 'employees' | 'tasks' | 'templates' | 'task_day' | 'maint_day';
+  view: 'zones' | 'rooms' | 'employees' | 'tasks' | 'templates' | 'task_day' | 'maint_day' | 'employee_detail';
 }> = ({ view }) => {
   const { propertyUid } = useParams<{ propertyUid: string }>();
   const { activePropertyUid, setActivePropertyUid, companyProperties, currentRole, currentUser } =
@@ -149,6 +155,8 @@ const PropertyScopedView: React.FC<{
       <MaintenanceDayAnalysisView />
     ) : view === 'templates' ? (
       <TemplatesView />
+    ) : view === 'employee_detail' ? (
+      <EmployeeDetailView />
     ) : view === 'employees' ? (
       <EmployeesView />
     ) : (
@@ -237,11 +245,13 @@ const AppContent: React.FC = () => {
           {/* Super Admin company-level routes */}
           <Route path="/admin/properties" element={<RequireAuth><RequireRole roles={['super_admin']}><WorkspaceGate><PropertiesView /></WorkspaceGate></RequireRole></RequireAuth>} />
           <Route path="/admin/settings" element={<RequireAuth><RequireRole roles={['super_admin']}><WorkspaceGate><AdminSettingsView /></WorkspaceGate></RequireRole></RequireAuth>} />
+          <Route path="/admin/logs" element={<RequireAuth><RequireRole roles={['super_admin']}><WorkspaceGate><LogsView /></WorkspaceGate></RequireRole></RequireAuth>} />
 
           {/* Property workspace routes (Property Manager & Super Admin inside a property) */}
           <Route path="/property/:propertyUid/zones" element={<RequireAuth><PropertyScopedView view="zones" /></RequireAuth>} />
           <Route path="/property/:propertyUid/rooms" element={<RequireAuth><PropertyScopedView view="rooms" /></RequireAuth>} />
           <Route path="/property/:propertyUid/employees" element={<RequireAuth><PropertyScopedView view="employees" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/employees/:employeeUid" element={<RequireAuth><PropertyScopedView view="employee_detail" /></RequireAuth>} />
           <Route path="/property/:propertyUid/tasks" element={<RequireAuth><PropertyScopedView view="tasks" /></RequireAuth>} />
           <Route path="/property/:propertyUid/tasks/history/:date" element={<RequireAuth><RequireRole roles={['super_admin', 'property_manager']}><PropertyScopedView view="task_day" /></RequireRole></RequireAuth>} />
           <Route path="/property/:propertyUid/maintenance" element={<RequireAuth><MaintenanceRedirect /></RequireAuth>} />

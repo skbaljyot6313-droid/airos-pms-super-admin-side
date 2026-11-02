@@ -62,6 +62,10 @@ async def get_current_user(
             auth_cache.put(user)
     if user is None or not user.is_active:
         raise Unauthenticated("Your session has expired. Please sign in again.")
+    session.info["audit_actor"] = {
+        "id": user.id, "name": user.name, "company_id": user.company_id,
+        "role": user.role.value,
+    }
     return user
 
 

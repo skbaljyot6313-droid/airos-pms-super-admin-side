@@ -1,5 +1,8 @@
 # Management Tool — codebase map
 
+Exhaustive lookup index (every endpoint, service, model, route, test, env var):
+`docs/codebase-index.md` — generated 2026-10-30, refreshed 2026-11-02.
+
 Property operations management SaaS (a.k.a. "AiROS" / "Airco PMS"). Multi-tenant:
 a `Company` owns `Property`s; non-super-admin users are scoped by
 `user.property_id`. Roles exist for `super_admin`, `property_manager`,
@@ -19,6 +22,8 @@ backend/                # FastAPI + SQLAlchemy 2 async + asyncpg + Alembic
                         #   transitions, resource_events)
   app/core/             # config.py (pydantic-settings, single config source), database,
                         #   security (JWT HS256 30min + hashed refresh tokens 30d, argon2),
+                        #   verify_queue (bounded argon2 executor — login verify runs
+                        #   off-loop; overload → 503 AUTH_QUEUE_* + Retry-After),
                         #   redis, queue (arq), rate_limit, storage (local/s3/supabase),
                         #   centrifugo (realtime tokens + post-commit publish)
   app/dependencies/auth.py  # get_current_user, require_role; company_id = tenant scope
@@ -242,3 +247,92 @@ backend's env.
   /companies, /admin/settings. PM scoping is enforced per-service
   (`_property_for_write`, `_request_for_review`, `_assert_company_scope`
   pinning, `_scoped`) — never by hiding UI.
+
+## Source-of-truth indexing notes (2026-10-29)
+
+- Historical `docs/performance-audit/architecture-overview.md` describes an
+  older baseline, not current behavior. `AppContext.loadWorkspace()` now uses
+  `GET /workspace` (nine independent pooled sessions gathered server-side),
+  falling back to nine GETs only on 404. Global reconciliation polling is
+  120 seconds, visibility-aware and non-overlapping; realtime invalidations
+  use scoped, coalesced refreshes. Employee Backend HTTP calls share the
+  lifespan-managed client in `app/core/http_client.py`.
+- Authentication reads use a detached, process-local user cache (default
+  `AUTH_CACHE_TTL_SECONDS=60`); cross-process role/deactivation changes can
+  remain stale until TTL expiry. Current login releases its read transaction
+  before bounded off-loop password verification, then writes login timestamp
+  and refresh-token hash together through a PostgreSQL CTE.
+- Code/config reference an arq scheduler worker, but this checkout has no
+  `WorkerSettings` or `generation_tick` implementation. Before disabling
+  `RUN_EMBEDDED_SCHEDULER`, verify who actually runs scheduled work externally.
+- `.github/workflows/deploy-production.yml` deploys Railway and Vercel but
+  defines no test/typecheck job. Test presence is not evidence of a CI gate.
+- Test inventory: backend regression suites cover auth, pooler compatibility,
+  verification queue, task review, shifts, live locations, employee notices,
+  realtime, and query-count regressions. Frontend Vitest configuration lives
+  in `vite.config.ts`; tests currently cover ZoneBoard and LiveLocationMap.
+  `tests/load/` is a separate opt-in load harness; do not execute its traffic
+  generators or account seeder as ordinary unit tests.
+
+## Super-admin activity logs
+
+- `/admin/logs` (SPA) opens a property-card directory; clicking a property
+  opens its scoped timeline, and Back to properties restores the directory.
+  Filters/pagination retain the selected property unless explicitly cleared.
+  Activity Timeline uses IST date groups, individual containers and horizontal
+  recorded-fact strips (not estimated completion percentages). Task Journey
+  searches `/admin/logs/tasks` and reads `/admin/logs/tasks/{id}/journey` in
+  oldest-first pages; its summary comes from authoritative Task columns,
+  never inferred from event titles. A separate all-company view preserves
+  access to unlinked authentication events. Attachment previews use the
+  company-scoped `/admin/logs/attachments/{source}/{event_id}` endpoint and
+  bearer-authenticated blobs, not public-URL fallbacks. Failed sign-ins and
+  refreshes record safe reason/status metadata; unverified attempts must not
+  be presented as performed by the targeted account. Unattributed attempts
+  have no company scope and are excluded from tenant-visible queries.
+  The SPA and `GET /api/v1/admin/logs` are super-admin-only;
+  `services/logs.py` unions shared task/evidence, maintenance, allocation,
+  resource-state, attendance, and audit histories. Filtering, counting, and
+  pagination run in SQL with an authoritative company scope. Date filters
+  require timezones; the UI converts inclusive IST dates to UTC boundaries.
+- `services/audit.py::capture_mutations` captures allowlisted management-side
+  ORM changes in the same transaction via a Session `before_flush` listener.
+  Actor context comes from `get_current_user`; passwords/tokens are excluded.
+  Persistent identity must come from `inspect(obj).identity` when attributes
+  are expired. Snapshots use JSON company/property identifiers so generic
+  deletion events do not depend on the deleted entity's foreign keys.
+- AuthService records successful login, explicit logout, signup, and refresh;
+  media uploads record actor/property after scope validation. These new
+  events cannot reconstruct past unrecorded actions. Employee Backend
+  login/logout needs instrumentation in that separate application. Shared
+  clock-in/out records are attendance events, not authentication events.
+- On this Windows installation, verify backend work with
+  `py -3.12 -m pytest tests/ -q` from `backend/`; default `python` resolves
+  to 3.15, whose SQLAlchemy extension is blocked by Application Control.
+
+## Employee detail pages
+
+- Directory cards/names and Zone Board name buttons open
+  `/property/:propertyUid/employees/:employeeUid`. Interactive directory
+  controls do not trigger navigation; name buttons on the board do not
+  initiate dragging.
+- `services/employee_profile.py` serves staff-only `/employees/{id}/profile`,
+  `/employees/{id}/tasks`, and `/employees/{id}/records` reads. Profile access
+  validates the employee's current property against the URL property.
+  All history queries are company-scoped, additionally restricted to the
+  manager's property for PMs. Responses are private/no-store.
+- Task metrics count distinct task IDs, not loaded-page rows. Allocations
+  use current employee IDs and the allocation ledger; completion/rejection
+  credit uses employee IDs on approved/disapproved submission attempts,
+  never actor-name matching or the latest task assignee. Abandonment uses
+  assignment-at-event records, with a current abandoned-assignment fallback
+  only when no allocation ledger exists. Counts overlap across outcomes.
+- Per-task filters show the latest matching employee submission attempt;
+  authoritative current task status is separate. Start-to-submission elapsed
+  requires a recorded employee allocation at the start and no intervening
+  reassignment. Starts from earlier attempts are not reused. This is elapsed
+  time including pauses, not measured active labor or payroll time.
+- Attendance, leave/week-off requests, dated shift assignments, submissions,
+  and allocation history are paginated server-side. Recorded salary is a
+  nullable free-text field; do not invent a currency, pay period, payment
+  history, deductions, or payslips. Missing attendance is not absence.

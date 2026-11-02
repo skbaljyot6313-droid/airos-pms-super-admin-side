@@ -7,7 +7,7 @@ under {API_V1_PREFIX}.
 
 from fastapi import APIRouter
 
-from app.api.v1 import attendance, auth, locations, media, realtime, shifts, templates, work_batches, workspace
+from app.api.v1 import attendance, auth, locations, logs, media, realtime, shifts, templates, work_batches, workspace
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
@@ -19,6 +19,7 @@ api_router.include_router(attendance.router)
 api_router.include_router(shifts.router)
 api_router.include_router(locations.router)
 api_router.include_router(realtime.router)
+api_router.include_router(logs.router)
 
 # Future routers:
 # api_router.include_router(companies.router,   prefix="/companies",  tags=["companies"])

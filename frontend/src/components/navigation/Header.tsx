@@ -15,6 +15,7 @@ import {
   Building2,
   Clock,
   LayoutTemplate,
+  ClipboardList,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { getInitials } from '../../lib/utils';
@@ -86,6 +87,10 @@ export const Header: React.FC = () => {
       { label: 'Properties', path: '/admin/properties', icon: <Building className="w-4 h-4" /> },
       { label: 'Settings', path: '/admin/settings', icon: <Settings className="w-4 h-4" /> },
     ];
+  }
+
+  if (currentRole === 'super_admin') {
+    navItems.push({ label: 'Logs', path: '/admin/logs', icon: <ClipboardList className="w-4 h-4" /> });
   }
 
   const handleNavClick = (path: string) => {

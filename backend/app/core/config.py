@@ -70,6 +70,27 @@ class Settings(BaseSettings):
     # Rate limiting — Redis sliding window when REDIS_URL is set, in-memory
     # token bucket otherwise (single-process only).
     RATE_LIMIT_ENABLED: bool = True
+    # Login endpoint rate limit (requests per window per client IP). These
+    # defaults are production posture — raise ONLY on staging/test envs to
+    # measure unthrottled auth capacity; never raise in production.
+    LOGIN_RATE_LIMIT: int = 10
+    LOGIN_RATE_LIMIT_WINDOW_SECONDS: int = 60
+
+    # Bounded password-verification queue (see app/core/verify_queue.py).
+    # Argon2id verify is CPU-bound (~50-150ms); the executor is a dedicated
+    # bounded thread pool, NOT the default executor.
+    #   VERIFY_MAX_WORKERS      — concurrent verifications per process;
+    #                             0 = auto (min(4, cpu_count))
+    #   VERIFY_QUEUE_MAX        — max requests WAITING for a slot; excess
+    #                             rejected immediately with 503+Retry-After
+    #   VERIFY_QUEUE_TIMEOUT_S  — max wait for a slot before 503
+    #   VERIFY_OVERLOAD_RETRY_AFTER_S — Retry-After header on overload 503s
+    # Per-process limits: total argon2 concurrency = workers x processes x
+    # instances — keep small relative to vCPU (see deploy/cloudrun.md).
+    VERIFY_MAX_WORKERS: int = 0
+    VERIFY_QUEUE_MAX: int = 128
+    VERIFY_QUEUE_TIMEOUT_S: float = 10.0
+    VERIFY_OVERLOAD_RETRY_AFTER_S: int = 3
 
     # Request timing instrumentation — per-request DB/external time is
     # accumulated into the access log and X-*-Time response headers.

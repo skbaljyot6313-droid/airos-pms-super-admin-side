@@ -11,7 +11,10 @@
  *   - FastAPI error envelope: { detail: string | { message, field?, code? }[] }
  */
 
-export const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '');
+export const BASE_URL = (
+  (import.meta.env.VITE_API_URL as string | undefined)?.trim() ||
+  (import.meta.env.DEV ? 'http://localhost:8000/api/v1' : undefined)
+)?.replace(/\/$/, '');
 
 /** Resolve a media path (/uploads/x.jpg) against the API ORIGIN — BASE_URL
     carries the /api/v1 prefix, which is not part of static file paths. */
@@ -182,6 +185,7 @@ interface RequestOptions {
   /** FormData body (file uploads) — bypasses JSON serialization */
   formData?: FormData;
   timeoutMs?: number;
+  responseType?: 'json' | 'blob';
   /** Internal: prevents infinite 401→refresh→retry loops */
   _retried?: boolean;
 }
@@ -275,6 +279,12 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   if (response.status === 204) {
     perfDone(204);
     return undefined as T;
+  }
+
+  if (options.responseType === 'blob') {
+    const blob = await response.blob();
+    perfDone(response.status);
+    return blob as T;
   }
 
   try {

@@ -34,7 +34,7 @@ const DraggableEmployeeCard: React.FC<{
   employee: Employee;
   isOverlay?: boolean;
 }> = ({ employee, isOverlay = false }) => {
-  const { tasks } = useApp();
+  const { tasks, navigate } = useApp();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: employee.employee_uid,
     data: { employee },
@@ -71,7 +71,7 @@ const DraggableEmployeeCard: React.FC<{
         </div>
         <div className="min-w-0 flex-1">
           <h4 className="font-semibold text-[13px] text-[#17221B] leading-tight truncate">
-            {employee.name}
+            <button type="button" disabled={isOverlay} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); navigate(`/property/${employee.property_uid}/employees/${employee.employee_uid}`); }} aria-label={`View employee profile for ${employee.name}`} className="max-w-full truncate text-left hover:underline focus-visible:outline-2 focus-visible:outline-[#386641]">{employee.name}</button>
           </h4>
           <p className="text-[11px] text-[#66706A] font-body truncate">
             {employee.job_title}

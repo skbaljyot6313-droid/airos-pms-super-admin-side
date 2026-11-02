@@ -2098,7 +2098,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // Upload evidence photos first — backend requires ≥1 photo
         const photo_urls: string[] = [];
         for (const file of photos) {
-          const res = await mediaApi.uploadPhoto(file);
+          const res = await mediaApi.uploadPhoto(file, activePropertyUid || undefined);
           photo_urls.push(res.url);
         }
         const res = await tasksApi.completeTask(task_uid, { photo_urls, note });
@@ -2126,7 +2126,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
       }
     },
-    [addToast, refreshUnitsScoped]
+    [addToast, refreshUnitsScoped, activePropertyUid]
   );
 
   const requestTaskRedo = useCallback(

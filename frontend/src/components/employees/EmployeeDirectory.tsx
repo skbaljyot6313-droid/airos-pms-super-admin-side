@@ -203,7 +203,11 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
             return (
               <Card
                 key={emp.employee_uid}
-                className="p-4 flex flex-col justify-between hover:border-[#D0C8BB] relative"
+                className="p-4 flex flex-col justify-between hover:border-[#8CA88C] relative cursor-pointer"
+                onClick={(e) => {
+                  if (!(e.target as HTMLElement).closest('button, a, input, select, textarea, label, [role="menu"]'))
+                    navigate(`/property/${emp.property_uid}/employees/${emp.employee_uid}`);
+                }}
               >
                 <div>
                   {/* Top Bar: Initials avatar + Actions Kebab */}
@@ -218,7 +222,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                       <div>
                         <div className="flex items-center gap-1.5">
                           <h4 className="font-semibold text-sm text-[#24221F] leading-tight">
-                            {emp.name}
+                            <button type="button" onClick={() => navigate(`/property/${emp.property_uid}/employees/${emp.employee_uid}`)} aria-label={`View employee profile for ${emp.name}`} className="text-left hover:text-[#386641] hover:underline focus-visible:outline-2 focus-visible:outline-[#386641]">{emp.name}</button>
                           </h4>
                           {isDeactivated && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#FDE8E8] text-[#A82828] font-medium">

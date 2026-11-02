@@ -237,5 +237,5 @@ def main() -> int:
         terminate(backend, "backend")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":      
     sys.exit(main())

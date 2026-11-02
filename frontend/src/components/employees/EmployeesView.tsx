@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CalendarOff, ClipboardList, Clock, LayoutGrid, List, MapPin, Plus, UserX } from 'lucide-react';
+import { BarChart3, CalendarOff, ClipboardList, Clock, LayoutGrid, List, MapPin, Plus, UserX } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { ZoneBoard } from './ZoneBoard';
@@ -9,6 +9,7 @@ import { LiveLocationMap } from './LiveLocationMap';
 import { LeavesPanel } from './LeavesPanel';
 import { ShiftManager } from './ShiftManager';
 import { AttendanceBoard } from './AttendanceBoard';
+import { TeamAnalyticsTab } from './analysis/TeamAnalytics';
 import { BackButton } from '../ui/BackButton';
 import { isEmployeeDeactivated } from '../../lib/employeeUtils';
 
@@ -53,6 +54,7 @@ export const EmployeesView: React.FC = () => {
     | 'leaves'
     | 'shifts'
     | 'attendance'
+    | 'analytics'
   >('board');
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
@@ -186,6 +188,19 @@ export const EmployeesView: React.FC = () => {
             />
             <span>Attendance</span>
           </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
+              activeTab === 'analytics'
+                ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                : 'text-[#66706A] hover:text-[#17221B]'
+            }`}
+          >
+            <BarChart3
+              className={`w-3.5 h-3.5 ${activeTab === 'analytics' ? 'text-[#365D78]' : ''}`}
+            />
+            <span>Analytics</span>
+          </button>
           {isStaff && (
             <>
               <button
@@ -237,6 +252,8 @@ export const EmployeesView: React.FC = () => {
         <ShiftManager />
       ) : activeTab === 'attendance' ? (
         <AttendanceBoard />
+      ) : activeTab === 'analytics' ? (
+        <TeamAnalyticsTab />
       ) : activeTab === 'leaves' ? (
         <LeavesPanel />
       ) : (

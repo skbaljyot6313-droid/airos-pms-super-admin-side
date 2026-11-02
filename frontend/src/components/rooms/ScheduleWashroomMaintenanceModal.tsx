@@ -110,7 +110,7 @@ export const ScheduleWashroomMaintenanceModal: React.FC<
         maintenanceType;
       const attachment_urls: string[] = [];
       for (const p of photos) {
-        const res = await mediaApi.uploadPhoto(p.file);
+        const res = await mediaApi.uploadPhoto(p.file, activeProperty?.property_uid);
         attachment_urls.push(res.url);
       }
       const targets = scope === 'washroom' ? [null] : targetFixtures;

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import auth_cache
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import AppError
 from app.core.rate_limit import rate_limit
@@ -47,7 +48,10 @@ async def signup(payload: SignupRequest, session: AsyncSession = Depends(get_db)
 @router.post(
     "/login",
     response_model=AuthResponse,
-    dependencies=[Depends(rate_limit("login", limit=10, window_seconds=60))],
+    dependencies=[Depends(rate_limit(
+        "login",
+        limit=settings.LOGIN_RATE_LIMIT,
+        window_seconds=settings.LOGIN_RATE_LIMIT_WINDOW_SECONDS))],
 )
 async def login(payload: LoginRequest, session: AsyncSession = Depends(get_db)):
     """Authenticate by email OR username + password."""
