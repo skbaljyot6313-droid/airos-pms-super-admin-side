@@ -301,6 +301,14 @@ def storage_key_from_url(url: str) -> str | None:
         if parsed.netloc == f"{settings.S3_BUCKET}.s3.{settings.S3_REGION}.amazonaws.com":
             candidates.append(path.lstrip("/"))
 
+    gcs_bucket = getattr(settings, "GCS_BUCKET", None)
+    if gcs_bucket and parsed.netloc == "storage.googleapis.com":
+        prefix = f"/{gcs_bucket}/"
+        if path.startswith(prefix):
+            candidates.append(path.removeprefix(prefix))
+    if gcs_bucket and parsed.netloc == f"{gcs_bucket}.storage.googleapis.com":
+        candidates.append(path.lstrip("/"))
+
     for candidate in candidates:
         candidate = unquote(candidate).strip("/")
         if candidate and Path(candidate).name == candidate:

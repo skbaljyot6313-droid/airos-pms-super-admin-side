@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, ImageIcon, Trash2, X } from 'lucide-react';
-import { mediaUrl } from '../../api/client';
+import { EvidencePhoto } from './EvidencePhoto';
 import { Button } from '../ui/Button';
 
 export interface EvidenceImage {
@@ -26,26 +26,49 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
   onDelete,
 }) => {
   const [index, setIndex] = useState(initialIndex);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    setIndex(Math.min(initialIndex, Math.max(images.length - 1, 0)));
+    if (!images.length) return;
+    const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    document.body.style.overflow = 'hidden';
+    dialogRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, [images.length > 0]);
+
+  useEffect(() => {
+    setIndex(Math.max(0, Math.min(initialIndex, Math.max(images.length - 1, 0))));
     setConfirmingDelete(false);
-  }, [initialIndex]);
+  }, [initialIndex, images[0]?.url]);
 
   useEffect(() => {
     setIndex((i) => Math.min(i, Math.max(images.length - 1, 0)));
   }, [images.length]);
 
   useEffect(() => {
+    if (!images.length) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      if (e.key === 'Tab') {
+        const controls = dialogRef.current?.querySelectorAll<HTMLElement>('button, [tabindex="0"]');
+        const first = controls?.[0];
+        const last = controls?.[controls.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
       if (confirmingDelete) return;
       if (e.key === 'ArrowLeft' && images.length > 1) {
+        e.preventDefault();
         setIndex((i) => (i - 1 + images.length) % images.length);
       }
       if (e.key === 'ArrowRight' && images.length > 1) {
+        e.preventDefault();
         setIndex((i) => (i + 1) % images.length);
       }
     };
@@ -55,7 +78,7 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
 
   if (images.length === 0) return null;
 
-  const current = images[index];
+  const current = images[Math.max(0, Math.min(index, images.length - 1))];
   const hasMany = images.length > 1;
   const canDeleteCurrent = Boolean(canDelete && current.image_uid && onDelete);
 
@@ -76,13 +99,14 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
   return (
     <div
       className="fixed inset-0 z-[70] bg-[#171511]/80 backdrop-blur-sm p-4 sm:p-8 flex items-center justify-center"
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label={title}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-5xl bg-[#24221F] border border-white/10 rounded-[18px] shadow-2xl text-white overflow-hidden"
+        className="w-full max-w-5xl max-h-[calc(100dvh-2rem)] bg-[#24221F] border border-white/10 rounded-[18px] shadow-2xl text-white overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-white/10">
@@ -100,11 +124,12 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="relative bg-black/35 flex items-center justify-center min-h-[320px] max-h-[64vh] p-4">
-          <img
-            src={mediaUrl(current.url)}
+        <div className="relative bg-black/35 flex items-center justify-center h-[55dvh] max-h-[640px] p-4">
+          <EvidencePhoto
+            key={current.url}
+            src={current.url}
             alt={`Completion evidence ${index + 1}`}
-            className="max-h-[58vh] max-w-full object-contain rounded-[10px] shadow-lg"
+            className="h-full w-full rounded-[10px] shadow-lg"
           />
           {hasMany && (
             <>
@@ -136,12 +161,13 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
                 type="button"
                 onClick={() => setIndex(i)}
                 aria-label={`View image ${i + 1}`}
+                aria-current={i === index ? 'true' : undefined}
                 className={`w-16 h-16 rounded-[10px] overflow-hidden border-2 shrink-0 cursor-pointer transition-colors ${
                   i === index ? 'border-[#9FBF88]' : 'border-white/15 hover:border-white/35'
                 }`}
               >
-                <img
-                  src={mediaUrl(image.url)}
+                <EvidencePhoto
+                  src={image.url}
                   alt={`Evidence thumbnail ${i + 1}`}
                   className="w-full h-full object-cover"
                 />

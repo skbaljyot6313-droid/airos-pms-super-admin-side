@@ -5,11 +5,11 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { usePolling } from '../../hooks/usePolling';
-import { mediaUrl } from '../../api/client';
 import * as tasksApi from '../../api/tasks';
 import { Task, TaskCompletionImage } from '../../types';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
+import { EvidencePhoto } from './EvidencePhoto';
 import { CompletionEvidenceLightbox, EvidenceImage } from './CompletionEvidenceLightbox';
 import { useRealtimeChannel, propChannel } from '../../realtime/useRealtimeChannel';
 import { fmtDateTimeIST } from '../../lib/datetime';
@@ -229,11 +229,10 @@ export const TaskReviewPanel: React.FC<Props> = ({ onOpenTask }) => {
                       onClick={() => setLightbox({ task, index: i })}
                       className="shrink-0 w-24 h-24 rounded-[10px] overflow-hidden border border-[#E2DCD0] bg-white hover:border-[#386641] transition-colors cursor-pointer"
                     >
-                      <img
-                        src={mediaUrl(img.url)}
+                      <EvidencePhoto
+                        src={img.url}
                         alt={`Evidence ${i + 1}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
+                        className="w-full h-full rounded-[10px] hover:brightness-95 transition-all"
                       />
                     </button>
                   ))}

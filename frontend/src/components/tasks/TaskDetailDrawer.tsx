@@ -19,7 +19,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import * as tasksApi from '../../api/tasks';
 import { perfLog } from '../../dev/perf';
-import { mediaUrl } from '../../api/client';
+import { EvidencePhoto } from './EvidencePhoto';
 import { CompletionEvidenceLightbox, EvidenceImage } from './CompletionEvidenceLightbox';
 import {
   ALLOWED_COMPLETION_IMAGE_TYPES,
@@ -128,8 +128,8 @@ const EvidenceFigure: React.FC<{
         onClick={onOpen}
         className="block w-full cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-[#386641]"
       >
-        <img
-          src={mediaUrl(item.photo)}
+        <EvidencePhoto
+          src={item.photo}
           alt={`Evidence by ${item.actor}`}
           className="w-full h-28 object-cover"
           onError={() => setFailed(true)}
@@ -570,9 +570,9 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
                         {event.photos && event.photos.length > 0 && (
                           <div className="flex gap-1.5 mt-1.5">
                             {event.photos.map((p, i) => (
-                              <img
+                              <EvidencePhoto
                                 key={i}
-                                src={mediaUrl(p)}
+                                src={p}
                                 alt="evidence"
                                 className="w-12 h-12 rounded-[8px] object-cover border border-[#E4DFD5]"
                               />

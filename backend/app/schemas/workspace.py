@@ -10,6 +10,7 @@ from typing import Any, Generic, TypeVar
 from pydantic import BaseModel
 from sqlalchemy import inspect as sa_inspect
 
+from app.core.storage import storage_key_from_url
 from app.models.employee import Employee
 from app.models.property import Property
 from app.models.structure import Area, Bed, Dorm, Room, Washroom, Zone
@@ -342,6 +343,11 @@ def employee_out(e: Employee) -> dict:
     }
 
 
+def evidence_url(url: str, key: str | None = None) -> str:
+    key = key or storage_key_from_url(url)
+    return f"/api/v1/media/file/{key}" if key else url
+
+
 def history_out(h: TaskHistoryEvent) -> dict:
     return {
         "event_uid": str(h.id),
@@ -349,7 +355,7 @@ def history_out(h: TaskHistoryEvent) -> dict:
         "at": h.at,
         "actor_name": h.actor_name,
         "note": h.note,
-        "photos": h.photos or [],
+        "photos": [evidence_url(url) for url in h.photos or []],
     }
 
 
@@ -359,7 +365,7 @@ def completion_image_out(i: TaskCompletionImage) -> dict:
         "task_uid": str(i.task_id),
         "event_uid": str(i.history_event_id) if i.history_event_id else None,
         "submission_uid": str(i.submission_id) if i.submission_id else None,
-        "url": i.url,
+        "url": evidence_url(i.url, i.storage_key),
         "file_name": i.file_name,
         "created_by_name": i.created_by_name,
         "created_at": i.created_at,
@@ -377,7 +383,7 @@ def completion_submission_out(
                 "task_uid": str(s.task_id),
                 "event_uid": str(event.id),
                 "submission_uid": str(s.id),
-                "url": url,
+                "url": evidence_url(url),
                 "file_name": url.rsplit("/", 1)[-1],
                 "created_by_name": s.employee_name,
                 "created_at": s.submitted_at,

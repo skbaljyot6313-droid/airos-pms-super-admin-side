@@ -228,6 +228,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     response = await fetch(url.toString(), {
       method,
       headers,
+      cache: options.responseType === 'blob' ? 'no-store' : 'default',
       body: formData ?? (body !== undefined ? JSON.stringify(body) : undefined),
       signal: controller.signal,
     });

@@ -8,6 +8,7 @@ but serialized as `/api/v1/media/file/<key>` paths the Super Admin
 frontend resolves against this API.
 """
 
+import mimetypes
 import re
 import uuid
 
@@ -24,7 +25,12 @@ from app.core.storage import (
     get_storage,
     new_object_key,
 )
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import bearer_scheme, get_current_user, Forbidden
+from fastapi.security import HTTPAuthorizationCredentials
+from sqlalchemy import String, cast, or_, select
+from app.models.task import Task, TaskCompletionImage, TaskHistoryEvent
+from app.models.user import UserRole
+from app.services.structure import StructureService
 from app.models.user import User
 from app.core.database import get_db
 from app.services.audit import AuditService
@@ -130,7 +136,11 @@ async def upload_media(
         Depends(rate_limit("media_fetch", limit=240, window_seconds=60))
     ],
 )
-async def get_media_file(key: str):
+async def get_media_file(
+    key: str,
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    session: AsyncSession = Depends(get_db),
+):
     """Stream a stored object through the API origin.
 
     Task evidence uploaded by the employee app is serialized as
@@ -142,11 +152,33 @@ async def get_media_file(key: str):
     """
     if not _OBJECT_KEY_RE.fullmatch(key):
         raise MediaNotFound()
+    tasks = (await session.execute(
+        select(Task).where(or_(
+            Task.id.in_(select(TaskCompletionImage.task_id).where(or_(
+                TaskCompletionImage.storage_key == key,
+                TaskCompletionImage.url.contains('/' + key),
+            ))),
+            Task.id.in_(select(TaskHistoryEvent.task_id).where(
+                cast(TaskHistoryEvent.photos, String).contains(key)
+            )),
+        ))
+    )).scalars().all()
+    if tasks:
+        user = await get_current_user(credentials, session)
+        for task in tasks:
+            prop = await StructureService(session)._property_for_write(user, task.property_id)
+            if prop.company_id != user.company_id:
+                raise MediaNotFound()
+            if user.role not in {UserRole.SUPER_ADMIN, UserRole.PROPERTY_MANAGER} and (
+                user.role != UserRole.EMPLOYEE or not user.employee_id
+                or task.employee_id != user.employee_id
+            ):
+                raise Forbidden()
     try:
         opened = await get_storage().open(key)
     except Exception as exc:
         logger.error(
-            "media fetch failed for %s: %s", key, exc, exc_info=True,
+            "media fetch failed: %s", type(exc).__name__,
         )
         raise StorageUnavailable(
             "Media storage is unavailable."
@@ -154,9 +186,11 @@ async def get_media_file(key: str):
     if opened is None:
         raise MediaNotFound()
     stream, content_type, length = opened
+    content_type = content_type or mimetypes.guess_type(key)[0]
     headers = {
         # objects are immutable uuid-keyed blobs
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control": "private, no-store",
+        "Vary": "Authorization",
         "X-Content-Type-Options": "nosniff",
         # already-compressed formats — bypass GZipMiddleware so
         # Content-Length survives for client progress display
