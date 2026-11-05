@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Search, Clock, AlertTriangle, Zap, ChevronRight, RefreshCw,
+  Search, Clock, AlertTriangle, Zap, ChevronRight, ChevronDown, RefreshCw,
   CalendarCheck, UserCheck, Play, CheckCircle2, Timer,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -31,6 +31,60 @@ const WORK_BADGE: Record<string, 'sage' | 'orange' | 'red' | 'lavender' | 'neutr
 
 const fmtTime = fmtTimeIST;
 
+/**
+ * Collapsible feeds — every row lands in exactly one group, matched in order.
+ * "In progress" is the generated-and-open set (pending → submitted incl.
+ * reopened/scheduled); "Delayed" is generated work flagged overdue; residue
+ * (skipped/cancelled occurrences) stays reachable under the last group.
+ */
+const GROUPS: {
+  key: string;
+  label: string;
+  icon: React.ElementType;
+  tone: string;
+  defaultOpen: boolean;
+  hideWhenEmpty?: boolean;
+  match: (i: TodayTaskItem) => boolean;
+}[] = [
+  {
+    key: 'pending', label: 'To be generated', icon: Timer,
+    tone: 'text-[#B45309]', defaultOpen: false,
+    match: (i) =>
+      i.generation_state === 'pending_generation' ||
+      i.generation_state === 'generation_failed',
+  },
+  {
+    key: 'active', label: 'In progress', icon: Play,
+    tone: 'text-[#386641]', defaultOpen: true,
+    match: (i) => i.generation_state === 'generated' && i.work_status !== 'overdue',
+  },
+  {
+    key: 'delayed', label: 'Delayed', icon: AlertTriangle,
+    tone: 'text-[#B91C1C]', defaultOpen: true,
+    match: (i) => i.work_status === 'overdue',
+  },
+  {
+    key: 'other', label: 'Skipped / Cancelled', icon: CalendarCheck,
+    tone: 'text-[#6C675F]', defaultOpen: false, hideWhenEmpty: true,
+    match: (i) => i.generation_state === 'skipped' || i.generation_state === 'cancelled',
+  },
+];
+
+const TABLE_HEAD = (
+  <thead>
+    <tr className="border-b border-[#EAE5DC] text-[10.5px] uppercase tracking-wider text-[#8C867C]">
+      <th className="px-3.5 py-2.5 font-semibold">Time</th>
+      <th className="px-3.5 py-2.5 font-semibold">Task</th>
+      <th className="px-3.5 py-2.5 font-semibold">Target</th>
+      <th className="px-3.5 py-2.5 font-semibold">Zone</th>
+      <th className="px-3.5 py-2.5 font-semibold">Assignee</th>
+      <th className="px-3.5 py-2.5 font-semibold">Generation</th>
+      <th className="px-3.5 py-2.5 font-semibold">Status</th>
+      <th className="px-3.5 py-2.5 font-semibold text-right">Action</th>
+    </tr>
+  </thead>
+);
+
 
 interface Props {
   onOpenTask: (taskUid: string) => void;
@@ -45,6 +99,9 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
   const [zoneFilter, setZoneFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [scope, setScope] = useState<'all' | 'unassigned'>('all');
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(GROUPS.map((g) => [g.key, g.defaultOpen]))
+  );
   const load = useCallback(async (quiet = false) => {
     if (!activePropertyUid) return;
     if (!quiet) setLoading(true);
@@ -114,6 +171,23 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
     return [...filtered].sort((a, b) => gr(a) - gr(b) || t(a) - t(b));
   }, [filtered]);
 
+  const grouped = useMemo(() => {
+    const g: Record<string, TodayTaskItem[]> = Object.fromEntries(
+      GROUPS.map((d) => [d.key, []])
+    );
+    for (const item of rows) {
+      const def = GROUPS.find((d) => d.match(item));
+      g[def ? def.key : 'other'].push(item);
+    }
+    return g;
+  }, [rows]);
+
+  // Any active filter/search force-expands every group — collapsed feeds
+  // must never hide a row the user is explicitly looking for.
+  const filtersActive =
+    !!search.trim() || !!zoneFilter || sourceFilter !== 'all' || scope !== 'all';
+  const groupIsOpen = (key: string) => filtersActive || !!openGroups[key];
+
   // Row aging tint — generated = green baseline; open task stale >1h yellow,
   // >3h red (red wins over yellow wins over green). Age is measured from the
   // item's scheduled time.
@@ -127,6 +201,80 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
       if (hrs > 1) return 'bg-[#FDF3DC]';
     }
     return 'bg-[#EDF6EF]';
+  };
+
+  const renderRow = (item: TodayTaskItem) => {
+    const pending = item.generation_state === 'pending_generation';
+    const gen = GEN_BADGE[item.generation_state] || GEN_BADGE.generated;
+    return (
+      <tr
+        key={item.occurrence_key || item.task_uid}
+        className={`border-b border-[#F0ECE4] last:border-0 ${rowTint(item)}`}
+      >
+        <td className="px-3.5 py-2.5 whitespace-nowrap text-[12px] text-[#58534C]">
+          <span className="inline-flex items-center gap-1.5">
+            <Clock className="w-3 h-3 text-[#A59F95]" /> {fmtTime(item.scheduled_at)}
+          </span>
+        </td>
+        <td className="px-3.5 py-2.5">
+          <p className="font-semibold text-[13px] text-[#24221F] leading-tight">{item.title}</p>
+          <span className="inline-flex items-center gap-1.5 mt-0.5">
+            {item.origin === 'guest_request' && (
+              <Badge variant="orange" size="sm">Guest Request</Badge>
+            )}
+            {item.ticket_number && (
+              <span className="text-[10.5px] text-[#8C867C]">{item.ticket_number}</span>
+            )}
+          </span>
+        </td>
+        <td className="px-3.5 py-2.5 text-[12px] text-[#58534C]">
+          {item.target_label || item.room_number || 'Property-wide'}
+        </td>
+        <td className="px-3.5 py-2.5 text-[12px] text-[#58534C] whitespace-nowrap">
+          {item.zone_name || '—'}
+        </td>
+        <td className="px-3.5 py-2.5 text-[12px] whitespace-nowrap">
+          {pending ? (
+            <span className="text-[#8C867C]">
+              {item.allocation_method === 'zone_round_robin'
+                ? 'Auto · Round Robin'
+                : item.assignment_mode === 'individual' ? 'Individual' : item.assignment_mode || '—'}
+            </span>
+          ) : (
+            <span className="text-[#58534C]">{item.assignee || 'Unassigned'}</span>
+          )}
+        </td>
+        <td className="px-3.5 py-2.5 whitespace-nowrap">
+          <Badge variant={gen.variant} size="sm">{gen.label}</Badge>
+        </td>
+        <td className="px-3.5 py-2.5 whitespace-nowrap">
+          {item.work_status ? (
+            <Badge variant={WORK_BADGE[item.work_status] || 'neutral'} size="sm">
+              {item.work_status.replace(/_/g, ' ')}
+            </Badge>
+          ) : '—'}
+        </td>
+        <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
+          {pending ? (
+            <button
+              onClick={() => void generate(item)}
+              disabled={generating === item.occurrence_key}
+              className="px-2.5 py-1.5 text-xs font-semibold text-[#386641] hover:bg-[#EBF3EC] rounded-[8px] inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              {generating === item.occurrence_key ? 'Generating…' : 'Generate Now'}
+            </button>
+          ) : (
+            <button
+              onClick={() => item.task_uid && onOpenTask(item.task_uid)}
+              className="px-2.5 py-1.5 text-xs font-semibold text-[#386641] hover:bg-[#EBF3EC] rounded-[8px] inline-flex items-center gap-1 cursor-pointer"
+            >
+              Open <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </td>
+      </tr>
+    );
   };
 
   const summary = data?.summary;
@@ -232,96 +380,51 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
           </p>
         </div>
       ) : (
-        <div className="rounded-[12px] border border-[#EAE5DC] bg-white overflow-x-auto">
-          <table className="w-full text-left text-sm min-w-[860px]">
-            <thead>
-              <tr className="border-b border-[#EAE5DC] text-[10.5px] uppercase tracking-wider text-[#8C867C]">
-                <th className="px-3.5 py-2.5 font-semibold">Time</th>
-                <th className="px-3.5 py-2.5 font-semibold">Task</th>
-                <th className="px-3.5 py-2.5 font-semibold">Target</th>
-                <th className="px-3.5 py-2.5 font-semibold">Zone</th>
-                <th className="px-3.5 py-2.5 font-semibold">Assignee</th>
-                <th className="px-3.5 py-2.5 font-semibold">Generation</th>
-                <th className="px-3.5 py-2.5 font-semibold">Status</th>
-                <th className="px-3.5 py-2.5 font-semibold text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((item) => {
-                const pending = item.generation_state === 'pending_generation';
-                const gen = GEN_BADGE[item.generation_state] || GEN_BADGE.generated;
-                return (
-                  <tr
-                    key={item.occurrence_key || item.task_uid}
-                    className={`border-b border-[#F0ECE4] last:border-0 ${rowTint(item)}`}
-                  >
-                    <td className="px-3.5 py-2.5 whitespace-nowrap text-[12px] text-[#58534C]">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Clock className="w-3 h-3 text-[#A59F95]" /> {fmtTime(item.scheduled_at)}
-                      </span>
-                    </td>
-                    <td className="px-3.5 py-2.5">
-                      <p className="font-semibold text-[13px] text-[#24221F] leading-tight">{item.title}</p>
-                      <span className="inline-flex items-center gap-1.5 mt-0.5">
-                        {item.origin === 'guest_request' && (
-                          <Badge variant="orange" size="sm">Guest Request</Badge>
-                        )}
-                        {item.ticket_number && (
-                          <span className="text-[10.5px] text-[#8C867C]">{item.ticket_number}</span>
-                        )}
-                      </span>
-                    </td>
-                    <td className="px-3.5 py-2.5 text-[12px] text-[#58534C]">
-                      {item.target_label || item.room_number || 'Property-wide'}
-                    </td>
-                    <td className="px-3.5 py-2.5 text-[12px] text-[#58534C] whitespace-nowrap">
-                      {item.zone_name || '—'}
-                    </td>
-                    <td className="px-3.5 py-2.5 text-[12px] whitespace-nowrap">
-                      {pending ? (
-                        <span className="text-[#8C867C]">
-                          {item.allocation_method === 'zone_round_robin'
-                            ? 'Auto · Round Robin'
-                            : item.assignment_mode === 'individual' ? 'Individual' : item.assignment_mode || '—'}
-                        </span>
-                      ) : (
-                        <span className="text-[#58534C]">{item.assignee || 'Unassigned'}</span>
-                      )}
-                    </td>
-                    <td className="px-3.5 py-2.5 whitespace-nowrap">
-                      <Badge variant={gen.variant} size="sm">{gen.label}</Badge>
-                    </td>
-                    <td className="px-3.5 py-2.5 whitespace-nowrap">
-                      {item.work_status ? (
-                        <Badge variant={WORK_BADGE[item.work_status] || 'neutral'} size="sm">
-                          {item.work_status.replace(/_/g, ' ')}
-                        </Badge>
-                      ) : '—'}
-                    </td>
-                    <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
-                      {pending ? (
-                        <button
-                          onClick={() => void generate(item)}
-                          disabled={generating === item.occurrence_key}
-                          className="px-2.5 py-1.5 text-xs font-semibold text-[#386641] hover:bg-[#EBF3EC] rounded-[8px] inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                        >
-                          <Zap className="w-3.5 h-3.5" />
-                          {generating === item.occurrence_key ? 'Generating…' : 'Generate Now'}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => item.task_uid && onOpenTask(item.task_uid)}
-                          className="px-2.5 py-1.5 text-xs font-semibold text-[#386641] hover:bg-[#EBF3EC] rounded-[8px] inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          Open <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="space-y-3">
+          {GROUPS.map((g) => {
+            const items = grouped[g.key];
+            const open = groupIsOpen(g.key);
+            const Icon = g.icon;
+            if (g.hideWhenEmpty && items.length === 0) return null;
+            return (
+              <div
+                key={g.key}
+                className="rounded-[12px] border border-[#EAE5DC] bg-white overflow-hidden"
+              >
+                <button
+                  onClick={() =>
+                    setOpenGroups((p) => ({ ...p, [g.key]: !p[g.key] }))
+                  }
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-[#FAF8F4] transition-colors cursor-pointer"
+                >
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#8C867C] transition-transform ${open ? '' : '-rotate-90'}`}
+                  />
+                  <Icon className={`w-4 h-4 ${g.tone}`} />
+                  <span className="font-display font-semibold text-sm text-[#24221F]">
+                    {g.label}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#F0EDE6] text-[#58534C]">
+                    {items.length}
+                  </span>
+                </button>
+                {open && (
+                  items.length === 0 ? (
+                    <p className="px-4 pb-3.5 -mt-1 text-xs text-[#8C867C]">
+                      No tasks in this group.
+                    </p>
+                  ) : (
+                    <div className="border-t border-[#EAE5DC] overflow-x-auto">
+                      <table className="w-full text-left text-sm min-w-[860px]">
+                        {TABLE_HEAD}
+                        <tbody>{items.map(renderRow)}</tbody>
+                      </table>
+                    </div>
+                  )
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
