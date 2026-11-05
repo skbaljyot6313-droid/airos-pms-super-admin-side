@@ -34,3 +34,26 @@ export async function updateProperty(
 export async function deleteProperty(property_uid: string): Promise<void> {
   return apiFetch<void>(`/properties/${property_uid}`, { method: 'DELETE' });
 }
+
+export interface FreshDayResult {
+  tasks_abandoned: number;
+  released: {
+    rooms: number;
+    dorms: number;
+    beds: number;
+    washrooms: number;
+    fixtures: number;
+  };
+  /** Units a blocking maintenance ticket still holds (kept on maintenance). */
+  still_blocked: string[];
+}
+
+/**
+ * 'Fresh day' — abandons every open task in the property and releases all
+ * unblocked cleaning/maintenance units to Available. Occupied stays occupied.
+ */
+export async function freshDay(property_uid: string): Promise<FreshDayResult> {
+  return apiFetch<FreshDayResult>(`/properties/${property_uid}/fresh-day`, {
+    method: 'POST',
+  });
+}

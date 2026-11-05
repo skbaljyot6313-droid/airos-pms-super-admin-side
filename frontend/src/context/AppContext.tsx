@@ -264,6 +264,8 @@ interface AppContextType {
   requestTaskRedo: (task_uid: string, note?: string) => Promise<void>;
   reassignTask: (task_uid: string, employee_uid: string | null) => Promise<void>;
   reopenTask: (task_uid: string, note?: string) => Promise<void>;
+  /** Fresh day — abandons every open task and releases unblocked units. */
+  freshDay: () => Promise<void>;
 
   // Maintenance ticket operations
   createMaintenanceTicket: (
@@ -2070,6 +2072,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     [addToast]
   );
 
+  const freshDay = useCallback(async () => {
+    if (!activePropertyUid) return;
+    try {
+      const res = await propertiesApi.freshDay(activePropertyUid);
+      const releasedTotal = Object.values(res.released).reduce((a, b) => a + b, 0);
+      addToast({
+        type: 'success',
+        title: 'Fresh Day Started',
+        description:
+          `${res.tasks_abandoned} open task${res.tasks_abandoned === 1 ? '' : 's'} abandoned` +
+          ` · ${releasedTotal} unit${releasedTotal === 1 ? '' : 's'} released to available.` +
+          (res.still_blocked.length
+            ? ` ${res.still_blocked.length} unit${res.still_blocked.length === 1 ? '' : 's'} held by open maintenance.`
+            : ''),
+      });
+      await loadWorkspace();
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Fresh Day Failed',
+        description: apiErrorMessage(err, 'Could not reset the day. Please try again.'),
+      });
+      throw err;
+    }
+  }, [activePropertyUid, addToast, loadWorkspace]);
+
   const startTask = useCallback(
     async (task_uid: string) => {
       try {
@@ -2509,6 +2537,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     requestTaskRedo,
     reassignTask,
     reopenTask,
+    freshDay,
     createMaintenanceTicket,
     createMaintenanceBatch,
     assignMaintenanceTicket,

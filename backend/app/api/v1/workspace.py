@@ -955,6 +955,18 @@ async def bulk_unit_status(
     }
 
 
+@router.post("/properties/{property_id}/fresh-day")
+async def fresh_day(
+    property_id: uuid.UUID,
+    user: User = Staff,
+    session: AsyncSession = Depends(get_db),
+):
+    """'Fresh day' — abandon every open task in the property and release all
+    unblocked cleaning/maintenance units to available. Occupied units stay
+    occupied; open maintenance tickets keep their hold."""
+    return await StructureService(session).fresh_day(user, property_id)
+
+
 # ------------------------------- Employees --------------------------------
 
 class InvalidDateRange(AppError):

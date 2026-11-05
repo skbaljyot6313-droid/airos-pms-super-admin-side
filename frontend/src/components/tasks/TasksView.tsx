@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CalendarCheck, CalendarDays, ClipboardCheck, History, OctagonX, Plus, Wrench } from 'lucide-react';
+import { CalendarCheck, CalendarDays, ClipboardCheck, History, OctagonX, Plus, Sunrise, Wrench } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
@@ -26,6 +26,7 @@ import { Task } from '../../types';
 export const TasksView: React.FC = () => {
   const {
     currentPropertyTasks, currentUser, canDo, deleteTask, activePropertyUid,
+    activeProperty, freshDay,
   } = useApp();
 
   const [searchParams] = useSearchParams();
@@ -42,6 +43,8 @@ export const TasksView: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
+  const [freshDayOpen, setFreshDayOpen] = useState(false);
+  const [freshDayBusy, setFreshDayBusy] = useState(false);
 
   const selectedTask =
     currentPropertyTasks.find((t) => t.task_uid === selectedTaskUid) || null;
@@ -62,19 +65,32 @@ export const TasksView: React.FC = () => {
             Today's operational schedule and generated work history
           </p>
         </div>
-        {canCreate && (
-          <Button
-            variant="primary"
-            onClick={() => {
-              setEditingTask(null);
-              setCreateOpen(true);
-            }}
-            className="self-start sm:self-auto gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Task</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {isStaff && (
+            <Button
+              variant="outline"
+              onClick={() => setFreshDayOpen(true)}
+              disabled={freshDayBusy}
+              className="gap-2"
+            >
+              <Sunrise className="w-4 h-4" />
+              <span>{freshDayBusy ? 'Resetting…' : 'Fresh Day'}</span>
+            </Button>
+          )}
+          {canCreate && (
+            <Button
+              variant="primary"
+              onClick={() => {
+                setEditingTask(null);
+                setCreateOpen(true);
+              }}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Task</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Section nav — Today's schedule vs pending review vs history */}
@@ -130,6 +146,23 @@ export const TasksView: React.FC = () => {
           setEditingTask(null);
         }}
         editTask={editingTask}
+      />
+      <ConfirmationDialog
+        isOpen={freshDayOpen}
+        onClose={() => setFreshDayOpen(false)}
+        onConfirm={() => {
+          setFreshDayBusy(true);
+          void freshDay()
+            .catch(() => {})
+            .finally(() => setFreshDayBusy(false));
+        }}
+        entityType="Day"
+        entityName={activeProperty?.name || ''}
+        title="Start a fresh day?"
+        warningTitle="This resets the entire work schedule."
+        impactMessage="Every open task — pending, assigned, in progress, scheduled, or awaiting review — will be abandoned. Units under cleaning (or maintenance with no open ticket) will be released to Available. Occupied units stay occupied; open maintenance tickets keep their hold."
+        promptMessage={`Are you sure you want to start a fresh day at ${activeProperty?.name ?? 'this property'}?`}
+        confirmLabel="Start Fresh Day"
       />
       <ConfirmationDialog
         isOpen={!!deletingTask}

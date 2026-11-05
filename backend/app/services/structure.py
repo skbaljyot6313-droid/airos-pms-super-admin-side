@@ -1873,6 +1873,135 @@ class StructureService:
                 "generated_tasks": generated,
                 "skipped_blocked": skipped_blocked}
 
+    async def fresh_day(self, user: User, property_id: uuid.UUID) -> dict:
+        """'Fresh day' — one staff command that resets the floor:
+
+          1. Every open task in the property (the full BLOCKING_TASK set —
+             no status exempt, including `submitted` and `scheduled`) is
+             abandoned with reason FRESH_DAY_RESET, stamped to the current
+             operational day, plus a per-task history event under the actor.
+          2. Every release-eligible resource (cleaning | maintenance) is
+             re-derived: unblocked cleaning → available; maintenance stays
+             iff a ticket still blocks it. Occupied/available/inactive rows
+             are never touched — derive() structurally cannot override them.
+
+        Maintenance tickets are NOT closed — a real-world defect persists
+        across the reset (same carry-forward policy as daily rollover).
+        """
+        from sqlalchemy import update
+
+        from app.core.centrifugo import prop_channel, queue_event
+        from app.domain.resource_events import SRC_ADMIN_OVERRIDE
+        from app.domain.resource_states import BLOCKING_TASK, RELEASE_ELIGIBLE
+        from app.models.company import Company
+        from app.services.audit import AuditService
+        from app.services.resource_state import ResourceStateService
+        from app.services.rollover import (
+            current_operational_day, parse_day_start,
+        )
+
+        prop = await self._property_for_write(user, property_id)
+        now_utc = datetime.now(timezone.utc)
+        cres = await self.session.execute(
+            select(Company.operational_day_start)
+            .where(Company.id == prop.company_id)
+        )
+        op_key = current_operational_day(
+            now_utc, parse_day_start(cres.scalar_one_or_none())
+        )
+
+        # One conditional UPDATE for the whole open set — RETURNING yields
+        # only rows actually flipped (a completion committed concurrently
+        # leaves its row untouched and absent here), so history events are
+        # stamped for exactly the abandoned tasks.
+        res = await self.session.execute(
+            update(Task)
+            .where(
+                Task.property_id == prop.id,
+                Task.status.in_(BLOCKING_TASK),
+            )
+            .values(
+                status="abandoned",
+                abandoned_at=now_utc,
+                abandoned_reason="FRESH_DAY_RESET",
+                abandoned_from_status=Task.status,
+                operational_date=func.coalesce(Task.operational_date, op_key),
+            )
+            .returning(Task.id, Task.abandoned_from_status)
+        )
+        abandoned = res.all()
+        for task_id, from_status in abandoned:
+            self.session.add(
+                TaskHistoryEvent(
+                    task_id=task_id,
+                    type="abandoned",
+                    actor_name=user.name,
+                    note=(
+                        f"Fresh day reset: open task closed from "
+                        f"'{from_status}' for operational day {op_key}."
+                    ),
+                )
+            )
+        if abandoned:
+            queue_event(
+                self.session,
+                prop_channel(prop.id, "tasks"),
+                "fresh_day",
+                {"property_uid": str(prop.id), "abandoned": len(abandoned)},
+            )
+
+        state = ResourceStateService(self.session)
+        released = {"rooms": 0, "dorms": 0, "beds": 0,
+                    "washrooms": 0, "fixtures": 0}
+        still_blocked: list[str] = []
+
+        async def _release(model, label_col, rtype, release_to):
+            res = await self.session.execute(
+                select(model.id, label_col).where(
+                    model.property_id == prop.id,
+                    model.status.in_(RELEASE_ELIGIBLE),
+                )
+            )
+            n = 0
+            for rid, label in res.all():
+                new = await state.derive(
+                    rtype, rid, release_to=release_to, user=user,
+                    source=SRC_ADMIN_OVERRIDE, reason="Fresh day reset",
+                )
+                if new is not None:
+                    n += 1
+                else:
+                    still_blocked.append(str(label))
+            return n
+
+        # Fixtures release first — a maintenance fixture blocks its washroom;
+        # dorms derive last — they aggregate their beds' outcomes.
+        released["fixtures"] = await _release(
+            WashroomFixture, WashroomFixture.fixture_type,
+            "fixture", "operational")
+        released["washrooms"] = await _release(
+            Washroom, Washroom.name, "washroom", "available")
+        released["rooms"] = await _release(
+            Room, Room.room_number, "room", "available")
+        released["beds"] = await _release(
+            Bed, Bed.bed_number, "bed", "available")
+        released["dorms"] = await _release(
+            Dorm, Dorm.name, "dorm", "available")
+
+        AuditService(self.session).record(
+            user,
+            entity_type="property", entity_id=prop.id,
+            entity_name=prop.name, action="fresh_day_reset",
+            property_id=prop.id,
+            detail={"tasks_abandoned": len(abandoned),
+                    "released": released,
+                    "still_blocked": len(still_blocked)},
+        )
+        await self._commit()
+        return {"tasks_abandoned": len(abandoned),
+                "released": released,
+                "still_blocked": still_blocked}
+
     async def _generate_cleaning_tasks(
         self, user: User, prop: Property, action: str,
         rooms: list[Room], beds: list[Bed],
