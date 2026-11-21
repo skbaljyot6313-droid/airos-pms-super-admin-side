@@ -1,6 +1,52 @@
 @import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap');
 @import "tailwindcss";
 
+/*
+ * AiROS design tokens — the approved warm palette (discovery report 02 §10).
+ * Additive: existing hex classes are unchanged; new code should use these
+ * (bg-brand, text-ink-2, border-line…). Radius and font-family are deliberately
+ * NOT overridden here (would change Tailwind defaults / .font-display).
+ */
+@theme {
+  --color-brand: #386641;
+  --color-brand-hover: #2F5736;
+  --color-brand-ink: #244E2C;
+  --color-brand-soft: #EBF3EC;
+  --color-brand-line: #CEE4D1;
+  --color-ink: #24221F;
+  --color-ink-2: #6C675F;
+  --color-ink-3: #8C867C;
+  --color-canvas: #FAF8F5;
+  --color-shell: #F7F4EE;
+  --color-surface: #FFFFFF;
+  --color-line: #EAE5DC;
+  --color-line-strong: #DDD7CB;
+  --color-hover: #F6F3EE;
+  --color-danger: #C53B3B;
+  --color-danger-ink: #A32A2A;
+  --color-danger-soft: #FDE8E8;
+  --color-warn-ink: #9A4C07;
+  --color-warn-soft: #FEF3E8;
+  --color-info-ink: #554388;
+  --color-info-soft: #F2EFF9;
+
+  /* Type scale — minimum body size 13px; ≤11px reserved for uppercase labels */
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1rem;
+  --text-meta: 0.75rem;
+  --text-meta--line-height: 1.125rem;
+  --text-body: 0.8125rem;
+  --text-body--line-height: 1.25rem;
+  --text-body-lg: 0.875rem;
+  --text-body-lg--line-height: 1.375rem;
+  --text-section: 1rem;
+  --text-section--line-height: 1.5rem;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.75rem;
+  --text-kpi: 1.5rem;
+  --text-kpi--line-height: 2rem;
+}
+
 @layer base {
   body {
     font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

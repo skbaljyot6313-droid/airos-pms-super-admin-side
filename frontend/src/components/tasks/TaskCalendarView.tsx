@@ -53,7 +53,7 @@ export const TaskCalendarView: React.FC = () => {
       loading={loading}
       error={error}
       onSelect={(date) =>
-        navigate(`/property/${activePropertyUid}/tasks/history/${date}`)
+        navigate(`/property/${activePropertyUid}/operations/history/tasks/${date}`)
       }
       renderDay={(_date, raw) => {
         const day = raw as TaskCalendarDay;

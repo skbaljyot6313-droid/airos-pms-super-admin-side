@@ -18,7 +18,7 @@ event stream, so historical days remain accurate after later closes.
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +34,6 @@ from app.models.structure import (
     Dorm,
     Room,
     Washroom,
-    WashroomFixture,
     Zone,
 )
 from app.models.user import User
@@ -63,7 +62,7 @@ _EVENT_STATUS = {
 def _window(day: str, start: time) -> tuple[datetime, datetime]:
     """Aware-UTC bounds of the operational day `day` (IST wall clock)."""
     d = date.fromisoformat(day)
-    ws = datetime.combine(d, start, tzinfo=IST).astimezone(timezone.utc)
+    ws = datetime.combine(d, start, tzinfo=IST).astimezone(UTC)
     return ws, ws + timedelta(days=1)
 
 
@@ -72,7 +71,7 @@ def _aware(dt: datetime | None) -> datetime | None:
     as UTC so both backends compare consistently against window bounds."""
     if dt is None:
         return None
-    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
 def _status_at(events: list[MaintenanceTicketEvent], instant: datetime) -> str:
@@ -162,12 +161,12 @@ class MaintenanceAnalysisService:
         nxt = date(y + (m == 12), 1 if m == 12 else m + 1, 1)
         tickets = await self._tickets(
             prop,
-            datetime(nxt.year, nxt.month, nxt.day, tzinfo=timezone.utc)
+            datetime(nxt.year, nxt.month, nxt.day, tzinfo=UTC)
             + timedelta(days=1),
         )
 
         today_key = current_operational_day(
-            datetime.now(timezone.utc), start
+            datetime.now(UTC), start
         )
         days: dict[str, dict] = {}
         days_in_month = (nxt - date(y, m, 1)).days
@@ -527,7 +526,7 @@ class MaintenanceAnalysisService:
             "operational_day_start": start.strftime("%H:%M"),
             "window_start_utc": ws.isoformat(),
             "window_end_utc": we.isoformat(),
-            "is_today": ws <= datetime.now(timezone.utc) < we,
+            "is_today": ws <= datetime.now(UTC) < we,
             "summary": out_summary,
             "tickets": sorted(
                 items, key=lambda r: r["created_at"], reverse=True

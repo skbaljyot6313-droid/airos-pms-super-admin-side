@@ -43,14 +43,71 @@ export async function assignEmployeeToZone(
   });
 }
 
-/** Area assignment — employee covers every zone inside the area. */
+/** Area assignment — employee covers every zone inside the area. Replaces
+ *  the whole area set; zone coverage is left untouched (additive modes). */
 export async function assignEmployeeToArea(
-  employee_uid: string,
-  area_uid: string | null
+  employee_uid: string, area_uid: string | null
 ): Promise<Employee> {
   return apiFetch<Employee>(`/employees/${employee_uid}/zone`, {
     method: 'PATCH',
-    body: { zone_uid: null, area_uid } satisfies EmployeeZoneAssignRequest,
+    body: { area_uid } satisfies EmployeeZoneAssignRequest,
+  });
+}
+
+/** Full unallocate — clears zones, areas and property-wide coverage. */
+export async function unallocateEmployee(
+  employee_uid: string
+): Promise<Employee> {
+  return apiFetch<Employee>(`/employees/${employee_uid}/zone`, {
+    method: 'PATCH',
+    body: {
+      zone_uid: null,
+      area_uid: null,
+      property_wide: false,
+    } satisfies EmployeeZoneAssignRequest,
+  });
+}
+
+/** Property-wide assignment — employee covers every zone in the property. */
+export async function assignEmployeeToPropertyWide(
+  employee_uid: string
+): Promise<Employee> {
+  return apiFetch<Employee>(`/employees/${employee_uid}/zone`, {
+    method: 'PATCH',
+    body: { property_wide: true } satisfies EmployeeZoneAssignRequest,
+  });
+}
+
+/** Add ANOTHER whole area to coverage — appends to the area set instead of
+ *  replacing it (multi-area allocation). */
+export async function addEmployeeArea(
+  employee_uid: string,
+  area_uid: string
+): Promise<Employee> {
+  return apiFetch<Employee>(`/employees/${employee_uid}/areas`, {
+    method: 'POST',
+    body: { area_uid },
+  });
+}
+
+/** Remove ONE covered area — other covered areas survive. */
+export async function removeEmployeeArea(
+  employee_uid: string,
+  area_uid: string
+): Promise<Employee> {
+  return apiFetch<Employee>(`/employees/${employee_uid}/areas/${area_uid}`, {
+    method: 'DELETE',
+  });
+}
+
+/** Second-zone coverage — adds/replaces the secondary zone (null clears it). */
+export async function assignEmployeeSecondaryZone(
+  employee_uid: string,
+  secondary_zone_uid: string | null
+): Promise<Employee> {
+  return apiFetch<Employee>(`/employees/${employee_uid}/zone`, {
+    method: 'PATCH',
+    body: { secondary_zone_uid } satisfies EmployeeZoneAssignRequest,
   });
 }
 
@@ -66,7 +123,13 @@ export type EmployeeTaskFilter = 'all' | 'allocated' | 'completed' | 'abandoned'
 export type EmployeeRecordKind = 'attendance' | 'leaves' | 'shifts' | 'allocations' | 'submissions' | 'maintenance';
 export interface EmployeeProfile {
   employee: Employee;
-  context: { property_name: string; zone_name: string | null; area_name: string | null };
+  context: {
+    property_name: string;
+    zone_name: string | null;
+    area_name: string | null;
+    secondary_zone_name?: string | null;
+    covers_property?: boolean;
+  };
   tasks: Record<Exclude<EmployeeTaskFilter, 'all'>, number>;
   attendance: { recorded_days: number; present_days: number; absent_days: number; leave_days: number; week_off_days: number; recorded_work_seconds: number | null };
   leave_requests: { pending_requests: number; approved_requests: number; rejected_requests: number };

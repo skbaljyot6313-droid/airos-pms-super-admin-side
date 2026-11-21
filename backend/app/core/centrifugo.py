@@ -26,7 +26,7 @@ CENTRIFUGO_TOKEN_SECRET signs client JWTs — both Railway-only env vars.
 
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -133,7 +133,7 @@ async def publish(channel: str, event_type: str, data: dict[str, Any]) -> bool:
         "v": 1,
         "id": uuid.uuid4().hex,
         "type": event_type,
-        "ts": datetime.now(timezone.utc).isoformat(),
+        "ts": datetime.now(UTC).isoformat(),
         "data": data,
     }
     try:

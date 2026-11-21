@@ -169,9 +169,10 @@ class PropertyService:
         """Reassign the manager to an existing employee and/or update the
         manager's login email/password. The previous manager's account is
         demoted to the employee role (kept for audit — never deleted)."""
+        from sqlalchemy import select as sa_select
+
         from app.models.employee import Employee, employee_is_assignable
         from app.services.structure import NotFoundErr, ValidationErr
-        from sqlalchemy import select as sa_select
 
         reassigning = mgr.employee_uid is not None
         if reassigning:

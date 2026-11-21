@@ -64,10 +64,32 @@ async def check_rate_limit(scope: str, ident: str, limit: int, window_s: int) ->
                     await redis.pexpire(key, window_s * 1000)
             return count <= limit
         except Exception as exc:
-            logger.warning("Redis rate-limit check failed (fail-open): %s",
-                           type(exc).__name__)
+            _report_degraded(exc)
             return True
     return _mem_hit(key, limit, window_s)
+
+
+_degraded_state = {"warned_at": 0.0, "failures": 0}
+_DEGRADED_WARN_INTERVAL = 60.0
+
+
+def _report_degraded(exc: Exception) -> None:
+    """Loud-but-throttled degraded-mode alarm for Redis limiter outages.
+
+    The limiter fails open by design — but an invisible fail-open is how a
+    Redis outage quietly removes login-throttling for hours. Alarm at most
+    once per interval with a cumulative failure count."""
+    _degraded_state["failures"] += 1
+    now = time.monotonic()
+    if now - _degraded_state["warned_at"] >= _DEGRADED_WARN_INTERVAL:
+        _degraded_state["warned_at"] = now
+        logger.error(
+            "RATE LIMITER DEGRADED — Redis check failing (%s); %d checks "
+            "failed-open since last alarm. Abuse throttling is inactive "
+            "until Redis recovers.",
+            type(exc).__name__, _degraded_state["failures"],
+        )
+        _degraded_state["failures"] = 0
 
 
 def _client_ip(request: Request) -> str:

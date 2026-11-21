@@ -254,7 +254,7 @@ export const TaskStatusBadge: React.FC<{ status: TaskStatus; size?: 'sm' | 'md' 
       );
     case 'in_progress':
       return (
-        <Badge variant="orange" size={size}>
+        <Badge variant="lavender" size={size}>
           <Clock className="w-3 h-3" />
           {TASK_STATUS_LABELS[status]}
         </Badge>

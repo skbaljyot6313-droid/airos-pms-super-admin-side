@@ -8,7 +8,7 @@ collapsed into one concept.
 """
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, func, or_, select
@@ -16,17 +16,18 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.company import Company
-from app.models.employee import Employee
-from app.models.structure import Room, Zone
+from app.models.structure import Zone
 from app.models.task import Task
 from app.models.template import TemplateGeneration, WorkTemplate
 from app.models.user import User, UserRole
 from app.services.rollover import (
-    RolloverService, operational_day_bounds, operational_day_key,
+    RolloverService,
+    operational_day_bounds,
+    operational_day_key,
     parse_day_start,
 )
 from app.services.structure import StructureService, ValidationErr
-from app.services.template import TemplateService, compute_next_run, _tz
+from app.services.template import TemplateService, _tz, compute_next_run
 
 IST = ZoneInfo("Asia/Kolkata")
 
@@ -34,9 +35,9 @@ IST = ZoneInfo("Asia/Kolkata")
 def _today_bounds(tz: ZoneInfo = IST):
     now_local = datetime.now(tz)
     day_start = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
-    return day_start.astimezone(timezone.utc), (
+    return day_start.astimezone(UTC), (
         day_start + timedelta(days=1)
-    ).astimezone(timezone.utc), now_local.date()
+    ).astimezone(UTC), now_local.date()
 
 
 class TaskOpsService:
@@ -163,7 +164,7 @@ class TaskOpsService:
             .where(Company.id == prop.company_id)
         )
         day_start = parse_day_start(cres.scalar_one_or_none())
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         op_start_utc, op_end_utc = operational_day_bounds(now_utc, day_start)
         aq = (
             select(Task)
@@ -242,7 +243,7 @@ class TaskOpsService:
         # they will never generate, so don't present them as pending.
         skipped = (t.next_run_at is not None
                    and occ < (t.next_run_at if t.next_run_at.tzinfo
-                              else t.next_run_at.replace(tzinfo=timezone.utc)))
+                              else t.next_run_at.replace(tzinfo=UTC)))
         return {
             **base,
             "item_type": "occurrence",
@@ -359,8 +360,8 @@ class TaskOpsService:
         # batch path build them from UTC-aware occurrences. A client that
         # sends '+05:30' would otherwise write a key that never matches.
         if occurrence.tzinfo is None:
-            occurrence = occurrence.replace(tzinfo=timezone.utc)
-        occurrence = occurrence.astimezone(timezone.utc)
+            occurrence = occurrence.replace(tzinfo=UTC)
+        occurrence = occurrence.astimezone(UTC)
 
         canon_key = f"{occurrence.isoformat()}|{target_key}"
         if await self.templates._already_generated(t.id, canon_key):

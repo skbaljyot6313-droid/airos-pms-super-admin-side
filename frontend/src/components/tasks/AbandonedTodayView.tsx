@@ -16,6 +16,8 @@ const fmtTime = fmtTimeIST;
 const REASON: Record<string, { label: string; variant: 'sage' | 'orange' | 'red' | 'lavender' | 'neutral' }> = {
   NEXT_SCHEDULED_OCCURRENCE: { label: 'occurrence expired', variant: 'orange' },
   SYSTEM_DAILY_ROLLOVER: { label: 'daily rollover', variant: 'neutral' },
+  MIDNIGHT_EXPIRY: { label: 'midnight expiry', variant: 'neutral' },
+  FRESH_DAY_RESET: { label: 'fresh day reset', variant: 'lavender' },
 };
 
 const reasonLabel = (r?: string) =>
@@ -109,6 +111,8 @@ export const AbandonedTodayView: React.FC<Props> = ({ onOpenTask }) => {
           <option value="all">All reasons</option>
           <option value="NEXT_SCHEDULED_OCCURRENCE">Occurrence expired</option>
           <option value="SYSTEM_DAILY_ROLLOVER">Daily rollover</option>
+          <option value="MIDNIGHT_EXPIRY">Midnight expiry</option>
+          <option value="FRESH_DAY_RESET">Fresh day reset</option>
         </select>
         <button onClick={() => void load()} className="p-2 text-[#8C867C] hover:bg-[#F5F2EB] rounded-[9px] cursor-pointer" title="Refresh">
           <RefreshCw className="w-3.5 h-3.5" />

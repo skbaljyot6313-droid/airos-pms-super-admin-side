@@ -10,7 +10,7 @@ Base URL resolution: EMPLOYEE_API_BASE_URL (full base incl. /api/v1) wins;
 otherwise EMPLOYEE_BACKEND_URL + /api/v1.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 
@@ -276,11 +276,11 @@ async def fetch_location_history(
     Range rules mirror upstream: `to` must be after `from`, span <= 31 days.
     Naive datetimes are treated as UTC; aware ones are converted."""
     if from_dt.tzinfo is None:
-        from_dt = from_dt.replace(tzinfo=timezone.utc)
+        from_dt = from_dt.replace(tzinfo=UTC)
     if to_dt.tzinfo is None:
-        to_dt = to_dt.replace(tzinfo=timezone.utc)
-    from_dt = from_dt.astimezone(timezone.utc)
-    to_dt = to_dt.astimezone(timezone.utc)
+        to_dt = to_dt.replace(tzinfo=UTC)
+    from_dt = from_dt.astimezone(UTC)
+    to_dt = to_dt.astimezone(UTC)
     if to_dt <= from_dt:
         raise LiveLocationBadRequest(
             "`to` must be after `from`.", code="INVALID_HISTORY_RANGE"

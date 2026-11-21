@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Building2,
   Bed,
@@ -15,6 +16,7 @@ import {
   Bath,
   Sparkles,
   ConciergeBell,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../ui/Card';
@@ -45,6 +47,7 @@ import {
 import { UnitZoneBoard } from './UnitZoneBoard';
 import { OccupancyToggle } from './OccupancyToggle';
 import { RequestItemModal } from './RequestItemModal';
+import { SwitchGuestModal, SwitchSource } from './SwitchGuestModal';
 import { CreateMaintenanceModal, MaintenanceTarget } from '../maintenance/CreateMaintenanceModal';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 import { Room, Dorm, Bed as BedUnit, BedStatus, RoomStatus, MaintenanceTicket, Washroom } from '../../types';
@@ -90,9 +93,27 @@ export const RoomsDormsView: React.FC = () => {
     subscribeUnitDeselect,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'rooms' | 'dorms' | 'washrooms' | 'zones'>('rooms');
+  type UnitTab = 'rooms' | 'dorms' | 'washrooms' | 'zones';
+  const UNIT_TABS: UnitTab[] = ['rooms', 'dorms', 'washrooms', 'zones'];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTabRaw] = useState<UnitTab>(() => {
+    const t = searchParams.get('tab');
+    return UNIT_TABS.includes(t as UnitTab) ? (t as UnitTab) : 'rooms';
+  });
+  const setActiveTab = (t: UnitTab) => {
+    setActiveTabRaw(t);
+    setSearchParams((prev) => {
+      const q = new URLSearchParams(prev);
+      q.set('tab', t);
+      return q;
+    });
+  };
   const [selectedZoneFilter, setSelectedZoneFilter] = useState<string>('all');
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
+  const STATUS_PARAMS = ['available', 'occupied', 'cleaning', 'maintenance'];
+  const initialStatus = searchParams.get('status');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>(
+    initialStatus && STATUS_PARAMS.includes(initialStatus) ? initialStatus : 'all',
+  );
 
   // Modals
   const [singleRoomModalOpen, setSingleRoomModalOpen] = useState(false);
@@ -140,6 +161,8 @@ export const RoomsDormsView: React.FC = () => {
   // checkout goes through a confirmation dialog.
 
   // Checkout confirmation + per-unit busy lock (no double-click dupes)
+  // Guest switch — the occupied unit whose guest is being moved
+  const [switchSource, setSwitchSource] = useState<SwitchSource | null>(null);
   const [checkoutTarget, setCheckoutTarget] = useState<{
     kind: 'room' | 'bed';
     uid: string;
@@ -300,7 +323,7 @@ export const RoomsDormsView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="mb-2">
-            <BackButton to={`/property/${activeProperty?.property_uid}/zones`} />
+            <BackButton to={`/property/${activeProperty?.property_uid}/overview`} />
           </div>
           <div className="flex items-center gap-2">
             <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#24221F] tracking-tight">
@@ -840,6 +863,35 @@ export const RoomsDormsView: React.FC = () => {
                           </button>
                           <button
                             type="button"
+                            disabled={
+                              !(room.is_occupied ?? room.status === 'occupied') ||
+                              busyUnits.has(`room:${room.room_uid}`)
+                            }
+                            onClick={() =>
+                              setSwitchSource({
+                                kind: 'room',
+                                uid: room.room_uid,
+                                label: `Room ${room.room_number}`,
+                                guest: room.current_guest ?? null,
+                              })
+                            }
+                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-[#386641] ${
+                              (room.is_occupied ?? room.status === 'occupied') &&
+                              !busyUnits.has(`room:${room.room_uid}`)
+                                ? 'text-[#386641] border-[#CDE0CF] bg-[#F4F8F4] hover:bg-[#EBF3EC] cursor-pointer'
+                                : 'text-[#C4BDB1] border-[#EDE8DD] bg-[#FAF8F5] cursor-not-allowed'
+                            }`}
+                            title={
+                              room.is_occupied ?? room.status === 'occupied'
+                                ? 'Move the guest to another room or dorm bed'
+                                : 'No active occupancy'
+                            }
+                          >
+                            <ArrowRightLeft className="w-3 h-3" />
+                            Switch
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => setRequestTarget({ room })}
                             className="px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#B45309] text-[#9A4C07] border-[#F0D5B8] bg-[#FDF6EE] hover:bg-[#FBEEDA]"
                             title="Raise a guest request — towel, extra mattress, etc. (urgent priority)"
@@ -1292,6 +1344,23 @@ export const RoomsDormsView: React.FC = () => {
                                   )
                                 }
                               />
+                              {(bed.is_occupied || bed.status === 'occupied') && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSwitchSource({
+                                      kind: 'bed',
+                                      uid: bed.bed_uid,
+                                      label: `${dorm.name} — ${bed.bed_number}`,
+                                      guest: bed.guest_name ?? null,
+                                    })
+                                  }
+                                  className="p-1 rounded-[6px] border transition-colors inline-flex items-center cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#386641] text-[#386641] border-[#CDE0CF] bg-[#F4F8F4] hover:bg-[#EBF3EC]"
+                                  title="Switch — move the guest to another room or bed"
+                                >
+                                  <ArrowRightLeft className="w-3 h-3" />
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => setRequestTarget({ dorm, bed })}
@@ -1427,7 +1496,7 @@ export const RoomsDormsView: React.FC = () => {
           onClose={() => setMaintenanceRoom(null)}
           onViewTicket={() => {
             setMaintenanceRoom(null);
-            navigate(`/property/${activeProperty?.property_uid}/tasks?tab=maintenance`);
+            navigate(`/property/${activeProperty?.property_uid}/operations/tasks?tab=maintenance`);
           }}
         />
       )}
@@ -1443,10 +1512,17 @@ export const RoomsDormsView: React.FC = () => {
           onViewTicket={() => {
             setMaintenanceWashroom(null);
             setMaintenanceWashroomTicket(null);
-            navigate(`/property/${activeProperty?.property_uid}/tasks?tab=maintenance`);
+            navigate(`/property/${activeProperty?.property_uid}/operations/tasks?tab=maintenance`);
           }}
         />
       )}
+
+      {/* Guest switch — move an open occupancy to any available unit */}
+      <SwitchGuestModal
+        isOpen={!!switchSource}
+        source={switchSource}
+        onClose={() => setSwitchSource(null)}
+      />
 
       {/* Batch maintenance for selected beds — one ticket per bed */}
       {bedMaintenanceTargets && (
@@ -1456,7 +1532,7 @@ export const RoomsDormsView: React.FC = () => {
           onClose={() => setBedMaintenanceTargets(null)}
           onViewTicket={() => {
             setBedMaintenanceTargets(null);
-            navigate(`/property/${activeProperty?.property_uid}/tasks?tab=maintenance`);
+            navigate(`/property/${activeProperty?.property_uid}/operations/tasks?tab=maintenance`);
           }}
         />
       )}
@@ -1469,7 +1545,7 @@ export const RoomsDormsView: React.FC = () => {
           onClose={() => setRoomMaintenanceTargets(null)}
           onViewTicket={() => {
             setRoomMaintenanceTargets(null);
-            navigate(`/property/${activeProperty?.property_uid}/tasks?tab=maintenance`);
+            navigate(`/property/${activeProperty?.property_uid}/operations/tasks?tab=maintenance`);
           }}
         />
       )}

@@ -1,0 +1,76 @@
+# AiROS VA media pipeline — local/dev stack.
+#
+#   docker compose -f deploy/media/docker-compose.yml up -d
+#
+#   camera --RTSP--> go2rtc (ingest + restream) --RTSP--> MediaMTX
+#                    (distribution) --WHEP/HLS--> browser
+#
+# Backend env for this stack:
+#   GO2RTC_API_URL=http://localhost:1984
+#   GO2RTC_RTSP_URL=rtsp://go2rtc:8554       # docker DNS — used BY MediaMTX
+#   MEDIAMTX_API_URL=http://localhost:9997
+#   MEDIAMTX_SIGNAL_URL=http://localhost:8889
+#   MEDIAMTX_PUBLIC_URL=http://localhost:8888
+#   VA_STREAM_TOKEN_SECRET=<random>
+#   CAMERA_CREDENTIAL_KEY=<fernet key>
+#
+# NOTE: no config mounts on purpose — both services persist API-driven
+# stream/path registrations back into their config file, which must be
+# writable. Defaults match this stack; see mediamtx.yml here for the
+# production reference. Streams/paths re-register lazily at session start,
+# so a container restart self-heals.
+
+networks:
+  media:
+    driver: bridge
+
+services:
+  go2rtc:
+    image: alexxit/go2rtc:latest
+    restart: unless-stopped
+    networks: [media]
+    ports:
+      - "1984:1984"      # control API (backend) — internal-only in prod
+      - "8554:8554"      # RTSP restream — MediaMTX uses service DNS
+      - "8555:8555/udp"  # go2rtc WebRTC (unused by AiROS — kept for tooling)
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest-ffmpeg
+    restart: unless-stopped
+    networks: [media]
+    environment:
+      MTX_API: "yes"
+      # Dev: unauthenticated internal permissions — control/read actions
+      # trusted on localhost/docker-net. Lock down in production (auth hook
+      # or authenticated users) — see README.
+      MTX_AUTHINTERNALUSERS_0_USER: "any"
+      MTX_AUTHINTERNALUSERS_0_PASS: ""
+      MTX_AUTHINTERNALUSERS_0_IPS: ""
+      MTX_AUTHINTERNALUSERS_0_PERMISSIONS_0_ACTION: "api"
+      MTX_AUTHINTERNALUSERS_1_USER: "any"
+      MTX_AUTHINTERNALUSERS_1_PASS: ""
+      MTX_AUTHINTERNALUSERS_1_IPS: ""
+      MTX_AUTHINTERNALUSERS_1_PERMISSIONS_0_ACTION: "read"
+      MTX_AUTHINTERNALUSERS_2_USER: "any"
+      MTX_AUTHINTERNALUSERS_2_PASS: ""
+      MTX_AUTHINTERNALUSERS_2_IPS: ""
+      MTX_AUTHINTERNALUSERS_2_PERMISSIONS_0_ACTION: "publish"
+      # Advertise loopback as the ICE host candidate so browsers on this
+      # machine can reach media — replace with the real public IP/host in
+      # any non-local deployment, and open UDP/8189.
+      MTX_WEBRTCICEHOSTNAT1TO1IPS: "127.0.0.1"
+      MTX_WEBRTCICESERVERS2: ""
+      # Distribution is WebRTC + HLS only — shut down protocol servers
+      # nothing uses (the internal RTSP *pull* from go2rtc is a client,
+      # unaffected by the RTSP server listener).
+      MTX_RTMP: "no"
+      MTX_SRT: "no"
+    ports:
+      - "9997:9997"      # control API (backend) — restrict in prod
+      - "8889:8889"      # WHEP signaling + ICE-TCP (backend proxies SDP)
+      - "8888:8888"      # HLS (browser fallback)
+      - "8189:8189/udp"  # WebRTC ICE media (browser)
+    # RTSP :8554 stays inside the `media` network — publishing it would
+    # clash with go2rtc's host 8554 and nothing host-side needs it.
+    depends_on:
+      - go2rtc

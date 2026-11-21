@@ -1,0 +1,6 @@
+# MediaMTX — distribution only (WHEP/HLS). Paths are pushed by the AiROS
+# backend via the control API and persisted into this file (mounted
+# writable), so container restarts keep path registrations. All runtime
+# behaviour (auth, metrics, ICE hosts, protocol servers) is configured via
+# MTX_* environment variables in docker-compose.yml.
+paths: {}

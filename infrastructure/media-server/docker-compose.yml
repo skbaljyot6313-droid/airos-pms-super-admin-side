@@ -1,0 +1,132 @@
+# AiROS VA — dedicated media server (PRODUCTION profile)
+#
+#   cp .env.example .env   # fill in secrets + public IP
+#   docker compose up -d
+#
+# Topology:
+#   IP cameras --RTSP--> go2rtc (ingest/auth/restream) --RTSP--> MediaMTX
+#                          (distribution) --WHEP :8889 / HLS :8888--> browsers
+#   FastAPI control plane --> go2rtc :1984 api, MediaMTX :9997 api
+#
+# MediaMTX pulls go2rtc restreams lazily (sourceOnDemand) — no redundant
+# RTSP to the physical camera: N viewers = 1 upstream connection. go2rtc
+# owns camera dial/reconnect/auth; MediaMTX owns viewer sessions only.
+#
+# Auth note: both control APIs are bound to loopback/host-firewalled ports
+# AND authenticated (basic auth from .env) — backend sets GO2RTC_API_AUTH
+# and MEDIAMTX_API_AUTH to the same credentials.
+
+networks:
+  media:
+    driver: bridge
+
+services:
+  go2rtc:
+    image: alexxit/go2rtc:1.9.15
+    restart: unless-stopped
+    networks: [media]
+    # Streams are pushed by the backend via the API; go2rtc persists them
+    # into this mounted config so container restarts keep registrations.
+    volumes:
+      - ./config/go2rtc.yaml:/config/go2rtc.yaml
+    environment:
+      # Basic auth on the control API — required outside localhost.
+      - "GO2RTC_API_USERNAME=${GO2RTC_API_USER:-airos}"
+      - "GO2RTC_API_PASSWORD=${GO2RTC_API_PASSWORD:?set GO2RTC_API_PASSWORD in .env}"
+    ports:
+      # Control API — loopback only on the host; the backend reaches it on
+      # localhost or over the host firewall allowlist. NEVER public.
+      - "127.0.0.1:1984:1984"
+      # RTSP restream consumed by MediaMTX — docker network only.
+      expose:
+      - "8554"
+
+  mediamtx:
+    image: bluenviron/mediamtx:1.21.4-ffmpeg
+    restart: unless-stopped
+    networks: [media]
+    volumes:
+      # API-driven path registrations persist into this file — survives
+      # container recreation. Keep it writable by the container.
+      - ./config/mediamtx.yml:/mediamtx.yml
+    environment:
+      MTX_API: "yes"
+      MTX_METRICS: "yes"
+      # Authenticated control/read/publish — passwords come from .env,
+      # never hardcoded here.
+      MTX_AUTHINTERNALUSERS_0_USER: ${MTX_API_USER:-airos}
+      MTX_AUTHINTERNALUSERS_0_PASS: ${MTX_API_PASSWORD:?set MTX_API_PASSWORD in .env}
+      MTX_AUTHINTERNALUSERS_0_PERMISSIONS_0_ACTION: api
+      MTX_AUTHINTERNALUSERS_1_USER: reader
+      MTX_AUTHINTERNALUSERS_1_PASS: ${MTX_API_PASSWORD}
+      MTX_AUTHINTERNALUSERS_1_PERMISSIONS_0_ACTION: read
+      MTX_AUTHINTERNALUSERS_2_USER: publisher
+      MTX_AUTHINTERNALUSERS_2_PASS: ${MTX_API_PASSWORD}
+      MTX_AUTHINTERNALUSERS_2_PERMISSIONS_0_ACTION: publish
+      # Advertise the REAL public/host address browsers use for ICE —
+      # never docker-internal IPs. UDP/8189 must be open on the firewall,
+      # or ICE falls back to TCP/8889.
+      MTX_WEBRTCADDITIONALHOSTS: ${PUBLIC_MEDIA_HOST:?set PUBLIC_MEDIA_HOST in .env}
+      MTX_WEBRTCICESERVERS2: ""
+      MTX_WEBRTCICETCPMUXADDRESS: ":8889"
+      # Distribution is WebRTC + HLS only — nothing else listens.
+      MTX_RTMP: "no"
+      MTX_SRT: "no"
+      MTX_RTSPADDRESS: ":8554"
+      # Viewer/resource ceilings — bounded, tune to host capacity.
+      MTX_PATHREADLIMITS: ""
+    ports:
+      - "127.0.0.1:9997:9997"    # control API (backend) — localhost/firewalled
+      - "8889:8889"              # WHEP signalling + ICE-TCP mux (browser)
+      - "8888:8888"              # HLS (browser fallback)
+      - "8189:8189/udp"          # WebRTC ICE media (browser)
+      - "127.0.0.1:9998:9998"    # Prometheus metrics — localhost/monitoring net
+    depends_on:
+      - go2rtc
+    deploy:
+      resources:
+        limits:
+          # Distribution is network-bound; CPU stays low without transcoding.
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          memory: 256M
+
+  # Liveness probe — the media images are scratch-based (no shell), so a
+  # tiny sidecar polls both control APIs and fails the compose health gate
+  # when either is down.
+  healthcheck:
+    image: curlimages/curl:8.10.1
+    restart: unless-stopped
+    networks: [media]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          curl -sf -u "$${GO2RTC_API_USER:-airos}:$${GO2RTC_API_PASSWORD}" http://go2rtc:1984/api \
+            && curl -sf -u "$${MTX_API_USER:-airos}:$${MTX_API_PASSWORD}" http://mediamtx:9997/v3/config/global/get \
+            || echo "media healthcheck FAILED $$(date -Is)";
+          sleep 15;
+        done
+    environment:
+      GO2RTC_API_USER: ${GO2RTC_API_USER:-airos}
+      GO2RTC_API_PASSWORD: ${GO2RTC_API_PASSWORD}
+      MTX_API_USER: ${MTX_API_USER:-airos}
+      MTX_API_PASSWORD: ${MTX_API_PASSWORD}
+    depends_on:
+      - go2rtc
+      - mediamtx
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    networks: [media]
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+
+volumes:
+  prometheus-data:

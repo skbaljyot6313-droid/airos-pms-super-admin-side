@@ -56,7 +56,7 @@ export const PropertiesView: React.FC = () => {
 
   const handleOpenProperty = (property_uid: string) => {
     setActivePropertyUid(property_uid);
-    navigate(`/property/${property_uid}/zones`);
+    navigate(`/property/${property_uid}/overview`);
   };
 
   const handleStartEdit = (prop: Property) => {

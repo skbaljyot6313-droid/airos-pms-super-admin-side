@@ -29,6 +29,9 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
   const dialogRef = useRef<HTMLDivElement>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(() => new Set());
+  const [retry, setRetry] = useState(0);
+  const markFailed = (url: string) => setFailedUrls((previous) => new Set(previous).add(url));
 
   useEffect(() => {
     if (!images.length) return;
@@ -125,12 +128,28 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
         </div>
 
         <div className="relative bg-black/35 flex items-center justify-center h-[55dvh] max-h-[640px] p-4">
-          <EvidencePhoto
-            key={current.url}
-            src={current.url}
-            alt={`Completion evidence ${index + 1}`}
-            className="h-full w-full rounded-[10px] shadow-lg"
-          />
+          {failedUrls.has(current.url) ? (
+            <div className="text-center px-12" role="alert">
+              <p>Evidence image could not be loaded.</p>
+              <p className="text-sm text-[#DDD7CB] mt-2">The file may be unavailable or media storage may be temporarily unreachable.</p>
+              <Button variant="ghost" className="mt-4" onClick={() => {
+                setFailedUrls((previous) => {
+                  const next = new Set(previous);
+                  next.delete(current.url);
+                  return next;
+                });
+                setRetry((value) => value + 1);
+              }}>Retry image</Button>
+            </div>
+          ) : (
+            <EvidencePhoto
+              key={`${current.url}:${retry}`}
+              src={current.url}
+              alt={`Completion evidence ${index + 1}`}
+              onError={() => markFailed(current.url)}
+              className="h-full w-full rounded-[10px] shadow-lg"
+            />
+          )}
           {hasMany && (
             <>
               <button

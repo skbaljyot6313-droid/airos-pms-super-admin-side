@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 30s  # lightweight — media dashboards don't need seconds
+
+scrape_configs:
+  # MediaMTX /metrics (MTX_METRICS=yes → :9998): path ready state, readers,
+  # per-protocol session counts, bytes in/out.
+  - job_name: mediamtx
+    static_configs:
+      - targets: ["mediamtx:9998"]
+
+  # go2rtc exposes no Prometheus endpoint — scrape the AiROS backend's
+  # /va/media-stats (auth-gated) or read its logs for producer/consumer
+  # counts. Point a static exporter at the backend if dashboards need it.

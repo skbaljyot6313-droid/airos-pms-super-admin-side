@@ -4,11 +4,13 @@ import {
   AutomationTrigger,
   BedStatus,
   Company,
+  Dorm,
   DormType,
   Employee,
   MaintenancePriority,
   Property,
   RecurrenceSchedule,
+  Room,
   RoomStatus,
   Task,
   TaskCompletionImage,
@@ -251,6 +253,25 @@ export interface CheckInRequest {
   guest_name?: string | null;
 }
 
+/** POST /occupancy/switch — move a guest between any two units. */
+export interface OccupancySwitchRequest {
+  source_type: 'room' | 'bed';
+  source_uid: string;
+  target_type: 'room' | 'bed';
+  target_uid: string;
+  /** Does the vacated unit need cleaning? false → releases to Available. */
+  clean_vacated?: boolean;
+}
+
+export interface OccupancySwitchResponse {
+  guest_name: string | null;
+  generated_tasks?: Task[];
+  /** Refreshed dorm payloads for every dorm touched by the move. */
+  dorms?: Record<string, Dorm>;
+  /** Refreshed room payloads for every room touched by the move. */
+  rooms?: Record<string, Room>;
+}
+
 export interface ResourceTransitionRequest {
   to: string;
   reason: string;
@@ -393,9 +414,13 @@ export interface EmployeeUpdateRequest {
 }
 
 export interface EmployeeZoneAssignRequest {
-  zone_uid: string | null;
-  /** Area-level assignment — mutually exclusive with zone_uid */
+  zone_uid?: string | null;
+  /** Area-level assignment — coexists with zone coverage; null clears the area set */
   area_uid?: string | null;
+  /** Optional SECOND coverage zone (max 2 zones); null clears only the secondary slot */
+  secondary_zone_uid?: string | null;
+  /** Property-wide coverage — eligible for work in every zone (exclusive) */
+  property_wide?: boolean;
 }
 
 // ---------------------------------------------------------------------------

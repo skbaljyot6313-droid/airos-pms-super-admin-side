@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import auth_cache
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.exceptions import AppError
 from app.core.rate_limit import rate_limit
 from app.dependencies.auth import Unauthenticated, get_current_user
 from app.models.user import User
@@ -64,9 +63,9 @@ async def login(payload: LoginRequest, session: AsyncSession = Depends(get_db)):
     dependencies=[Depends(rate_limit("refresh", limit=30, window_seconds=60))],
 )
 async def refresh(payload: RefreshRequest, session: AsyncSession = Depends(get_db)):
-    """Exchange a valid refresh token for a new access token."""
-    access = await AuthService(session).refresh(payload.refresh_token)
-    return TokenRefreshResponse(access_token=access)
+    """Exchange a valid refresh token for a new token pair (rotation)."""
+    access, new_refresh = await AuthService(session).refresh(payload.refresh_token)
+    return TokenRefreshResponse(access_token=access, refresh_token=new_refresh)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

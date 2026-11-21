@@ -446,8 +446,15 @@ export interface Employee {
   company_uid: string;
   property_uid: string;
   zone_uid?: string | null; // null if "Not allocated to a zone"
+  /** Optional SECOND coverage zone — employee is eligible in both zones (max 2) */
+  secondary_zone_uid?: string | null;
   /** Area-level assignment — mutually exclusive with zone_uid; covers all zones in the area */
   area_uid?: string | null;
+  /** ALL covered areas — primary area_uid first, then additional whole-area
+   *  assignments (multi-area coverage). */
+  area_uids?: string[];
+  /** Property-wide coverage — eligible for work in every zone of the property */
+  covers_property?: boolean;
   name: string;
   email: string;
   phone: string;

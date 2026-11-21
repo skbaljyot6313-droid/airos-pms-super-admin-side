@@ -14,10 +14,10 @@ describe('Employee directory profile links', () => {
   it('opens the canonical detail page from the employee name and card background', () => {
     render(<EmployeeDirectory />);
     fireEvent.click(screen.getByRole('button', { name: 'View employee profile for Employee One' }));
-    expect(navigate).toHaveBeenLastCalledWith('/property/property-1/employees/employee-1');
+    expect(navigate).toHaveBeenLastCalledWith('/property/property-1/workforce/employees/employee-1');
     navigate.mockClear();
     fireEvent.click(screen.getByText('Housekeeper'));
-    expect(navigate).toHaveBeenLastCalledWith('/property/property-1/employees/employee-1');
+    expect(navigate).toHaveBeenLastCalledWith('/property/property-1/workforce/employees/employee-1');
   });
   it('does not navigate when interacting with the allocation dropdown', () => {
     const { container } = render(<EmployeeDirectory />);

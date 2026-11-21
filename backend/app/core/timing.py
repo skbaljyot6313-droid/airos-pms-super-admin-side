@@ -25,7 +25,6 @@ from dataclasses import dataclass, field
 
 from sqlalchemy import event
 
-from app.core.config import settings
 from app.core.logging import get_logger
 
 logger = get_logger("app.timing")

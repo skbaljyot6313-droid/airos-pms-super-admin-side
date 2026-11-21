@@ -12,7 +12,7 @@ duplicated.
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import func, or_, select, text, union_all
 from sqlalchemy.exc import IntegrityError
@@ -20,9 +20,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import bounded_lock_wait, is_lock_timeout
 from app.core.logging import get_logger
+from app.domain.coverage import covers_area, covers_area_direct, covers_zone
+from app.models.attendance import on_duty
+from app.models.company import Company
 from app.models.employee import Employee, employee_is_assignable
-from app.services.employee_events import queue_allocation_notice
 from app.models.property import Property
+from app.services.rollover import current_operational_day, parse_day_start
 from app.models.structure import Area, Zone
 from app.models.user import User
 from app.models.work_allocation import (
@@ -30,13 +33,14 @@ from app.models.work_allocation import (
     WorkAllocationHistory,
     ZoneAllocationState,
 )
+from app.services.employee_events import queue_allocation_notice
 
 logger = get_logger(__name__)
 
 
 async def next_batch_number(session: AsyncSession) -> str:
     """WB-YYYY-NNNNN via a PostgreSQL sequence; max-scan fallback on SQLite."""
-    year = datetime.now(timezone.utc).year
+    year = datetime.now(UTC).year
     try:
         res = await session.execute(text("SELECT nextval('work_batch_seq')"))
         n = int(res.scalar_one())
@@ -53,7 +57,7 @@ async def next_batch_numbers(session: AsyncSession, n: int) -> list[str]:
     fallback counts once and offsets — no per-number round trips."""
     if n <= 0:
         return []
-    year = datetime.now(timezone.utc).year
+    year = datetime.now(UTC).year
     try:
         res = await session.execute(
             text("SELECT nextval('work_batch_seq') "
@@ -151,9 +155,12 @@ class WorkAllocationService:
 
     async def employee_for_assignment(
         self, employee_id: uuid.UUID, property_id: uuid.UUID,
-        *, work_type: str | None = None,
+        *, work_type: str | None = None, emergency_override: bool = False,
     ) -> Employee:
-        """Resolve an explicit assignee under the central eligibility rules."""
+        """Resolve an explicit assignee under the central eligibility rules.
+
+        `emergency_override` skips ONLY the on-duty gate; callers must have
+        passed assignment_override.authorize_override first."""
         from app.services.structure import ValidationErr
 
         res = await self.session.execute(
@@ -176,7 +183,28 @@ class WorkAllocationService:
                 "Employee department is not eligible for this task type.",
                 field="employee_uid",
             )
+        if not emergency_override and not await self.is_on_duty(emp.id, property_id):
+            raise ValidationErr(
+                "Employee is not on duty — they must start their workday "
+                "before receiving new work.",
+                field="employee_uid",
+            )
         return emp
+
+    async def is_on_duty(self, employee_id: uuid.UUID, property_id: uuid.UUID) -> bool:
+        op_date = await self._current_operational_date(property_id)
+        return bool(await self.session.scalar(select(on_duty(employee_id, op_date))))
+
+    async def _current_operational_date(self, property_id: uuid.UUID) -> str:
+        """This property's company op-day key for right now (IST)."""
+        res = await self.session.execute(
+            select(Company.operational_day_start)
+            .join(Property, Property.company_id == Company.id)
+            .where(Property.id == property_id)
+        )
+        return current_operational_day(
+            datetime.now(UTC), parse_day_start(res.scalar_one_or_none()),
+        )
 
     async def _employee_pool(
         self, property_id: uuid.UUID, *scope,
@@ -187,6 +215,9 @@ class WorkAllocationService:
             *scope,
             func.lower(Employee.status) == "active",
             Employee.leave_status.is_(False),
+            # Availability: only an employee who has started today's workday
+            # and is not on break receives new work (models.attendance.on_duty).
+            on_duty(Employee.id, await self._current_operational_date(property_id)),
         ]
         if departments:
             filters.append(or_(*(
@@ -245,19 +276,37 @@ class WorkAllocationService:
             # pools (each WAN round trip is ~200ms), partitioned in memory.
             both = await self._employee_pool(
                 property_id,
-                or_(
-                    Employee.zone_id == zone_id,
-                    Employee.area_id == cover_area,
-                ),
+                or_(covers_zone(zone_id), covers_area_direct(cover_area)),
                 manager_employee_id=manager_employee_id,
                 departments=departments,
             )
-            zone_pool = [e for e in both if e.zone_id == zone_id]
-            area_pool = [e for e in both if e.area_id == cover_area]
+            # Which of these employees hold the covering area — primary
+            # ``area_id`` or an ``employee_area_assignments`` row.
+            from app.models.employee import EmployeeAreaAssignment
+            extra_area_emps = set()
+            if both:
+                res = await self.session.execute(
+                    select(EmployeeAreaAssignment.employee_id).where(
+                        EmployeeAreaAssignment.employee_id.in_(
+                            [e.id for e in both]
+                        ),
+                        EmployeeAreaAssignment.area_id == cover_area,
+                    )
+                )
+                extra_area_emps = set(res.scalars())
+            zone_pool = [
+                e for e in both
+                if e.zone_id == zone_id or e.secondary_zone_id == zone_id
+                or e.covers_property
+            ]
+            area_pool = [
+                e for e in both
+                if e.area_id == cover_area or e.id in extra_area_emps
+            ]
         else:
             zone_pool = (
                 await self._employee_pool(
-                    property_id, Employee.zone_id == zone_id,
+                    property_id, covers_zone(zone_id),
                     manager_employee_id=manager_employee_id,
                     departments=departments,
                 )
@@ -265,23 +314,16 @@ class WorkAllocationService:
             )
             if cover_area is not None and zone_id is None:
                 # AREA-LEVEL task — pool = area-wide staff UNION the staff
-                # of every zone inside the area (single query via zone
-                # subselect).
+                # of every zone inside the area, plus property-wide staff.
                 area_pool = await self._employee_pool(
-                    property_id,
-                    or_(
-                        Employee.area_id == cover_area,
-                        Employee.zone_id.in_(
-                            select(Zone.id).where(Zone.area_id == cover_area)
-                        ),
-                    ),
+                    property_id, covers_area(cover_area),
                     manager_employee_id=manager_employee_id,
                     departments=departments,
                 )
             else:
                 area_pool = (
                     await self._employee_pool(
-                        property_id, Employee.area_id == cover_area,
+                        property_id, covers_area_direct(cover_area),
                         manager_employee_id=manager_employee_id,
                         departments=departments,
                     )
@@ -661,7 +703,7 @@ class WorkAllocationService:
                 )
             if state is not None:
                 state.last_assigned_employee_id = employee.id
-                state.last_assigned_at = datetime.now(timezone.utc)
+                state.last_assigned_at = datetime.now(UTC)
                 state.version += 1
         if zone_id is None and zone_name is None:
             zone_name = area_name
@@ -759,11 +801,16 @@ class WorkAllocationService:
                 area_zone_ids.setdefault(z.area_id, []).append(z.id)
         by_zone: dict[uuid.UUID, list[Employee]] = {}
         by_area: dict[uuid.UUID, list[Employee]] = {}
+        property_wide: list[Employee] = []
         for e in staff:
             if e.zone_id:
                 by_zone.setdefault(e.zone_id, []).append(e)
+            if e.secondary_zone_id:
+                by_zone.setdefault(e.secondary_zone_id, []).append(e)
             if e.area_id:
                 by_area.setdefault(e.area_id, []).append(e)
+            if e.covers_property:
+                property_wide.append(e)
         loads = await self._active_workloads(
             property_id, [e.id for e in staff]
         )
@@ -807,7 +854,7 @@ class WorkAllocationService:
                     "zone_name": u.get("zone_name"),
                     "area_name": (areas[cover].name if cover in areas
                                   else None),
-                    "pool": union(zp, ap),
+                    "pool": union(zp, ap, property_wide),
                     "level": ("zone+area" if zp and ap
                               else "zone" if zp
                               else "area" if ap else None),
@@ -820,6 +867,7 @@ class WorkAllocationService:
                     by_area.get(aid, []),
                     *(by_zone.get(z, [])
                       for z in area_zone_ids.get(aid, [])),
+                    property_wide,
                 )
                 scopes[key] = {
                     "kind": "area", "zone_id": None, "area_id": aid,
@@ -899,7 +947,7 @@ class WorkAllocationService:
                 ent["assigned"] += 1
                 if ent["state"] is not None:
                     ent["state"].last_assigned_employee_id = employee.id
-                    ent["state"].last_assigned_at = datetime.now(timezone.utc)
+                    ent["state"].last_assigned_at = datetime.now(UTC)
                     ent["state"].version += 1
             zone_name = u.get("zone_name")
             if u.get("zone_id") is None and zone_name is None:

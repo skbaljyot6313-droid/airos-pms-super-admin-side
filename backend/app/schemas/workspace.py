@@ -4,8 +4,7 @@ Workspace DTOs — serialization for the collections the frontend's
 (`*_uid` keys, snake_case).
 """
 
-from datetime import datetime
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 from sqlalchemy import inspect as sa_inspect
@@ -15,7 +14,10 @@ from app.models.employee import Employee
 from app.models.property import Property
 from app.models.structure import Area, Bed, Dorm, Room, Washroom, Zone
 from app.models.task import (
-    Task, TaskCompletionImage, TaskCompletionSubmission, TaskHistoryEvent,
+    Task,
+    TaskCompletionImage,
+    TaskCompletionSubmission,
+    TaskHistoryEvent,
 )
 
 T = TypeVar("T")
@@ -321,13 +323,20 @@ def employee_out(e: Employee) -> dict:
         "company_uid": str(e.company_id),
         "property_uid": str(e.property_id),
         "zone_uid": str(e.zone_id) if e.zone_id else None,
+        "secondary_zone_uid": str(e.secondary_zone_id) if e.secondary_zone_id else None,
         "area_uid": str(e.area_id) if e.area_id else None,
+        # Multi-area coverage — primary area first, then additional areas.
+        "area_uids": (
+            [str(e.area_id)] if e.area_id else []
+        ) + [str(a.area_id) for a in getattr(e, "area_assignments", [])],
+        "covers_property": bool(e.covers_property),
         "name": e.name,
         "email": e.email,
         "phone": e.phone,
         "username": e.username,
         "job_title": e.job_title,
         "department": e.department,
+        "department_uid": str(e.department_id) if e.department_id else None,
         "status": e.status,
         "role": None,
         "salary": e.salary,

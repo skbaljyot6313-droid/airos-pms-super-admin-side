@@ -9,15 +9,15 @@ unique (template_id, occurrence_key) ledger row.
 """
 
 import uuid
-from datetime import datetime, time as dtime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from datetime import time as dtime
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-
 from app.models.company import Company
 from app.models.employee import Employee, employee_is_assignable
 from app.models.maintenance import MaintenanceTicket
@@ -45,7 +45,7 @@ from app.services.structure import (
     StructureService,
     ValidationErr,
 )
-from app.services.task import PRIORITIES, TaskService
+from app.services.task import PRIORITIES
 from app.services.work_allocation import (
     WorkAllocationService,
     infer_task_work_type,
@@ -81,7 +81,7 @@ def compute_next_run(schedule: dict, after: datetime,
     if not schedule:
         return None
     if after.tzinfo is None:
-        after = after.replace(tzinfo=timezone.utc)  # sqlite round-trip
+        after = after.replace(tzinfo=UTC)  # sqlite round-trip
     tz = _tz(schedule)
     now_local = after.astimezone(tz)
     start_d = None
@@ -105,7 +105,7 @@ def compute_next_run(schedule: dict, after: datetime,
         )
 
     def out(dt_local: datetime) -> datetime | None:
-        return dt_local.astimezone(timezone.utc) if ok(dt_local) else None
+        return dt_local.astimezone(UTC) if ok(dt_local) else None
 
     if schedule.get("kind") != "recurring":
         if not schedule.get("date"):
@@ -120,7 +120,7 @@ def compute_next_run(schedule: dict, after: datetime,
         dt = datetime.combine(d, t, tzinfo=tz)
         if (start_d is None or d >= start_d) and (end_d is None or d <= end_d):
             if dt > now_local or allow_past:
-                return dt.astimezone(timezone.utc)
+                return dt.astimezone(UTC)
         return None
 
     freq = schedule.get("frequency") or "daily"
@@ -143,7 +143,7 @@ def compute_next_run(schedule: dict, after: datetime,
             end = datetime.combine(d, win_end, tzinfo=tz)
             while t <= end:
                 if ok(t):
-                    return t.astimezone(timezone.utc)
+                    return t.astimezone(UTC)
                 t += step
         return None
 
@@ -422,7 +422,7 @@ class TemplateService:
             created_by=user.id,
             created_by_name=user.name,
             next_run_at=(compute_next_run(data["schedule"],
-                                          datetime.now(timezone.utc),
+                                          datetime.now(UTC),
                                           allow_past=True)
                          if data["status"] == "active" else None),
         )
@@ -457,7 +457,7 @@ class TemplateService:
         if "location" in data:
             t.location = _loc_out(data["location"])
         t.version += 1
-        t.next_run_at = (compute_next_run(t.schedule, datetime.now(timezone.utc),
+        t.next_run_at = (compute_next_run(t.schedule, datetime.now(UTC),
                                      allow_past=True)
                          if t.status == "active" else None)
         self._snapshot(t)
@@ -471,7 +471,7 @@ class TemplateService:
         if status_ not in TEMPLATE_STATUSES:
             raise ValidationErr("Invalid status.", field="status")
         t.status = status_
-        t.next_run_at = (compute_next_run(t.schedule, datetime.now(timezone.utc),
+        t.next_run_at = (compute_next_run(t.schedule, datetime.now(UTC),
                                      allow_past=True)
                          if status_ == "active" else None)
         await self.session.commit()
@@ -597,7 +597,7 @@ class TemplateService:
         passes the caller's tenant scope so a manual trigger can only fire
         generation for the caller's own company/property.
         """
-        now = now or datetime.now(timezone.utc)
+        now = now or datetime.now(UTC)
         q = select(WorkTemplate).where(
             WorkTemplate.status == "active",
             WorkTemplate.next_run_at.is_not(None),
@@ -854,8 +854,8 @@ class TemplateService:
         # Canonical occurrence key — always UTC so '...+05:30' and
         # '...+00:00' spellings of the same instant can't fork the ledger.
         if occurrence.tzinfo is None:
-            occurrence = occurrence.replace(tzinfo=timezone.utc)
-        occurrence = occurrence.astimezone(timezone.utc)
+            occurrence = occurrence.replace(tzinfo=UTC)
+        occurrence = occurrence.astimezone(UTC)
         key = f"{occurrence.isoformat()}|{tgt['key']}"
         if not ledger_checked and await self._already_generated(t.id, key):
             return None
@@ -939,7 +939,7 @@ class TemplateService:
             row._resolved_area_id = location.area_id
             occ_dt = occurrence
             if occ_dt.tzinfo is None:
-                occ_dt = occ_dt.replace(tzinfo=timezone.utc)
+                occ_dt = occ_dt.replace(tzinfo=UTC)
             self.session.add(TaskHistoryEvent(
                 task_id=row.id, type="auto_generated",
                 actor_name="Template Scheduler",

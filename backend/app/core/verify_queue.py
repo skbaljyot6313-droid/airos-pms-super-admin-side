@@ -158,7 +158,7 @@ class VerifyQueue:
             # to an unlocked slot still can't wait past the deadline.
             await asyncio.wait_for(
                 self._slots.acquire(), timeout=self.queue_timeout_s)
-        except (asyncio.TimeoutError, TimeoutError):
+        except TimeoutError:
             self.rejected_timeout += 1
             raise VerificationWaitTimeout(retry) from None
         finally:

@@ -11,7 +11,7 @@ SELECT FOR UPDATE so two check-ins can't race the same unit.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
@@ -122,7 +122,7 @@ class OccupancyService:
         occ = Occupancy(
             property_id=room.property_id, room_id=room.id,
             guest_name=name, checked_in_by=user.id,
-            checked_in_at=datetime.now(timezone.utc),
+            checked_in_at=datetime.now(UTC),
         )
         self.session.add(occ)
         try:
@@ -158,7 +158,7 @@ class OccupancyService:
         occ = Occupancy(
             property_id=dorm.property_id, bed_id=bed.id,
             guest_name=name, checked_in_by=user.id,
-            checked_in_at=datetime.now(timezone.utc),
+            checked_in_at=datetime.now(UTC),
         )
         self.session.add(occ)
         try:
@@ -236,12 +236,17 @@ class OccupancyService:
         rooms: list[Room] | None = None,
         beds: list[Bed] | None = None,
         create_cleaning_task: bool = True,
+        release_to: str = "cleaning",
         reason: str = "Checkout — cleaning required",
     ) -> dict:
         """The unified checkout pipeline. Every checkout entry point
         (room endpoint, bed endpoint, dorm endpoint, bulk action) funnels
         here so occupancy-close → task-spawn → transition can never
         diverge. Caller owns the commit.
+
+        `release_to` is the state a vacated unit drops to — "cleaning"
+        for a normal checkout, "available" for a guest switch where the
+        staff says the unit does not need cleaning.
 
         A unit is checked out when it has an OPEN OCCUPANCY or still
         projects `occupied` — the record is the truth, the projection is
@@ -250,7 +255,7 @@ class OccupancyService:
         rooms = list(rooms or [])
         beds = list(beds or [])
         occs = await self._open_occupancy_map(rooms=rooms, beds=beds)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         out_rooms = [
             r for r in rooms
@@ -293,7 +298,7 @@ class OccupancyService:
             occ = occs["room"].get(r.id)
             if r.status == "occupied":
                 await self.state.transition(
-                    "room", r.id, "cleaning", user=user,
+                    "room", r.id, release_to, user=user,
                     source=SRC_OCCUPANCY_CHECKOUT,
                     occupancy_id=occ.id if occ else None,
                     reason=reason, locked_row=r,
@@ -302,7 +307,7 @@ class OccupancyService:
                 # drifted projection (e.g. 'available' with an open
                 # occupancy) — re-resolve canonically after the close
                 await self.state.derive(
-                    "room", r.id, release_to="available", user=user,
+                    "room", r.id, release_to=release_to, user=user,
                     source=SRC_OCCUPANCY_CHECKOUT, reason=reason,
                 )
             r.current_guest = None
@@ -310,14 +315,14 @@ class OccupancyService:
             occ = occs["bed"].get(b.id)
             if b.status == "occupied":
                 await self.state.transition(
-                    "bed", b.id, "cleaning", user=user,
+                    "bed", b.id, release_to, user=user,
                     source=SRC_OCCUPANCY_CHECKOUT,
                     occupancy_id=occ.id if occ else None,
                     reason=reason, locked_row=b,
                 )
             else:
                 await self.state.derive(
-                    "bed", b.id, release_to="available", user=user,
+                    "bed", b.id, release_to=release_to, user=user,
                     source=SRC_OCCUPANCY_CHECKOUT, reason=reason,
                 )
             b.guest_name = None
@@ -328,7 +333,7 @@ class OccupancyService:
         # keep it occupied
         for dorm_id in dorm_ids:
             await self.state.derive(
-                "dorm", dorm_id, release_to="cleaning", user=user,
+                "dorm", dorm_id, release_to=release_to, user=user,
                 source=SRC_OCCUPANCY_CHECKOUT,
                 reason="Checkout — aggregate recompute",
             )
@@ -368,3 +373,165 @@ class OccupancyService:
         await self.session.commit()
         dorm = await self.structure._reload_dorm(bed.dorm_id)
         return {"dorm": dorm, "generated": res["generated"]}
+
+    # ------------------------------------------------------------------
+    # Guest switch — move the OPEN occupancy to another unit (any kind)
+    # ------------------------------------------------------------------
+
+    async def switch_occupancy(
+        self,
+        user: User,
+        *,
+        source_type: str,
+        source_id: uuid.UUID,
+        target_type: str,
+        target_id: uuid.UUID,
+        clean_vacated: bool = True,
+    ) -> dict:
+        """Move the guest from one unit to another — room→room, bed→bed,
+        or across kinds. The vacated unit goes through the normal
+        checkout pipeline (cleaning task by default; straight to
+        available when `clean_vacated` is False) and the target flips to
+        occupied — all in ONE transaction so a guest is never homeless.
+
+        History stays honest: the source occupancy closes, a new row
+        opens on the target carrying the guest name — two stay records,
+        linked by the audited checkout/check-in events.
+        """
+        if source_type not in ("room", "bed") or target_type not in ("room", "bed"):
+            raise ValidationErr("Switch targets must be rooms or beds.")
+        if source_type == target_type and source_id == target_id:
+            raise ValidationErr("Source and target are the same unit.")
+
+        # 1. lock the source unit + its open occupancy — the "guest" to move
+        s_room = s_bed = s_dorm = None
+        if source_type == "room":
+            s_room = await self._lock_room(user, source_id)
+            occ = await self.open_occupancy(room_id=s_room.id)
+            prop = await self.session.get(Property, s_room.property_id)
+            src_label = f"Room {s_room.room_number}"
+        else:
+            s_bed, s_dorm = await self._lock_bed(user, source_id)
+            occ = await self.open_occupancy(bed_id=s_bed.id)
+            prop = await self.session.get(Property, s_dorm.property_id)
+            src_label = f"{s_dorm.name} — {s_bed.bed_number}"
+        if occ is None:
+            raise ConflictErr(f"{src_label} has no active occupant to move.")
+        guest_name = occ.guest_name
+
+        # 2. lock + validate the target — same property, available, free
+        t_room = t_bed = t_dorm = None
+        if target_type == "room":
+            t_room = await self._lock_room(user, target_id)
+            if t_room.property_id != prop.id:
+                raise ValidationErr("Cannot move a guest across properties.")
+            if t_room.status != "available" or await self.open_occupancy(
+                room_id=t_room.id
+            ):
+                raise ConflictErr(
+                    f"Room {t_room.room_number} is {t_room.status} — the "
+                    "target must be an available unit."
+                )
+            tgt_label = f"Room {t_room.room_number}"
+        else:
+            t_bed, t_dorm = await self._lock_bed(user, target_id)
+            if t_dorm.property_id != prop.id:
+                raise ValidationErr("Cannot move a guest across properties.")
+            if not t_dorm.is_active:
+                raise ConflictErr(
+                    f"Dorm {t_dorm.name} is deactivated — its beds cannot "
+                    "be checked into."
+                )
+            if t_bed.status != "available" or await self.open_occupancy(
+                bed_id=t_bed.id
+            ):
+                raise ConflictErr(
+                    f"Bed {t_bed.bed_number} is {t_bed.status} — the "
+                    "target must be an available unit."
+                )
+            tgt_label = f"{t_dorm.name} — {t_bed.bed_number}"
+
+        # 3. release the source unit through the shared checkout pipeline
+        reason = (
+            f"Guest moved to {tgt_label}"
+            + ("" if clean_vacated else " — no cleaning needed")
+        )
+        res = await self.checkout_units(
+            user, prop,
+            rooms=[s_room] if s_room is not None else [],
+            beds=[s_bed] if s_bed is not None else [],
+            create_cleaning_task=clean_vacated,
+            release_to="cleaning" if clean_vacated else "available",
+            reason=reason,
+        )
+
+        # 4. open the occupancy on the target — guest keeps their name
+        new_occ = Occupancy(
+            property_id=prop.id,
+            room_id=t_room.id if t_room is not None else None,
+            bed_id=t_bed.id if t_bed is not None else None,
+            guest_name=guest_name, checked_in_by=user.id,
+            checked_in_at=datetime.now(UTC),
+        )
+        self.session.add(new_occ)
+        try:
+            async with self.session.begin_nested():
+                await self.session.flush()
+        except IntegrityError:
+            raise ConflictErr("Target unit already has an active occupant.")
+        if t_room is not None:
+            await self.state.transition(
+                "room", t_room.id, "occupied", user=user,
+                source=SRC_OCCUPANCY_CHECKIN, occupancy_id=new_occ.id,
+                reason=f"Guest switched from {src_label}",
+            )
+            t_room.current_guest = new_occ.guest_name
+            t_room._open_occupancy = True
+        else:
+            await self.state.transition(
+                "bed", t_bed.id, "occupied", user=user,
+                source=SRC_OCCUPANCY_CHECKIN, occupancy_id=new_occ.id,
+                reason=f"Guest switched from {src_label}",
+            )
+            t_bed.guest_name = new_occ.guest_name
+            # dorm aggregates its beds — first guest flips it to occupied
+            if t_dorm.status == "available":
+                try:
+                    await self.state.transition(
+                        "dorm", t_dorm.id, "occupied", user=user,
+                        source=SRC_OCCUPANCY_CHECKIN,
+                        occupancy_id=new_occ.id,
+                        reason=f"Guest switched from {src_label}",
+                    )
+                except (ConflictErr, ValidationErr):
+                    pass
+
+        # same automation surface as a plain checkout on the source
+        if s_room is not None:
+            await self.structure._fire_automation(
+                user, prop.id, "room_checked_out", s_room.zone_id
+            )
+        else:
+            await self.structure._fire_automation(
+                user, prop.id, "bed_available_after_checkout", s_dorm.zone_id
+            )
+
+        await self.session.commit()
+        if s_room is not None:
+            s_room._open_occupancy = False
+        result = {"generated": res["generated"], "guest_name": guest_name}
+        if s_room is not None or t_room is not None:
+            result["rooms"] = {
+                str(r.id): r for r in (s_room, t_room) if r is not None
+            }
+        if s_bed is not None or t_bed is not None:
+            for dorm_id in {
+                d for d in (
+                    s_bed.dorm_id if s_bed is not None else None,
+                    t_bed.dorm_id if t_bed is not None else None,
+                ) if d is not None
+            }:
+                result.setdefault("dorms", {})[str(dorm_id)] = (
+                    await self.structure._reload_dorm(dorm_id)
+                )
+        return result

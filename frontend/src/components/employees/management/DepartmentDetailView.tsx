@@ -1,0 +1,266 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { Crown, Users, ArrowLeftRight, Pencil } from 'lucide-react';
+import {
+  DepartmentDetail,
+  DepartmentTransferRecord,
+  departmentDetail,
+  departmentTransfers,
+  listDepartments,
+  Department,
+} from '../../../api/departments';
+import { useApp } from '../../../context/AppContext';
+import { BackButton } from '../../ui/BackButton';
+import { Button } from '../../ui/Button';
+import { DepartmentFormModal } from './DepartmentFormModal';
+import { TransferModal } from './TransferModal';
+
+export const DepartmentDetailView: React.FC = () => {
+  const { propertyUid, departmentUid } = useParams<{
+    propertyUid: string;
+    departmentUid: string;
+  }>();
+  const { currentPropertyEmployees } = useApp();
+  const [dept, setDept] = useState<DepartmentDetail | null>(null);
+  const [allDepts, setAllDepts] = useState<Department[]>([]);
+  const [history, setHistory] = useState<DepartmentTransferRecord[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+
+  const load = async () => {
+    if (!propertyUid || !departmentUid) return;
+    setLoading(true);
+    try {
+      const [d, all, h] = await Promise.all([
+        departmentDetail(departmentUid),
+        listDepartments({ property_uid: propertyUid, include_inactive: true }),
+        departmentTransfers({ property_uid: propertyUid, limit: 50 }),
+      ]);
+      setDept(d);
+      setAllDepts(all);
+      setHistory(
+        h.filter(
+          (t) =>
+            t.from_department_uid === departmentUid ||
+            t.to_department_uid === departmentUid
+        )
+      );
+      setError(null);
+    } catch (e) {
+      setError((e as { message?: string })?.message || 'Failed to load department.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyUid, departmentUid]);
+
+  const headOf = useMemo(() => {
+    const m: Record<string, string> = {};
+    allDepts.forEach((d) => {
+      if (d.head) m[d.head.employee_uid] = d.name;
+    });
+    return m;
+  }, [allDepts]);
+
+  const staffOptions = currentPropertyEmployees
+    .filter((e) => !(e as { deactivated_at?: string | null }).deactivated_at)
+    .map((e) => ({ employee_uid: e.employee_uid, name: e.name }));
+
+  if (loading)
+    return <div className="font-body text-sm text-[#66706A]">Loading…</div>;
+  if (error || !dept)
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-body">
+        {error || 'Department not found.'}
+      </div>
+    );
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div>
+          <div className="mb-2">
+            <BackButton to={`/property/${propertyUid}/workforce/departments`} />
+          </div>
+          <h1 className="font-display font-semibold text-[28px] text-[#17221B] tracking-tight leading-tight">
+            {dept.name}
+            {dept.code && (
+              <span className="ml-2 font-body text-sm text-[#9A9484] font-normal">
+                {dept.code}
+              </span>
+            )}
+          </h1>
+          <p className="font-body text-sm text-[#66706A] mt-1">
+            {dept.description || 'Department roster, head and activity'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => setEditOpen(true)}>
+            <Pencil className="w-4 h-4 mr-1.5" /> Edit
+          </Button>
+          <Button onClick={() => setTransferOpen(true)}>
+            <ArrowLeftRight className="w-4 h-4 mr-1.5" /> Manage employees
+          </Button>
+        </div>
+      </div>
+
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-xl border border-[#E4DED1] bg-white/60 px-4 py-3">
+          <div className="font-display text-xl font-bold text-[#17221B] tabular-nums">
+            {dept.employee_count}
+          </div>
+          <div className="font-body text-xs text-[#66706A] mt-1.5">Total staff</div>
+        </div>
+        <div className="rounded-xl border border-[#E4DED1] bg-white/60 px-4 py-3">
+          <div className="font-display text-xl font-bold text-[#17221B] tabular-nums">
+            {dept.active_employee_count}
+          </div>
+          <div className="font-body text-xs text-[#66706A] mt-1.5">Active</div>
+        </div>
+        <div className="rounded-xl border border-[#E4DED1] bg-white/60 px-4 py-3">
+          <div className="font-display text-xl font-bold text-[#17221B] tabular-nums">
+            {dept.employee_count - dept.active_employee_count}
+          </div>
+          <div className="font-body text-xs text-[#66706A] mt-1.5">Inactive</div>
+        </div>
+        <div className="rounded-xl border border-[#E4DED1] bg-white/60 px-4 py-3">
+          <div className="font-body text-sm text-[#17221B] flex items-center gap-1.5 mt-0.5">
+            {dept.head ? (
+              <>
+                <Crown className="w-4 h-4 text-[#B08D3E]" /> {dept.head.name}
+              </>
+            ) : (
+              <span className="text-[#9A9484]">No head</span>
+            )}
+          </div>
+          <div className="font-body text-xs text-[#66706A] mt-1.5">
+            Department head
+          </div>
+        </div>
+      </div>
+
+      {/* Roster */}
+      <div className="space-y-2">
+        <h2 className="font-display font-semibold text-lg text-[#17221B] flex items-center gap-2">
+          <Users className="w-4 h-4" /> Roster
+        </h2>
+        {dept.employees.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-[#D8D0BF] bg-white/40 px-6 py-8 text-center font-body text-sm text-[#66706A]">
+            No employees in this department. Use “Manage employees” to add staff.
+          </div>
+        ) : (
+          <div className="rounded-xl border border-[#E4DED1] bg-white/60 overflow-hidden">
+            <table className="w-full text-sm font-body">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wide text-[#9A9484] border-b border-[#EAE4D6]">
+                  <th className="px-4 py-2.5 font-medium">Name</th>
+                  <th className="px-4 py-2.5 font-medium">Job title</th>
+                  <th className="px-4 py-2.5 font-medium">Status</th>
+                  <th className="px-4 py-2.5 font-medium text-right">Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dept.employees.map((e) => (
+                  <tr
+                    key={e.employee_uid}
+                    className="border-b border-[#F0EBE0] last:border-0 hover:bg-[#FAF8F2]"
+                  >
+                    <td className="px-4 py-2.5">
+                      <Link
+                        to={`/property/${propertyUid}/workforce/employees/${e.employee_uid}`}
+                        className="font-medium text-[#17221B] hover:underline"
+                      >
+                        {e.name}
+                      </Link>
+                      <div className="text-[11px] text-[#9A9484]">{e.email}</div>
+                    </td>
+                    <td className="px-4 py-2.5 text-[#66706A]">
+                      {e.job_title || '—'}
+                    </td>
+                    <td className="px-4 py-2.5 text-[#66706A]">{e.status}</td>
+                    <td className="px-4 py-2.5 text-right">
+                      {e.is_head && (
+                        <span className="inline-flex items-center gap-1 text-xs text-[#B08D3E]">
+                          <Crown className="w-3.5 h-3.5" /> Head
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Transfer history */}
+      <div className="space-y-2">
+        <h2 className="font-display font-semibold text-lg text-[#17221B]">
+          Recent transfers
+        </h2>
+        {history.length === 0 ? (
+          <div className="font-body text-sm text-[#9A9484]">
+            No transfers recorded for this department yet.
+          </div>
+        ) : (
+          <div className="rounded-xl border border-[#E4DED1] bg-white/60 divide-y divide-[#F0EBE0]">
+            {history.map((t) => (
+              <div
+                key={t.transfer_uid}
+                className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-body"
+              >
+                <span className="font-medium text-[#17221B]">
+                  {t.employee_name || 'Employee'}
+                </span>
+                <span className="text-[#66706A]">
+                  {t.from_department_name || 'Unassigned'} →{' '}
+                  {t.to_department_name || 'Unassigned'}
+                </span>
+                {t.reason && (
+                  <span className="text-[#9A9484] text-xs">“{t.reason}”</span>
+                )}
+                <span className="ml-auto text-[11px] text-[#9A9484]">
+                  {t.changed_by_name || 'System'} ·{' '}
+                  {t.created_at
+                    ? new Date(t.created_at).toLocaleString()
+                    : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <DepartmentFormModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        propertyUid={propertyUid!}
+        department={dept}
+        onSaved={() => void load()}
+      />
+
+      <TransferModal
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
+        propertyUid={propertyUid!}
+        employees={dept.employees.map((e) => ({
+          employee_uid: e.employee_uid,
+          name: e.name,
+          department_uid: dept.department_uid,
+          department: dept.name,
+        }))}
+        departments={allDepts}
+        headOf={headOf}
+        staffOptions={staffOptions}
+        onDone={() => void load()}
+      />
+    </div>
+  );
+};

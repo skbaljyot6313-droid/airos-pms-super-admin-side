@@ -2,7 +2,11 @@
 
 Deep index generated 2026-10-30 by a full-repository scan; refreshed 2026-11-02
 (employee-analysis expansion, team analytics, landing-page consolidation +
-motion system). `AGENTS.md` remains the curated map of conventions and business
+motion system), 2026-11-05 (GCS storage backend, notification push outbox,
+selection-time evidence-upload pipeline, Firebase Hosting deploy, Cloud SQL
+tooling), and 2026-11-10 (fresh-day reset endpoint + UI, collapsible
+Today-Tasks feeds, authenticated evidence delivery / EvidencePhoto, dev perf
+instrumentation, test-file additions). `AGENTS.md` remains the curated map of conventions and business
 rules; this file is the exhaustive lookup: every endpoint, service, model
 column, route, component, test, and env var. Where this file and AGENTS.md
 disagree, this file reflects the code as read — see §13 Discrepancies.
@@ -33,9 +37,12 @@ backend/
   app/schemas/              # auth, maintenance, property, structure, template,
                             #   work_allocation, workspace (*_out serializers, *_uid wire IDs)
   app/services/             # 23 business-logic files (Router → Service → Repository)
-  alembic/versions/         # 40-revision linear chain (head v9f2b5c8d1e4)
-  tests/                    # 11 pytest files — no conftest, fake-session pattern, no real DB
-  scripts/                  # audit_probe.py, api_probe.py, pooler_compat.py (read-only probes)
+  alembic/versions/         # 41-revision linear chain (head w3b7d9f1a4c6)
+  tests/                    # 16 pytest files — no conftest, fake-session pattern, no real DB
+  scripts/                  # audit_probe.py, api_probe.py, pooler_compat.py (read-only probes),
+                            #   cloudsql_copy_from_source.py (prod→airos_dev data copy),
+                            #   firebase_deploy.py (Hosting REST deploy, no firebase CLI)
+  .dockerignore, .gcloudignore  # Cloud Run source-upload filters
   railway.toml, Dockerfile  # prod deploys
 frontend/
   src/App.tsx               # routes + guards (RequireAuth/RequireRole/PropertyScopedView)
@@ -43,17 +50,23 @@ frontend/
                               #   scoped refresh machinery, realtime wiring, toasts
   src/api/                  # 21 thin wrappers over apiFetch (client.ts)
   src/realtime/             # centrifuge-js singleton + useRealtimeChannel
-  src/lib/                  # permissions (can() mirror), activityLogs, taskUtils, datetime(IST), ...
+  src/lib/                  # permissions (can() mirror), activityLogs, taskUtils, datetime(IST),
+                            #   imageOptimize, uploadQueue, mediaLimits, ...
+  src/hooks/                # useEvidenceUploads (select-time compress+upload), usePolling
   src/components/           # admin, auth, employees(+analytics/+analysis), landing
                           #   (single-file LandingPage), maintenance, navigation, profile,
                           #   properties, rooms, tasks, templates, ui, zones
   vercel.json               # SPA rewrite deploy config
+  firebase.json, .firebaserc  # Firebase Hosting alt deploy (site airos-super-admin-dev)
 deploy/centrifugo/          # Dockerfile + config.json (priv namespace, JWT-gated channels)
-deploy/cloudrun.md          # documented-only staging recommendation
+docs/cloudrun.md            # documented-only staging recommendation (moved out of deploy/)
 tests/load/                 # opt-in load harness (login burst), NOT part of pytest runs
 docs/                       # FRONTEND_FEATURES, aesthetics (design/motion spec),
                             #   codebase-index, employee-analytics, realtime,
-                            #   performance-audit/*
+                            #   performance-audit/*, audit/, security/, finops/,
+                            #   cloudrun.md, CLOUD_SQL_* / GOOGLE_CLOUD_* (moved from repo
+                            #   root — deletions still unstaged), AIROS_* storage/GCS/
+                            #   upload-perf series, FIREBASE_* reports
 .github/workflows/          # deploy-production.yml, deploy-centrifugo.yml
 ```
 
@@ -64,7 +77,12 @@ docs/                       # FRONTEND_FEATURES, aesthetics (design/motion spec)
   `SecurityHeadersMiddleware` → `GZipMiddleware(500)` → `CORSMiddleware`.
 - `register_exception_handlers(app)`; `REQUEST_TIMING_ENABLED` installs engine
   listeners → `X-Response-Time/X-DB-Time/X-DB-Queries/X-Ext-Time` headers.
-- Static mount `/uploads` → `LocalStorage` dir (always mounted).
+- `GET /uploads/{key}` is registered as an API route to `get_media_file`
+  (rate-limited `media_fetch` 240/60s, `include_in_schema=False`) BEFORE the
+  static `/uploads` `StaticFiles` mount — single-segment local-upload keys are
+  streamed through the storage abstraction + rate limiter; the mount only
+  catches deeper paths. In production, `get_storage()` is resolved eagerly at
+  boot (fails fast on missing object-storage config).
 - Top-level: `GET /health` (liveness), `GET /health/db`, `GET /ready` AND
   `/api/v1/health` (dual-registered; DB + schema-version + Redis probes).
 - Lifespan startup: prod config warnings (JWT/DB → fatal) → `check_database()`
@@ -73,9 +91,15 @@ docs/                       # FRONTEND_FEATURES, aesthetics (design/motion spec)
   `init_eb_client()`. Shutdown: cancel scheduler → `close_eb_client` →
   `close_queue` → `close_redis` → `close_db`.
 - Scheduler tick (60s, own session each, order is load-bearing):
-  `RolloverService.expire_due` → `TemplateService.run_due` →
-  `TaskService.run_due_repetitive` → `RolloverService.run` → every 15th tick a
+  `RolloverService.expire_due` → `RolloverService.run` (midnight-IST sweep —
+  expires the past day's open work BEFORE generation so stale tasks can't
+  block new slots) → `TemplateService.run_due` →
+  `TaskService.run_due_repetitive` → every 15th tick a
   read-only `reconcile_property` scan. Failures: exponential backoff ≤600s.
+- `POST /internal/generation-tick` (X-Cron-Key == `CRON_SECRET`, else 404,
+  `include_in_schema=False`) — the same 4-step sweep driven by Cloud
+  Scheduler `airos-generation-tick` (*/5min, asia-south1) for deployed envs
+  where the embedded loop can't be trusted to run. Each step error-isolated.
 - `dependencies/auth.py`: `get_current_user` (JWT → auth_cache 60s TTL →
   `UserRepository.get_by_id`; sets `session.info["audit_actor"]`; inactive →
   401). `require_role(*roles)`; `require_super_admin` = SA only;
@@ -107,7 +131,10 @@ tasks, maintenance tickets).
 **Properties**: `GET /properties` auth · `POST /properties` **SA** ·
 `GET /properties/{id}` auth · `PATCH /properties/{id}` staff ·
 `DELETE /properties/{id}` **SA** ·
-`GET /properties/{id}/reconciliation` staff (read-only drift scan).
+`GET /properties/{id}/reconciliation` staff (read-only drift scan) ·
+`POST /properties/{id}/fresh-day` staff (bulk-abandon all open tasks →
+FRESH_DAY_RESET, then re-derive every RELEASE_ELIGIBLE unit → available;
+occupied/inactive untouched, tickets keep their hold).
 
 **Areas**: `GET /areas` auth · `POST /areas` staff · `PATCH /areas/{id}` staff ·
 `DELETE /areas/{id}` staff.
@@ -181,11 +208,12 @@ validate date ranges.
 
 ### 3.3 `/media`
 
-- `POST /media/uploads` auth (rate 30/60s) — JPEG/PNG/WebP, ≤10MB, magic-byte
-  check, `property_id` scope → `{url,key}`.
+- `POST /media/uploads` auth (rate 30/60s) — JPEG/PNG/WebP/HEIC/HEIF (ISO
+  BMFF `ftyp` box check), ≤10MB, magic-byte check, `property_id` scope →
+  `{url,key}`. Logs `read_validate_ms/storage_ms/audit_ms` pipeline timings.
 - `GET /media/file/{key}` **open** (rate 240/60s) — key whitelist regex
   `^[0-9a-f]{32}\.[a-z0-9]{2,5}$`; streams via `StorageBackend.open`,
-  `immutable` cache headers.
+  `immutable` cache headers. Same handler also serves `/uploads/{key}` (§2).
 
 ### 3.4 `/work-batches`
 
@@ -258,9 +286,9 @@ private/no-store).
 | `property.py` (~332) | `PropertyService`: `create_property` (Property+manager Employee+PM User atomically, `PROP-NNN`), `update_property` (`_apply_manager_update` demotes/reassigns PMs), `delete_property`. |
 | `reconciliation.py` (~366) | `reconcile_property` read-only drift scan; findings: orphan_cleaning/maintenance/occupied, occupancy_status_conflict, occupied_under_work, unflagged_ticket/task, invalid_state. |
 | `resource_state.py` (~891) | `ResourceStateService` — THE status writer: `transition` (legal-graph + source-gate; admin_override needs staff+reason; →occupied needs open occupancy), `derive` (release-eligible only: maintenance>cleaning>occupancy→release), `repair` (full recompute), `explain`; per-type blocker queries incl. bed-cover via `Task.bed_ids`. |
-| `rollover.py` (~395) | Op-day math (IST, `operational_day_start` default 06:00) + `RolloverService.run` (`SYSTEM_DAILY_ROLLOVER`) / `.expire_due` (`NEXT_SCHEDULED_OCCURRENCE`; `submitted` survives); conditional UPDATEs, race-safe. |
+| `rollover.py` (~420) | Op-day math (IST, `operational_day_start` default 06:00) + `RolloverService.run` — **midnight-IST sweep** (`MIDNIGHT_EXPIRY`): abandons every OPEN_STATUSES task anchored before today's IST date via `_midnight_anchor_key` (operational_date clamped to creation date > due_date > scheduled_for > created_at); strict — `expires_at` windows do NOT extend life; conditional UPDATE + history event per row / `.expire_due` (`NEXT_SCHEDULED_OCCURRENCE`; `submitted` survives). `operational_day_start` now governs stamping/analytics only, not lifecycle. |
 | `shifts.py` (~523) | `ShiftService` CRUD + assignments (`effective_from/until`, overlap 409, history kept); pure fns `shift_applies_on`, `shift_window_utc`, `effective_assignments`; `schedule_exempt_employees` = SA/PM-linked 24×7. |
-| `structure.py` (~2088) | Structure CRUD + `bulk_unit_status`; shared errors `NotFoundErr/ConflictErr/ValidationErr`; `_property_for_write`; `_fire_automation`; dorm bed resize; washroom fixture sync; `_generate_cleaning_tasks` (SAVEPOINT-guarded dedup vs `uq_tasks_open_room_title`). |
+| `structure.py` (~2088) | Structure CRUD + `bulk_unit_status`; shared errors `NotFoundErr/ConflictErr/ValidationErr`; `_property_for_write`; `_fire_automation`; dorm bed resize; washroom fixture sync; `_generate_cleaning_tasks` (SAVEPOINT-guarded dedup vs `uq_tasks_open_room_title`); `fresh_day` (one conditional UPDATE abandons every BLOCKING_TASK row w/ per-task history + `fresh_day` realtime hint, then derive() on all RELEASE_ELIGIBLE units — same carry-forward as rollover; tickets NOT closed). |
 | `task.py` (~1511) | `TaskService` full lifecycle: create/start/complete (staff-only direct close, evidence rules), review (`approve_task`/`reject_task` on `submitted`), `reassign`, `request_redo`, `reopen_task`, `run_due_repetitive`, `_next_instance` series clones; guards `_require_assignee/_require_reviewer/_require_resource_authority`. |
 | `task_location.py` (111) | `resolve_task_location` — canonical zone/area derivation for generated work. |
 | `task_ops.py` (~515) | `TaskOpsService.today` (generated + pending-generation union via TemplateGeneration ledger), `history` (paginated), `generate_occurrence` ("Generate Now"). |
@@ -286,14 +314,14 @@ private/no-store).
 
 | File | Provides |
 |---|---|
-| `config.py` | `Settings` singleton — full env catalog in §11. `database_url` assembly (asyncpg), `production_warnings`, `pooler_mode`. |
+| `config.py` | `Settings` singleton — full env catalog in §11. `database_url` assembly (asyncpg), `production_warnings`, `pooler_mode`. `__repr_args__` redacts all secrets (DB URL/password, JWT, Redis, service keys, S3 creds) from repr/logs. |
 | `database.py` | `InstrumentedAsyncQueuePool`, `engine`, `AsyncSessionLocal`; `bounded_lock_wait` (10s `lock_timeout`), `get_db`, `check_database`; **Session `after_commit`/`after_rollback` hooks dispatch `session.info` buffers** — `EB_ALLOC_EVENTS` (EB allocation notices) + `RT_EVENTS` (Centrifugo); savepoints skipped. |
 | `security.py` | Argon2id hash/verify, HS256 access JWT (30min), opaque refresh (sha256-hash stored, 30d), `slugify_username`. |
 | `verify_queue.py` | Bounded argon2 executor (semaphore + queue cap + wait deadline); overload → 503 `AUTH_QUEUE_*` + `Retry-After`; `dummy_hash`. |
 | `redis.py` | Optional shared client (`get_redis` tri-state, never raises); key prefix `mt:`. |
 | `queue.py` | arq `enqueue` (None when Redis down — inline fallback). |
 | `rate_limit.py` | `rate_limit(scope, limit, window)` dep; Redis INCR/PEXPIRE, in-memory fallback, fails open. |
-| `storage.py` | `StorageBackend.save/open/delete`; Local/S3/Supabase; `get_storage` auto-order; `MAX_BYTES=10MB`; `storage_key_from_url` reverse-map. |
+| `storage.py` | `StorageBackend.save/open/delete`; Local/GCS/S3/Supabase. `get_storage` order: `gcs` (or auto+`GCS_BUCKET`) → `s3` → `supabase` → `local`; unknown `STORAGE_BACKEND` and local-in-production are hard RuntimeErrors. `GCSStorage` wraps google-cloud-storage (`if_generation_match=0` writes, generation-pinned reads, 30s timeouts — all off-loop via `to_thread`). `SupabaseStorage` shares the lifespan-managed `http_client.get_eb_client()` instead of per-call AsyncClients. `MAX_BYTES=10MB`; `storage_key_from_url` reverse-map. |
 | `centrifugo.py` | `PRIVATE_NS="priv"`, `prop_channel`/`emp_channel`, connection/subscription HMAC JWTs, `publish`, `queue_event` → `RT_EVENTS`, `dispatch_realtime_events` (≤50). |
 | `middleware.py` | RequestID, AccessLog (X-* timing headers + TimingBag), SecurityHeaders (+HSTS prod). |
 | `timing.py` | `TimingBag` contextvar; engine listeners for db_ms/db_queries. |
@@ -349,7 +377,13 @@ serialize to `*_uid` strings via `schemas/*_out` mappers.
 generated + EXCLUDE no-overlap), `shifts` (IST times, grace, early_exit,
 Mon-first `working_days` bitmap), `employee_shift_assignments` (effective
 windows), `notifications` (CHECK'd type vocab; SA writes submission_approved/
-disapproved).
+disapproved). `notifications` additionally carries the EB push-delivery
+outbox — `push_status` (queued|dispatching|accepted|retry_pending|failed|
+delivered|opened, `ck_notifications_push_status`; 'delivered' reserved but
+unused — FCM v1 can't confirm device delivery), `push_attempts`,
+`push_next_attempt_at`, `push_last_error`, `push_provider_ref`,
+`push_updated_at`, index `ix_notif_push_due(status, next_attempt_at)`.
+Push columns are migration-only — NOT in the SA ORM model (EB owns dispatch).
 
 **EB-owned, NOT ORM-mapped**: `device_registrations`, `location_events`,
 `mobile_releases`, `location_tracking_sessions`. Never add ORM models — but
@@ -359,9 +393,9 @@ read-only queries backing `GET /employees/{id}/devices`.
 schema. Several constraints live only in migrations (status CHECKs, attendance
 uniques/EXCLUDE, `ck_notifications_type`) — a `create_all` schema would lack them.
 
-## 8. Alembic chain (40 revs, linear — head `v9f2b5c8d1e4`)
+## 8. Alembic chain (41 revs, linear — head `w3b7d9f1a4c6`)
 
-`e01da4bc153a` companies+users+refresh_tokens → `345d9736662b` structure+employees+tasks+history → `a38d5c90adfd` allocation_events+UCs → `649b374bfc29` maintenance+sequences → `027058f5a060` dorm/bed targets on tickets → `f0ac59d056c6` allocation state+batches+history → `6b2a1a12ad65` tasks.start_time → `db39ee38a729` work_templates+versions+generations → `6920e7a5283e` recurrence fields → `b7f3c21a9e04` series_id → `c4d81e7b2f05` employees.area_id → `d9e2f04a1c33` uq_tasks_open_room_title → `e8b2c4d6f1a7` dorm/bed targets on tasks → `f19a2b3c4d5e` tasks.area_id (+orphaned area_allocation_state) → `a2d4f6b8c0e1` employee deactivation → `b4c6d8e0f2a1` completion_images → `c7e8f1a2b3d4`/`d8e1f2a3b4c5` submissions+backfills → `e9f2a4b6c8d0` washrooms → `f3a8c1d5e7b9`/`d8e4b2f1a7c3` fixture count cols → `c5f7a9b1d3e2` FK rewrite CASCADE → `e2b7d4a8c1f5` washroom_fixtures (drops count cols) → `f3c8e1a2b6d4` washrooms.dorm_id → `g4d9f2b3c7e5` 1-washroom-per-dorm UC → `h5e0a3c4d8f6` audit_events → `i6f1b2d4e8a0` occupancies+resource_state_events+status CHECKs → `j7a2c3e5f9b1` guest_name nullable → `k8b3d4f6a1c2` attachments.attempt → `l2c5d7e9f1a3` tasks.origin → `m5f3a7c9e1b4` tasks.work_type → `n6g4a8c0e2f5` abandoned_*+operational_day_start → `o7h5b9d1f3e6` scheduled_for/expires_at+uq_tasks_series_due → `p8d1f4a7c2e5` attendance tables → `q9e2f5a8c3d7` request ranges+EXCLUDE → `r4b8d2f6a0c3e` request_type rename → **`s5c9e3a7d1f4` shared-DB boundary** (notifications+devices+location_events+property geofence) → `t6d0e4a8f2b5` mobile_releases → **`u7e1f5a9d3c6` location_tracking_sessions (EB mirror — never stamp over)** → `v9f2b5c8d1e4` shifts+assignments (head).
+`e01da4bc153a` companies+users+refresh_tokens → `345d9736662b` structure+employees+tasks+history → `a38d5c90adfd` allocation_events+UCs → `649b374bfc29` maintenance+sequences → `027058f5a060` dorm/bed targets on tickets → `f0ac59d056c6` allocation state+batches+history → `6b2a1a12ad65` tasks.start_time → `db39ee38a729` work_templates+versions+generations → `6920e7a5283e` recurrence fields → `b7f3c21a9e04` series_id → `c4d81e7b2f05` employees.area_id → `d9e2f04a1c33` uq_tasks_open_room_title → `e8b2c4d6f1a7` dorm/bed targets on tasks → `f19a2b3c4d5e` tasks.area_id (+orphaned area_allocation_state) → `a2d4f6b8c0e1` employee deactivation → `b4c6d8e0f2a1` completion_images → `c7e8f1a2b3d4`/`d8e1f2a3b4c5` submissions+backfills → `e9f2a4b6c8d0` washrooms → `f3a8c1d5e7b9`/`d8e4b2f1a7c3` fixture count cols → `c5f7a9b1d3e2` FK rewrite CASCADE → `e2b7d4a8c1f5` washroom_fixtures (drops count cols) → `f3c8e1a2b6d4` washrooms.dorm_id → `g4d9f2b3c7e5` 1-washroom-per-dorm UC → `h5e0a3c4d8f6` audit_events → `i6f1b2d4e8a0` occupancies+resource_state_events+status CHECKs → `j7a2c3e5f9b1` guest_name nullable → `k8b3d4f6a1c2` attachments.attempt → `l2c5d7e9f1a3` tasks.origin → `m5f3a7c9e1b4` tasks.work_type → `n6g4a8c0e2f5` abandoned_*+operational_day_start → `o7h5b9d1f3e6` scheduled_for/expires_at+uq_tasks_series_due → `p8d1f4a7c2e5` attendance tables → `q9e2f5a8c3d7` request ranges+EXCLUDE → `r4b8d2f6a0c3e` request_type rename → **`s5c9e3a7d1f4` shared-DB boundary** (notifications+devices+location_events+property geofence) → `t6d0e4a8f2b5` mobile_releases → **`u7e1f5a9d3c6` location_tracking_sessions (EB mirror — never stamp over)** → `v9f2b5c8d1e4` shifts+assignments → **`w3b7d9f1a4c6` notifications push-delivery outbox (head)** — 6 push_* cols + CHECK + `ix_notif_push_due`; historical rows backfilled to `accepted` so the EB sweep never replays them.
 
 ## 9. Frontend index (`frontend/src/`)
 
@@ -399,7 +433,9 @@ uniques/EXCLUDE, `ck_notifications_type`) — a `create_all` schema would lack t
 
 `client.ts`: `apiFetch` (bearer from localStorage `mgmt_tool_auth_token`, JSON
 or FormData, 20s timeout→ApiError(0), 401→single-flight `/auth/refresh`→retry
-once→`onUnauthorized`, 204→undefined, blob support); `ApiError(status, message,
+once→`onUnauthorized`, 204→undefined, blob support: blob GETs send the bearer
+token + `cache:'no-store'` so evidence images never settle into the shared
+HTTP cache); `ApiError(status, message,
 fieldErrors)`; `mediaUrl`. Token keys `mgmt_tool_auth_token` / `_refresh_token`.
 
 Modules (1 fn per endpoint, names match §3): `auth`, `workspace`, `properties`,
@@ -412,7 +448,8 @@ generate-occurrence), `maintenance` (+calendar/day-analysis/room+washroom
 history, `createWorkBatch`), `attendance` (statusBoard/requests/approve/reject),
 `shifts` (CRUD+assignments+listCurrent), `locations` (liveLocations/
 liveLocation/locationHistory), `logs` (listLogs/findJourneyTasks/getTaskJourney/
-getLogAttachment blob), `media` (uploadPhoto), `templates` (CRUD+actions+
+getLogAttachment blob), `media` (uploadPhoto — multipart, `property_id` query,
+AbortSignal), `templates` (CRUD+actions+
 generated-work+generateDue). `types.ts` ~1075 lines of DTOs; `src/types.ts`
 domain types incl. **`ResourceStateContract`** (`is_occupied`,
 `occupancy_state`, `operational_state`, `visual_state` — server-canonical,
@@ -425,7 +462,7 @@ never recomputed client-side).
 - **employees**: EmployeesView (tabs: board|directory|live|leaves|shifts|attendance|**analytics**→TeamAnalyticsTab), ZoneBoard (dnd-kit drag→zone/area assign; attendance does NOT gate), EmployeeDirectory (+deactivated tab, links to detail), EmployeeDetailView (profile header + PeriodSelector + tabbed analysis: OverviewTab [embeds LocationsTab.LocationTree], AllocationTimeline, MaintenanceTab, RecordsSection, AttendanceTab, DevicesTab — see §13: only Overview/Allocations buttons currently wired), LiveLocationMap (Leaflet+markercluster; **30s** reconcile poll + `locations`/`attendance` channels; 10s age clock; on-duty-only markers), AttendanceBoard (status_board; poll only while `is_today`), ShiftManager (dnd assign, IST windows, bitmap editor), LeavesPanel (approve/reject), CreateEmployeeModal; analytics/AllocationTimeline, analytics/WorkActivityChart; **analysis/** PeriodSelector(+usePeriod bounds), OverviewTab, AttendanceTab, MaintenanceTab, DevicesTab, LocationsTab, TeamAnalytics(TeamAnalyticsTab), kit(BlockLoading/TabBtn/card).
 - **maintenance**: MaintenanceView (live|history|calendar; TicketDrawer w/ full action set + evidence), CreateMaintenanceModal (WorkBatch, per-type issue options), MaintenanceCalendarView, MaintenanceDayAnalysisView.
 - **rooms**: RoomsDormsView (tabs rooms|dorms|washrooms|zones; multi-select bulk; all modals), UnitZoneBoard (dnd unit→zone), WashroomsView, WashroomModal, WashroomDetailModal, AssignWashroomTaskModal, ScheduleWashroomMaintenanceModal, OccupancyToggle, RequestItemModal (guest_request urgent), Create/EditRoomModal, BulkCreateRoomsModal, Create/EditDormModal, BulkCreateDormsModal, BulkCreateWashroomsModal.
-- **tasks**: TasksView (tabs today|abandoned|review|maintenance|history|calendar; `?tab`/`?ticket` deep links), TodayTasksView (+generation_state badges, generateOccurrence), AbandonedTodayView, TaskReviewPanel (evidence lightbox, reject needs reason), TaskHistoryView (server-paginated, debounced filters), TaskCalendarView, TaskDayAnalysisView, TaskDetailDrawer (getTask on open; evidence picker→completeTask), CreateTaskModal (all target axes + types), CompletionEvidenceLightbox.
+- **tasks**: TasksView (tabs today|abandoned|review|maintenance|history|calendar; `?tab`/`?ticket` deep links; **Fresh Day** staff button → destructive-confirm → `freshDay` mutation → toast counts + reload), TodayTasksView (+generation_state badges, generateOccurrence; **4 collapsible feeds** — To be generated / In progress / Delayed / Skipped-Cancelled; any active filter or search force-expands all), AbandonedTodayView, TaskReviewPanel (evidence lightbox, reject needs reason), TaskHistoryView (server-paginated, debounced filters), TaskCalendarView, TaskDayAnalysisView, TaskDetailDrawer (getTask on open; evidence picker runs `useEvidenceUploads` → completeTask), CreateTaskModal (all target axes + types), CompletionEvidenceLightbox, EvidencePhoto (authenticated evidence renderer — `evidencePath` maps same-origin `/media/file|/uploads` URLs to an apiFetch blob + objectURL; dedupes in-flight fetches per key).
 - **templates**: TemplatesView (+PREMADE one-click install), TemplateWizard (~1240-line multi-step: assignment/location/schedule/checklist/verification/overdue/notifications), TemplateDetailDrawer (generated-work, Run now).
 - **zones**: ZonesView (area-grouped cards→ZoneWorkspace), ZoneWorkspace (unit bulk ops), CreateZoneModal, CreateAreaModal.
 - **ui**: BackButton, Badge+status badges+**`unitVisualState`** (consumes `visual_state` directly), Button, Card, ConfirmationDialog, Drawer, Modal, OperationalCalendar (IST month grid), Skeleton, ToastContainer.
@@ -441,6 +478,13 @@ redaction + IST groups + attachment refs). `taskUtils.ts`
 helpers (never call toLocale* directly). `zoneUtils`, `employeeUtils`
 (`isEmployeeAssignable`), `maintenanceUtils` (blocking statuses incl.
 `resolved`), `washroomFixtures`, `mediaLimits`, `utils` (cn, getInitials).
+`imageOptimize.ts` (canvas resize ≤1920px, webp/jpeg q≈0.82, HEIC passthrough,
+EXIF-safe) + `uploadQueue.ts` (bounded-concurrency runner, per-item retry w/
+exponential backoff, AbortSignal) + `hooks/useEvidenceUploads.ts` (select-time
+compress→upload pipeline, ≤3 in flight, item states compressing|uploading|
+ready|error) drive the evidence pickers. `src/dev/perf.ts` is dev-only
+instrumentation (REQ/REFRESH/POLL/RENDER/DETAIL console lines + 2s mutation
+correlation windows; inert outside `import.meta.env.DEV`).
 
 ### 9.6 Polling & realtime matrix
 
@@ -475,10 +519,17 @@ reads, ASGITransport + dependency_overrides for routes, respx for outbound):
 | test_shifts | largest (648): IST windows/overnight, bitmap, status-board states, overlap 409, attendance-doesn't-gate-allocation |
 | test_task_review | approve/reject workflow, reviewer gates, PM property scoping |
 | test_verify_queue | bounded queue: reject/timeout/Retry-After, dummy hash |
+| test_firebase_deploy | `scripts/firebase_deploy.py` manifest determinism/content-addressing, upload payload map |
+| test_media_validation | upload signature sniffing (JPEG/PNG/WebP/HEIC `ftyp`, garbage rejection — no DB/storage) |
+| test_security_discovery | authZ surface sweep — refresh/me/logout guards against forged/inactive actors |
+| test_storage_gcs | `GCSStorage` save/open/delete — generation-pinned reads, `if_generation_match=0` writes, missing-object semantics |
+| test_task_evidence_delivery | evidence keys serialize to `/api/v1/media/file/<key>` URLs in task/submission payloads |
+| test_rollover | midnight sweep: anchor math (op-date clamp/due/scheduled/created), all open statuses expire, terminal+scheduled immune, expires_at strict, race-safe conditional update, idempotency, catch-up, reassign terminal guard, `/internal/generation-tick` auth+step order |
 
 **Frontend** (vitest+jsdom, config in `vite.config.ts`): LogsView, TaskJourney,
 EmployeeDetailView, EmployeeDirectory, LiveLocationMap, ZoneBoard,
-activityLogs.
+CompletionEvidenceLightbox, EvidencePhoto, activityLogs, uploadQueue,
+evidenceDelivery (apiFetch authed-blob + no-store + refresh-retry).
 
 **Load harness** `tests/load/` (opt-in, `--confirm-load-test`; runners have
 `__test__=False`): `load_common` (classification/percentiles/safety caps
@@ -496,8 +547,9 @@ Backend `.env.example` (authoritative): `APP_NAME/APP_ENV/DEBUG`,
 transaction\|session\|direct), `SUPABASE_{URL,PUBLISHABLE_KEY,SECRET_KEY,
 STORAGE_S3_URL,STORAGE_BUCKET}`, `JWT_SECRET_KEY`(required)`/JWT_ALGORITHM/
 ACCESS_TOKEN_EXPIRE_MINUTES(30)/REFRESH_TOKEN_EXPIRE_DAYS(30)`, `CORS_ORIGINS`,
-`REDIS_URL`+timeouts, `RUN_EMBEDDED_SCHEDULER`(true), `RATE_LIMIT_ENABLED`,
-`STORAGE_BACKEND`(local\|auto\|supabase\|s3), `UPLOAD_DIR`,
+`REDIS_URL`+timeouts, `RUN_EMBEDDED_SCHEDULER`(true), `CRON_SECRET`
+(internal tick endpoint guard), `RATE_LIMIT_ENABLED`,
+`STORAGE_BACKEND`(local\|auto\|supabase\|s3\|gcs), `GCS_BUCKET`, `UPLOAD_DIR`,
 `MAX_TASK_COMPLETION_IMAGES`(10), `S3_{ENDPOINT_URL,REGION,BUCKET,ACCESS_KEY,
 SECRET_KEY,PUBLIC_BASE_URL}`, `EMPLOYEE_API_BASE_URL` (preferred over legacy
 `EMPLOYEE_BACKEND_URL`), `LOCATION_SERVICE_API_KEY`, `CENTRIFUGO_{URL,API_KEY,
@@ -563,6 +615,9 @@ TOKEN_HMAC_SECRET_KEY`, `CENTRIFUGO_HTTP_API_KEY`,
 12. `index.css` font is now **Satoshi** (Fontshare import), not Inter; the
     `ea-*` (employee analysis) and `lp-*` (landing) keyframe/utility classes
     live there — see `docs/aesthetics.md` for the design spec driving them.
-13. All working-tree content (LogsView, employee detail/analysis, verify_queue,
-    load harness, this file) is **uncommitted** on top of HEAD `c1e21e3`
-    (2026-10-15) — `git log` does not reflect current surface.
+13. HEAD is `274d7eb` (2026-11-05) — employee-analysis, verify_queue, fresh-day
+    and collapsible-feeds work are committed. Still **uncommitted** on top:
+    GCS storage backend + `w3b7d9f1a4c6` push-outbox migration, evidence-upload
+    pipeline (useEvidenceUploads/uploadQueue/imageOptimize/EvidencePhoto),
+    Firebase Hosting files + `firebase_deploy.py`, Cloud SQL scripts, the
+    docs/* relocation (root deletions still unstaged), and this file.

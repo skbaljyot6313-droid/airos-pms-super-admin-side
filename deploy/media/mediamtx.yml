@@ -1,0 +1,35 @@
+# MediaMTX production reference config for the AiROS VA module.
+#
+# In dev this file is NOT mounted — MediaMTX's `config/paths` API writes
+# registrations back into the config file, so it must be writable.
+# For a persistent production deploy, mount this file (or a copy) on a
+# WRITABLE path and keep `api` + the auth settings below.
+
+api: yes
+
+# --- WebRTC ---
+webrtc: yes
+# Public ICE candidate(s) browsers connect to. Set to the real public
+# IP/hostname — never a docker-internal or localhost address.
+webrtcICEHostNAT1To1IPs: [CHANGE_ME_PUBLIC_IP]
+# Optional STUN for NAT'd browsers; add a TURN entry for restrictive nets.
+webrtcICEServers2: []
+webrtcLocalUDPAddress: :8189
+webrtcLocalTCPAddress: :8889
+
+# --- HLS fallback ---
+hls: yes
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+
+# --- Control API (:9997) ---
+# Network-restrict to the backend. Prefer also enabling API auth or an
+# HTTP auth hook in production.
+
+# --- Paths ---
+# Paths are registered dynamically by the backend via
+# `POST /v3/config/paths/add/cam_<id>` with sourceOnDemand — the pull from
+# go2rtc runs only while a reader exists.
+paths:
+  all_others:
+    sourceOnDemand: yes

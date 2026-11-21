@@ -10,12 +10,16 @@ frontend resolves against this API.
 
 import mimetypes
 import re
+import time
 import uuid
 
-from fastapi import APIRouter, Depends, Request, UploadFile, status
-from fastapi import File
+from fastapi import APIRouter, Depends, File, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPAuthorizationCredentials
+from sqlalchemy import String, cast, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.core.exceptions import AppError
 from app.core.logging import get_logger
 from app.core.rate_limit import rate_limit
@@ -25,17 +29,13 @@ from app.core.storage import (
     get_storage,
     new_object_key,
 )
-from app.dependencies.auth import bearer_scheme, get_current_user, Forbidden
-from fastapi.security import HTTPAuthorizationCredentials
-from sqlalchemy import String, cast, or_, select
+from app.dependencies.auth import Forbidden, bearer_scheme, get_current_user
+from app.models.maintenance import MaintenanceTicketAttachment
+from app.models.property import Property
 from app.models.task import Task, TaskCompletionImage, TaskHistoryEvent
-from app.models.user import UserRole
-from app.services.structure import StructureService
-from app.models.user import User
-from app.core.database import get_db
-from app.services.audit import AuditService
+from app.models.user import User, UserRole
 from app.repositories.workspace import WorkspaceRepository
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.services.audit import AuditService
 
 router = APIRouter(tags=["media"])
 
@@ -67,6 +67,9 @@ def _matches_image_signature(data: bytes, content_type: str) -> bool:
         return data.startswith(b"\x89PNG\r\n\x1a\n")
     if content_type == "image/webp":
         return len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+    if content_type in ("image/heic", "image/heif"):
+        # ISO BMFF container — 'ftyp' box at offset 4, brand heic/heix/mif1 etc.
+        return len(data) >= 12 and data[4:8] == b"ftyp"
     return False
 
 
@@ -93,6 +96,7 @@ async def upload_media(
     session: AsyncSession = Depends(get_db),
     property_id: uuid.UUID | None = None,
 ):
+    t_start = time.perf_counter()
     property_id = property_id or user.property_id
     if property_id and await WorkspaceRepository(session).get_property(user, property_id) is None:
         raise InvalidUpload("Property is not available.", field="property_id")
@@ -103,6 +107,7 @@ async def upload_media(
         raise InvalidUpload("Empty file.", field="photos")
     if not _matches_image_signature(data, file.content_type):
         raise InvalidUpload("File content does not match its image type.", field="photos")
+    t_read = time.perf_counter()
 
     key = new_object_key(file.filename, file.content_type)
     try:
@@ -117,6 +122,7 @@ async def upload_media(
         raise StorageUnavailable(
             "Image storage is unavailable — check the storage backend configuration."
         ) from exc
+    t_save = time.perf_counter()
     # Local backend returns a relative /uploads/<key> path — the frontend's
     # mediaUrl() resolves it against the API origin. Works identically
     # direct, or behind nginx (absolute proxy-derived URLs lose the port).
@@ -127,6 +133,15 @@ async def upload_media(
                 "size_bytes": len(data)},
     )
     await session.commit()
+    # upload pipeline timing — separates read/validate, storage write, and
+    # audit-commit latency so backend cost is distinguishable from network.
+    t_end = time.perf_counter()
+    logger.info(
+        "upload key=%s bytes=%d read_validate_ms=%.1f storage_ms=%.1f audit_ms=%.1f",
+        key, len(data),
+        (t_read - t_start) * 1000, (t_save - t_read) * 1000,
+        (t_end - t_save) * 1000,
+    )
     return {"url": url, "key": key}
 
 
@@ -165,15 +180,36 @@ async def get_media_file(
     )).scalars().all()
     if tasks:
         user = await get_current_user(credentials, session)
+        # One batched property lookup — the same company-scope check the
+        # per-task _property_for_write calls performed, without N queries.
+        props = {
+            p.id: p for p in (await session.execute(
+                select(Property).where(Property.id.in_({t.property_id for t in tasks}))
+            )).scalars()
+        }
         for task in tasks:
-            prop = await StructureService(session)._property_for_write(user, task.property_id)
-            if prop.company_id != user.company_id:
+            prop = props.get(task.property_id)
+            if prop is None or prop.company_id != user.company_id:
                 raise MediaNotFound()
             if user.role not in {UserRole.SUPER_ADMIN, UserRole.PROPERTY_MANAGER} and (
                 user.role != UserRole.EMPLOYEE or not user.employee_id
                 or task.employee_id != user.employee_id
             ):
                 raise Forbidden()
+    else:
+        # Non-task objects: maintenance-ticket attachments are rendered in
+        # plain <img> tags that cannot carry a JWT, so they stay
+        # public-by-unguessable-key (same exposure as the storage URLs they
+        # replaced). An object referenced by NOTHING is never served — an
+        # orphan upload has no owner to authorize against, so handing it
+        # out by URL alone would be an unauthenticated disclosure vector.
+        referenced = (await session.execute(
+            select(MaintenanceTicketAttachment.id).where(
+                MaintenanceTicketAttachment.url.contains('/' + key)
+            ).limit(1)
+        )).first()
+        if referenced is None:
+            raise MediaNotFound()
     try:
         opened = await get_storage().open(key)
     except Exception as exc:

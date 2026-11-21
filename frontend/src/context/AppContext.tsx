@@ -32,11 +32,9 @@ import {
 import { generateId } from '../lib/utils';
 import { can } from '../lib/permissions';
 import { isEmployeeDeactivated } from '../lib/employeeUtils';
-import { ApiError, getAuthToken, setUnauthorizedHandler } from '../api/client';
+import { ApiError } from '../api/client';
 import { useRealtimeChannel, propChannel } from '../realtime/useRealtimeChannel';
-import { disconnectRealtime } from '../realtime/client';
-import * as authApi from '../api/auth';
-import * as companiesApi from '../api/companies';
+import { useSession } from './SessionContext';
 import * as propertiesApi from '../api/properties';
 import * as areasApi from '../api/areas';
 import * as zonesApi from '../api/zones';
@@ -47,7 +45,7 @@ import * as employeesApi from '../api/employees';
 import * as tasksApi from '../api/tasks';
 import * as workspaceApi from '../api/workspace';
 import * as maintenanceApi from '../api/maintenance';
-import * as mediaApi from '../api/media';
+
 import {
   EmployeeCreateRequest,
   PropertyCreateRequest,
@@ -69,6 +67,7 @@ import {
   WashroomBulkCreateRequest,
   WashroomCreateRequest,
   WashroomUpdateRequest,
+  OccupancySwitchRequest,
 } from '../api/types';
 
 export interface ToastMessage {
@@ -235,9 +234,20 @@ interface AppContextType {
   createEmployee: (data: Omit<EmployeeCreateRequest, 'property_uid'>) => Promise<Employee>;
   updateEmployee: (employee_uid: string, updates: EmployeeUpdateRequest) => Promise<void>;
   moveEmployeeToZone: (employee_uid: string, zone_uid: string | null) => Promise<void>;
+  assignEmployeeToPropertyWide: (employee_uid: string) => Promise<void>;
+  assignEmployeeSecondaryZone: (
+    employee_uid: string,
+    secondary_zone_uid: string | null
+  ) => Promise<void>;
   assignEmployeeToZone: (employee_uid: string, zone_uid: string | null) => Promise<void>;
   /** Assign to a whole area — the employee is eligible for work in every zone inside it */
   assignEmployeeToArea: (employee_uid: string, area_uid: string | null) => Promise<void>;
+  /** Clear ALL coverage — zones, areas and property-wide — at once */
+  unallocateEmployee: (employee_uid: string) => Promise<void>;
+  /** Multi-area coverage — append/remove one whole area without disturbing
+   *  the rest of the employee's area set. */
+  addEmployeeAreaCoverage: (employee_uid: string, area_uid: string) => Promise<void>;
+  removeEmployeeAreaCoverage: (employee_uid: string, area_uid: string) => Promise<void>;
   deleteEmployee: (employee_uid: string) => Promise<void>;
   deactivateEmployee: (employee_uid: string) => Promise<void>;
   reactivateEmployee: (employee_uid: string) => Promise<void>;
@@ -246,6 +256,9 @@ interface AppContextType {
   // the API response replaces local state (no optimistic mutation)
   checkInRoom: (room_uid: string, guest_name?: string) => Promise<void>;
   checkOutRoom: (room_uid: string) => Promise<void>;
+  switchOccupancy: (
+    req: OccupancySwitchRequest
+  ) => Promise<boolean>;
   transitionResource: (
     resource_type: 'room' | 'dorm' | 'bed' | 'washroom' | 'fixture',
     resource_id: string,
@@ -260,7 +273,7 @@ interface AppContextType {
   updateTask: (task_uid: string, updates: TaskUpdateRequest) => Promise<void>;
   deleteTask: (task_uid: string) => Promise<void>;
   startTask: (task_uid: string) => Promise<void>;
-  completeTask: (task_uid: string, photos: File[], note?: string) => Promise<void>;
+  completeTask: (task_uid: string, photo_urls: string[], note?: string) => Promise<void>;
   requestTaskRedo: (task_uid: string, note?: string) => Promise<void>;
   reassignTask: (task_uid: string, employee_uid: string | null) => Promise<void>;
   reopenTask: (task_uid: string, note?: string) => Promise<void>;
@@ -303,11 +316,15 @@ const apiErrorMessage = (err: unknown, fallback: string) =>
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // -------------------------------------------------------------------
-  // Auth & session
+  // Auth & session — owned by SessionProvider (context/SessionContext.tsx).
+  // Collection work reaches this provider through subscribeSessionEvents.
   // -------------------------------------------------------------------
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [company, setCompany] = useState<Company | null>(null);
-  const [activePropertyUid, setActivePropertyUid] = useState<string>('');
+  const session = useSession();
+  const {
+    currentUser, company, activePropertyUid, currentRole, isAuthenticated,
+    setActivePropertyUid, signIn, logout, registerCompanyAccount,
+    updateProfile, updateCompanyDetails,
+  } = session;
 
   // -------------------------------------------------------------------
   // Server state — populated exclusively by the API layer
@@ -660,13 +677,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   );
 
 
-  // Wipe every tenant-scoped collection — shared by logout and the
-  // unauthorized handler so a dead session can't leave stale data behind
-  // for the next user who signs in on this browser.
-  const clearSessionState = useCallback(() => {
-    setCurrentUser(null);
-    setCompany(null);
-    setActivePropertyUid('');
+  // Session lifecycle → collection work. `cleared` wipes every
+  // tenant-scoped collection so a dead session can't leave stale data
+  // behind for the next user who signs in on this browser; `established`
+  // loads the workspace; the rest map session ops onto local stores.
+  const wipeCollections = useCallback(() => {
     setProperties([]);
     setAreas([]);
     setZones([]);
@@ -678,45 +693,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setMaintenanceTickets([]);
   }, []);
 
-  // -------------------------------------------------------------------
-  // Session bootstrap: token present → GET /auth/me → load workspace
-  // -------------------------------------------------------------------
   useEffect(() => {
-    let cancelled = false;
-    const bootstrap = async () => {
-      // No stored access token → no session to restore. Skip /auth/me
-      // entirely — calling it would produce a doomed 401 that fires the
-      // unauthorized handler and bounces public pages to /login.
-      if (!getAuthToken()) return;
-      try {
-        const { user, company: userCompany } = await authApi.me();
-        if (cancelled) return;
-        setCurrentUser(user);
-        setCompany(userCompany);
-        if (user.property_uid) setActivePropertyUid(user.property_uid);
-        await loadWorkspace();
-      } catch {
-        // No/invalid session — stay on the public routes
+    return session.subscribeSessionEvents((ev) => {
+      switch (ev.type) {
+        case 'established':
+          void loadWorkspace();
+          break;
+        case 'cleared':
+          wipeCollections();
+          break;
+        case 'employee-patch':
+          setEmployees((prev) =>
+            prev.map((e) =>
+              e.employee_uid === ev.employee_uid ? { ...e, ...ev.updates } : e
+            )
+          );
+          break;
+        case 'toast':
+          addToast(ev.toast);
+          break;
       }
-    };
-    void bootstrap();
-    return () => {
-      cancelled = true;
-    };
-  }, [loadWorkspace]);
-
-  // Session expiry: API client fires this when a 401 survives the
-  // single refresh retry — clear the full session, not just the user.
-  useEffect(() => {
-    setUnauthorizedHandler(() => {
-      clearSessionState();
-      routerNavigate('/login');
     });
-    return () => setUnauthorizedHandler(null);
-  }, [routerNavigate, clearSessionState]);
-
-  const currentRole: UserRole = currentUser?.role || 'super_admin';
-  const isAuthenticated = !!currentUser;
+  }, [session, loadWorkspace, wipeCollections, addToast]);
 
   // -------------------------------------------------------------------
   // Derived collections
@@ -766,7 +764,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const currentPropertyUnallocatedEmployees = useMemo(
     () => currentPropertyEmployees.filter(
-      (e) => !isEmployeeDeactivated(e) && !e.zone_uid && !e.area_uid
+      (e) => !isEmployeeDeactivated(e) && !e.zone_uid && !e.area_uid && !e.covers_property
     ),
     [currentPropertyEmployees]
   );
@@ -813,98 +811,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       routerNavigate(path);
     },
     [routerNavigate]
-  );
-
-  // -------------------------------------------------------------------
-  // Auth operations
-  // -------------------------------------------------------------------
-  const signIn = useCallback(
-    (session: { user: AuthUser; company: Company }) => {
-      const { user, company: userCompany } = session;
-      setCurrentUser(user);
-      setCompany(userCompany);
-      if (user.property_uid) setActivePropertyUid(user.property_uid);
-      void loadWorkspace();
-
-      if (user.role === 'super_admin') {
-        routerNavigate('/admin/properties');
-      } else if (user.role === 'property_manager') {
-        routerNavigate(`/property/${user.property_uid}/zones`);
-      } else {
-        routerNavigate('/');
-      }
-    },
-    [loadWorkspace, routerNavigate]
-  );
-
-  const logout = useCallback(() => {
-    void authApi.logout(); // best-effort server-side invalidation
-    disconnectRealtime(); // drop the socket + scoped tokens with the session
-    clearSessionState();
-    routerNavigate('/');
-    addToast({
-      type: 'info',
-      title: 'Logged Out',
-      description: 'You have been signed out of Management Tool.',
-    });
-  }, [routerNavigate, addToast, clearSessionState]);
-
-  const registerCompanyAccount = useCallback(
-    async (payload: RegisterCompanyRequest) => {
-      const res = await authApi.registerCompany(payload);
-      signIn({ user: res.user, company: res.company });
-      addToast({
-        type: 'success',
-        title: 'Organization Registered',
-        description: `${res.company.name} setup completed. Welcome to Management Tool!`,
-      });
-    },
-    [signIn, addToast]
-  );
-
-  const updateProfile = useCallback(
-    async (updates: { name?: string; phone?: string; email?: string }) => {
-      try {
-        const updated = await authApi.updateProfile(updates);
-        setCurrentUser(updated);
-        if (updated.employee_uid) {
-          setEmployees((prev) =>
-            prev.map((e) => (e.employee_uid === updated.employee_uid ? { ...e, ...updates } : e))
-          );
-        }
-        addToast({
-          type: 'success',
-          title: 'Profile Updated',
-          description: 'Your details were saved.',
-        });
-      } catch (err) {
-        addToast({
-          type: 'error',
-          title: 'Profile Update Failed',
-          description: apiErrorMessage(err, 'Could not save profile changes.'),
-        });
-        throw err;
-      }
-    },
-    [addToast]
-  );
-
-  const updateCompanyDetails = useCallback(
-    async (updates: {
-      name?: string;
-      legal_name?: string;
-      brand_name?: string;
-      email?: string;
-      phone?: string;
-      address?: string;
-      pin_code?: string;
-      operational_day_start?: string;
-    }) => {
-      if (!company) return;
-      const updated = await companiesApi.updateCompany(company.company_uid, updates);
-      setCompany(updated);
-    },
-    [company]
   );
 
   // -------------------------------------------------------------------
@@ -1207,6 +1113,58 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           title: 'Checkout Failed',
           description: apiErrorMessage(err, 'Could not check out the room.'),
         });
+      }
+    },
+    [addToast, markSelfUnitEvent]
+  );
+
+  // Guest switch — the response carries every touched room/dorm payload
+  // plus any vacated-unit cleaning tasks; merge them in-band.
+  const switchOccupancy = useCallback(
+    async (req: OccupancySwitchRequest): Promise<boolean> => {
+      try {
+        const res = await roomsApi.switchOccupancy(req);
+        if (res.rooms) {
+          const map = res.rooms;
+          setRooms((prev) =>
+            prev.map((r) => map[r.room_uid] ?? r)
+          );
+        }
+        if (res.dorms) {
+          const map = res.dorms;
+          setDorms((prev) =>
+            prev.map((d) => map[d.dorm_uid] ?? d)
+          );
+        }
+        markSelfUnitEvent(req.source_uid);
+        markSelfUnitEvent(req.target_uid);
+        if (res.generated_tasks?.length) {
+          const generated = res.generated_tasks;
+          setTasks((prev) => {
+            const known = new Set(prev.map((t) => t.task_uid));
+            return [
+              ...prev,
+              ...generated.filter((t) => !known.has(t.task_uid)),
+            ];
+          });
+        }
+        addToast({
+          type: 'success',
+          title: 'Guest Switched',
+          description: `${res.guest_name || 'Guest'} moved — vacated unit ${
+            req.clean_vacated !== false
+              ? 'flagged for cleaning'
+              : 'released to available'
+          }.`,
+        });
+        return true;
+      } catch (err) {
+        addToast({
+          type: 'error',
+          title: 'Switch Failed',
+          description: apiErrorMessage(err, 'Could not move the guest.'),
+        });
+        return false;
       }
     },
     [addToast, markSelfUnitEvent]
@@ -1872,11 +1830,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const moveEmployeeToZone = useCallback(
     async (employee_uid: string, zone_uid: string | null) => {
       const prev = employees.find((e) => e.employee_uid === employee_uid);
-      const previous = { zone_uid: prev?.zone_uid ?? null, area_uid: prev?.area_uid ?? null };
-      // zone assignment clears any area-level assignment (mutually exclusive)
+      const previous = {
+        zone_uid: prev?.zone_uid ?? null,
+        secondary_zone_uid: prev?.secondary_zone_uid ?? null,
+        area_uid: prev?.area_uid ?? null,
+        area_uids: prev?.area_uids ?? [],
+        covers_property: prev?.covers_property ?? false,
+      };
+      // Zone coverage is additive — a zone assign keeps whole-area
+      // coverage; it only narrows property-wide. Clearing zones touches
+      // the zone pair only.
       setEmployees((prev) =>
         prev.map((e) =>
-          e.employee_uid === employee_uid ? { ...e, zone_uid, area_uid: null } : e
+          e.employee_uid === employee_uid
+            ? {
+                ...e,
+                zone_uid,
+                secondary_zone_uid: null,
+                ...(zone_uid ? { covers_property: false } : {}),
+              }
+            : e
         )
       );
       try {
@@ -1890,15 +1863,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           title: 'Employee Reassigned',
           description: zone_uid
             ? `Moved to ${zoneName || 'zone'}.`
-            : 'Moved to the unallocated pool.',
+            : 'Zone coverage removed.',
         });
       } catch (err) {
         // Roll back the optimistic move
         setEmployees((prev) =>
           prev.map((e) =>
-            e.employee_uid === employee_uid
-              ? { ...e, zone_uid: previous.zone_uid, area_uid: previous.area_uid }
-              : e
+            e.employee_uid === employee_uid ? { ...e, ...previous } : e
           )
         );
         addToast({
@@ -1917,10 +1888,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const assignEmployeeToArea = useCallback(
     async (employee_uid: string, area_uid: string | null) => {
       const prev = employees.find((e) => e.employee_uid === employee_uid);
-      const previous = { zone_uid: prev?.zone_uid ?? null, area_uid: prev?.area_uid ?? null };
+      const previous = {
+        zone_uid: prev?.zone_uid ?? null,
+        secondary_zone_uid: prev?.secondary_zone_uid ?? null,
+        area_uid: prev?.area_uid ?? null,
+        area_uids: prev?.area_uids ?? [],
+        covers_property: prev?.covers_property ?? false,
+      };
       setEmployees((p) =>
         p.map((e) =>
-          e.employee_uid === employee_uid ? { ...e, area_uid, zone_uid: null } : e
+          e.employee_uid === employee_uid
+            ? {
+                ...e,
+                area_uid,
+                area_uids: area_uid ? [area_uid] : [],
+                ...(area_uid ? { covers_property: false } : {}),
+              }
+            : e
         )
       );
       try {
@@ -1939,9 +1923,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } catch (err) {
         setEmployees((p) =>
           p.map((e) =>
-            e.employee_uid === employee_uid
-              ? { ...e, zone_uid: previous.zone_uid, area_uid: previous.area_uid }
-              : e
+            e.employee_uid === employee_uid ? { ...e, ...previous } : e
           )
         );
         addToast({
@@ -1952,6 +1934,216 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     },
     [employees, areas, addToast]
+  );
+
+  // Multi-area coverage — add/remove ONE area without disturbing the rest.
+  const addEmployeeAreaCoverage = useCallback(
+    async (employee_uid: string, area_uid: string) => {
+      const prev = employees.find((e) => e.employee_uid === employee_uid);
+      try {
+        const updated = await employeesApi.addEmployeeArea(employee_uid, area_uid);
+        setEmployees((p) =>
+          p.map((e) => (e.employee_uid === employee_uid ? updated : e))
+        );
+        const areaName = areas.find((a) => a.area_uid === area_uid)?.name;
+        addToast({
+          type: 'success',
+          title: 'Area Added',
+          description: `Now also covers whole ${areaName || 'area'}.`,
+        });
+      } catch (err) {
+        setEmployees((p) =>
+          p.map((e) => (e.employee_uid === employee_uid ? { ...e, ...prev } : e))
+        );
+        addToast({
+          type: 'error',
+          title: 'Assignment Failed',
+          description: apiErrorMessage(err, 'Could not add the area.'),
+        });
+      }
+    },
+    [employees, areas, addToast]
+  );
+
+  const removeEmployeeAreaCoverage = useCallback(
+    async (employee_uid: string, area_uid: string) => {
+      const prev = employees.find((e) => e.employee_uid === employee_uid);
+      try {
+        const updated = await employeesApi.removeEmployeeArea(employee_uid, area_uid);
+        setEmployees((p) =>
+          p.map((e) => (e.employee_uid === employee_uid ? updated : e))
+        );
+        const areaName = areas.find((a) => a.area_uid === area_uid)?.name;
+        addToast({
+          type: 'success',
+          title: 'Area Removed',
+          description: `No longer covers ${areaName || 'that area'}.`,
+        });
+      } catch (err) {
+        setEmployees((p) =>
+          p.map((e) => (e.employee_uid === employee_uid ? { ...e, ...prev } : e))
+        );
+        addToast({
+          type: 'error',
+          title: 'Assignment Failed',
+          description: apiErrorMessage(err, 'Could not remove the area.'),
+        });
+      }
+    },
+    [employees, areas, addToast]
+  );
+
+  // Full unallocate — zones, areas and property-wide all cleared at once.
+  const unallocateEmployee = useCallback(
+    async (employee_uid: string) => {
+      const prev = employees.find((e) => e.employee_uid === employee_uid);
+      const previous = {
+        zone_uid: prev?.zone_uid ?? null,
+        secondary_zone_uid: prev?.secondary_zone_uid ?? null,
+        area_uid: prev?.area_uid ?? null,
+        area_uids: prev?.area_uids ?? [],
+        covers_property: prev?.covers_property ?? false,
+      };
+      setEmployees((p) =>
+        p.map((e) =>
+          e.employee_uid === employee_uid
+            ? {
+                ...e,
+                zone_uid: null,
+                secondary_zone_uid: null,
+                area_uid: null,
+                area_uids: [],
+                covers_property: false,
+              }
+            : e
+        )
+      );
+      try {
+        const updated = await employeesApi.unallocateEmployee(employee_uid);
+        setEmployees((p) =>
+          p.map((e) => (e.employee_uid === employee_uid ? updated : e))
+        );
+        addToast({
+          type: 'success',
+          title: 'Employee Unallocated',
+          description: 'All coverage cleared — moved to the unallocated pool.',
+        });
+      } catch (err) {
+        setEmployees((p) =>
+          p.map((e) =>
+            e.employee_uid === employee_uid ? { ...e, ...previous } : e
+          )
+        );
+        addToast({
+          type: 'error',
+          title: 'Assignment Failed',
+          description: apiErrorMessage(err, 'Could not unallocate the employee.'),
+        });
+      }
+    },
+    [employees, addToast]
+  );
+
+  // Property-wide coverage — eligible for work in every zone
+  const assignEmployeeToPropertyWide = useCallback(
+    async (employee_uid: string) => {
+      const prev = employees.find((e) => e.employee_uid === employee_uid);
+      const previous = {
+        zone_uid: prev?.zone_uid ?? null,
+        secondary_zone_uid: prev?.secondary_zone_uid ?? null,
+        area_uid: prev?.area_uid ?? null,
+        area_uids: prev?.area_uids ?? [],
+        covers_property: prev?.covers_property ?? false,
+      };
+      setEmployees((p) =>
+        p.map((e) =>
+          e.employee_uid === employee_uid
+            ? { ...e, covers_property: true, zone_uid: null, secondary_zone_uid: null, area_uid: null, area_uids: [] }
+            : e
+        )
+      );
+      try {
+        const updated = await employeesApi.assignEmployeeToPropertyWide(employee_uid);
+        setEmployees((p) =>
+          p.map((e) => (e.employee_uid === employee_uid ? updated : e))
+        );
+        addToast({
+          type: 'success',
+          title: 'Employee Reassigned',
+          description: 'Covers the whole property — eligible in every zone.',
+        });
+      } catch (err) {
+        setEmployees((p) =>
+          p.map((e) =>
+            e.employee_uid === employee_uid ? { ...e, ...previous } : e
+          )
+        );
+        addToast({
+          type: 'error',
+          title: 'Assignment Failed',
+          description: apiErrorMessage(err, 'Could not assign the employee.'),
+        });
+      }
+    },
+    [employees, addToast]
+  );
+
+  // Second-zone coverage — keeps the primary zone, adds/changes the other
+  const assignEmployeeSecondaryZone = useCallback(
+    async (employee_uid: string, secondary_zone_uid: string | null) => {
+      const prev = employees.find((e) => e.employee_uid === employee_uid);
+      const previous = {
+        zone_uid: prev?.zone_uid ?? null,
+        secondary_zone_uid: prev?.secondary_zone_uid ?? null,
+        area_uid: prev?.area_uid ?? null,
+        area_uids: prev?.area_uids ?? [],
+        covers_property: prev?.covers_property ?? false,
+      };
+      setEmployees((p) =>
+        p.map((e) => {
+          if (e.employee_uid !== employee_uid) return e;
+          if (secondary_zone_uid && !e.zone_uid) {
+            // No primary zone — the added zone becomes primary (server parity)
+            return {
+              ...e, zone_uid: secondary_zone_uid,
+              secondary_zone_uid: null, covers_property: false,
+            };
+          }
+          return {
+            ...e, secondary_zone_uid,
+            ...(secondary_zone_uid ? { covers_property: false } : {}),
+          };
+        })
+      );
+      try {
+        const updated = await employeesApi.assignEmployeeSecondaryZone(
+          employee_uid, secondary_zone_uid
+        );
+        setEmployees((p) =>
+          p.map((e) => (e.employee_uid === employee_uid ? updated : e))
+        );
+        const zoneName = zones.find((z) => z.zone_uid === secondary_zone_uid)?.name;
+        addToast({
+          type: 'success',
+          title: 'Coverage Updated',
+          description: secondary_zone_uid
+            ? `Also covers ${zoneName || 'the second zone'} — works in two zones.`
+            : 'Second zone removed — back to single-zone coverage.',
+        });
+      } catch (err) {
+        setEmployees((p) =>
+          p.map((e) =>
+            e.employee_uid === employee_uid ? { ...e, ...previous } : e
+          )
+        );
+        addToast({
+          type: 'error',
+          title: 'Assignment Failed',
+          description: apiErrorMessage(err, 'Could not update zone coverage.'),
+        });
+      }
+    },
+    [employees, zones, addToast]
   );
 
   const deactivateEmployee = useCallback(
@@ -2121,14 +2313,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   );
 
   const completeTask = useCallback(
-    async (task_uid: string, photos: File[], note?: string) => {
+    async (task_uid: string, photo_urls: string[], note?: string) => {
       try {
-        // Upload evidence photos first — backend requires ≥1 photo
-        const photo_urls: string[] = [];
-        for (const file of photos) {
-          const res = await mediaApi.uploadPhoto(file, activePropertyUid || undefined);
-          photo_urls.push(res.url);
-        }
+        // Evidence URLs are pre-uploaded by useEvidenceUploads at selection
+        // time — submit is a single round trip, never re-uploads.
         const res = await tasksApi.completeTask(task_uid, { photo_urls, note });
         setTasks((prev) => {
           const next = prev.map((t) => (t.task_uid === task_uid ? res.task : t));
@@ -2496,6 +2684,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     deleteRoom,
     checkInRoom,
     checkOutRoom,
+    switchOccupancy,
     transitionResource,
     assignRoomToZone,
     createDorm,
@@ -2526,6 +2715,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     moveEmployeeToZone,
     assignEmployeeToZone,
     assignEmployeeToArea,
+    unallocateEmployee,
+    addEmployeeAreaCoverage,
+    removeEmployeeAreaCoverage,
+    assignEmployeeToPropertyWide,
+    assignEmployeeSecondaryZone,
     deleteEmployee,
     deactivateEmployee,
     reactivateEmployee,

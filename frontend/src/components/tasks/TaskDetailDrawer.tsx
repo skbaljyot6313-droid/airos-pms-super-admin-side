@@ -26,6 +26,7 @@ import {
   MAX_COMPLETION_IMAGES,
   MAX_UPLOAD_BYTES,
 } from '../../lib/mediaLimits';
+import { useEvidenceUploads } from '../../hooks/useEvidenceUploads';
 import { Drawer } from '../ui/Drawer';
 import { Badge, TaskStatusBadge, TaskTypeBadge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -156,8 +157,17 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
     addToast,
   } = useApp();
 
-  /** Selected evidence photos — uploaded to POST /media/uploads on completion */
-  const [evidencePhotos, setEvidencePhotos] = useState<{ file: File; previewUrl: string }[]>([]);
+  /** Evidence photos — compressed + uploaded at selection time so completion
+   *  is a single round trip. Items carry per-photo status (compressing →
+   *  uploading → ready|error). */
+  const evidence = useEvidenceUploads({
+    maxCount: MAX_COMPLETION_IMAGES,
+    allowedTypes: ALLOWED_COMPLETION_IMAGE_TYPES,
+    maxBytes: MAX_UPLOAD_BYTES,
+    onToast: addToast,
+  });
+  const evidenceRef = useRef(evidence);
+  evidenceRef.current = evidence;
   const [completionNote, setCompletionNote] = useState('');
   const [redoMode, setRedoMode] = useState(false);
   const [redoNote, setRedoNote] = useState('');
@@ -170,8 +180,6 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
     index: number;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const evidencePhotosRef = useRef(evidencePhotos);
-  evidencePhotosRef.current = evidencePhotos;
 
   // The tasks list is now a slim payload — history/images/submissions are
   // loaded on demand when a task is opened. The summary prop renders
@@ -197,10 +205,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
   ]);
   const task = taskDetail ?? taskSummary;
 
-  useEffect(
-    () => () => evidencePhotosRef.current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl)),
-    []
-  );
+  useEffect(() => () => evidenceRef.current.reset(), []);
 
   const status = task ? getEffectiveTaskStatus(task) : 'pending';
   const canManage = currentUser?.role !== 'employee'; // PM & Super Admin share the same management actions
@@ -236,49 +241,12 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
   }, [task]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-    const accepted = files.slice(
-      0,
-      Math.max(MAX_COMPLETION_IMAGES - evidencePhotos.length, 0)
-    );
-    if (files.length > accepted.length) {
-      addToast({
-        type: 'error',
-        title: 'Too many photos',
-        description: `A submission can include at most ${MAX_COMPLETION_IMAGES} images.`,
-      });
-    }
-    accepted.forEach((file) => {
-      if (!ALLOWED_COMPLETION_IMAGE_TYPES.has(file.type)) {
-        addToast({
-          type: 'error',
-          title: 'Photo upload failed',
-          description: `${file.name} must be a JPEG, PNG, WebP, or HEIC image.`,
-        });
-        return;
-      }
-      if (file.size > MAX_UPLOAD_BYTES) {
-        addToast({
-          type: 'error',
-          title: 'Photo upload failed',
-          description: `${file.name} exceeds the 10 MB limit.`,
-        });
-        return;
-      }
-      setEvidencePhotos((prev) => [
-        ...prev,
-        { file, previewUrl: URL.createObjectURL(file) },
-      ]);
-    });
+    evidence.add(Array.from(e.target.files || []));
     e.target.value = '';
   };
 
   const resetLocal = () => {
-    setEvidencePhotos((prev) => {
-      prev.forEach((p) => URL.revokeObjectURL(p.previewUrl));
-      return [];
-    });
+    evidence.reset();
     setCompletionNote('');
     setRedoMode(false);
     setRedoNote('');
@@ -291,12 +259,12 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
   };
 
   const handleComplete = async () => {
-    if (!task || isCompleting) return;
+    if (!task || isCompleting || evidence.busy) return;
     setIsCompleting(true);
     try {
       await completeTask(
         task.task_uid,
-        evidencePhotos.map((p) => p.file),
+        evidence.readyUrls,
         completionNote.trim() || undefined
       );
       resetLocal();
@@ -615,36 +583,50 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
                     <Camera className="w-3.5 h-3.5" />
                     <span>Add Photos</span>
                   </Button>
-                  {evidencePhotos.length === 0 ? (
-                    <span className="text-[11px] text-[#A34A07] font-medium">
+                  {evidence.items.length === 0 ? (
+                    <span className="text-[11px] text-[#9A4C07] font-medium">
                       Required before completing
+                    </span>
+                  ) : evidence.busy ? (
+                    <span className="text-[11px] text-[#6C675F] font-medium">
+                      Uploading {evidence.progress.done}/{evidence.progress.total}…
                     </span>
                   ) : (
                     <span className="text-[11px] text-[#6C675F] font-medium">
-                      {evidencePhotos.length} photo{evidencePhotos.length > 1 ? 's' : ''} selected
+                      {evidence.items.length} photo{evidence.items.length > 1 ? 's' : ''} ready
                       · max {MAX_COMPLETION_IMAGES}
                     </span>
                   )}
                 </div>
 
-                {evidencePhotos.length > 0 && (
+                {evidence.items.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
-                    {evidencePhotos.map((p, i) => (
-                      <div key={i} className="relative">
+                    {evidence.items.map((p, i) => (
+                      <div key={p.id} className="relative">
                         <img
                           src={p.previewUrl}
                           alt={`evidence ${i + 1}`}
-                          className="w-16 h-16 rounded-[10px] object-cover border border-[#DDD7CB]"
+                          className={`w-16 h-16 rounded-[10px] object-cover border ${
+                            p.status === 'error' ? 'border-[#C53B3B]' : 'border-[#DDD7CB]'
+                          } ${p.status === 'ready' ? '' : 'opacity-60'}`}
                         />
+                        {p.status === 'error' ? (
+                          <button
+                            type="button"
+                            onClick={() => evidence.retry(p.id)}
+                            className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-[#C53B3B] bg-white/70 rounded-[10px] cursor-pointer"
+                            title={p.error || 'Upload failed — tap to retry'}
+                          >
+                            Retry
+                          </button>
+                        ) : p.status !== 'ready' ? (
+                          <span className="absolute inset-0 flex items-center justify-center text-[9px] font-semibold text-white bg-black/40 rounded-[10px]">
+                            {p.status === 'compressing' ? 'Prep' : 'Up'}
+                          </span>
+                        ) : null}
                         <button
                           type="button"
-                          onClick={() =>
-                            setEvidencePhotos((prev) => {
-                              const next = prev.filter((_, idx) => idx !== i);
-                              URL.revokeObjectURL(prev[i].previewUrl);
-                              return next;
-                            })
-                          }
+                          onClick={() => evidence.remove(p.id)}
                           className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#C53B3B] text-white rounded-full text-[10px] leading-none flex items-center justify-center cursor-pointer"
                           title="Remove photo"
                         >
@@ -667,13 +649,15 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
                   <Button
                     variant="primary"
                     size="sm"
-                    disabled={evidencePhotos.length === 0 || isCompleting}
+                    disabled={evidence.readyUrls.length === 0 || evidence.busy || isCompleting}
                     isLoading={isCompleting}
                     onClick={handleComplete}
                     title={
-                      evidencePhotos.length === 0
+                      evidence.readyUrls.length === 0
                         ? 'Attach at least one photo to enable completion'
-                        : 'Mark the task as completed'
+                        : evidence.busy
+                          ? 'Waiting for photo uploads to finish'
+                          : 'Mark the task as completed'
                     }
                     className="gap-1.5"
                   >

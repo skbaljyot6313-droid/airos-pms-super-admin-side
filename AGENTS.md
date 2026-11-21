@@ -17,7 +17,18 @@ main.py                 # dev launcher: frees :8000/:3000, runs uvicorn --reload
 backend/                # FastAPI + SQLAlchemy 2 async + asyncpg + Alembic
   app/main.py           # lifespan, middleware, /health /ready, embedded scheduler
   app/api/v1/           # router.py mounts: auth, workspace, media, work_batches,
-                        #   templates, attendance, locations, realtime — all under /api/v1
+                        #   templates, attendance, locations, realtime, va —
+                        #   all under /api/v1.
+                        #   workspace/ is a package: 8 domain routers (bootstrap,
+                        #   reads, structure, occupancy, employees, tasks,
+                        #   maintenance, properties) aggregated in __init__.py —
+                        #   shared helpers/errors live in workspace/_common.py
+                        #   va.py = Video Analytics: camera CRUD (areas/zones),
+                        #   stream sessions, WHEP proxy + media-health.
+                        #   Pipeline: camera → go2rtc (RTSP ingest/restream
+                        #   + optional ffmpeg transcode) → MediaMTX (WHEP/HLS
+                        #   distribution) — deploy/media/ = one compose,
+                        #   services/{go2rtc,mediamtx}.py = control clients
   app/domain/           # pure state-transition rules (resource_states,
                         #   transitions, resource_events)
   app/core/             # config.py (pydantic-settings, single config source), database,
@@ -75,10 +86,15 @@ frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-do
   `scheduled_for`/`expires_at` — the occurrence instant and the NEXT
   scheduled boundary. `RolloverService.expire_due` abandons unfinished
   (non-`submitted`) instances at `expires_at` with reason
-  `NEXT_SCHEDULED_OCCURRENCE` BEFORE generation runs (tick order matters:
-  an open predecessor must not block its successor). `submitted` survives
-  expiry; the daily op-day rollover (`SYSTEM_DAILY_ROLLOVER`) skips
-  still-valid instances. `uq_tasks_series_due` = one row per
+  `NEXT_SCHEDULED_OCCURRENCE`. `submitted` survives occurrence expiry.
+  `RolloverService.run` is the **midnight-IST sweep** (`MIDNIGHT_EXPIRY`):
+  every OPEN_STATUSES task anchored before today's IST date is abandoned —
+  strict, `expires_at` grants no extension, conditional UPDATE per row.
+  `company.operational_day_start` now only steers op-day stamping/
+  analytics, not lifecycle. Deployed envs drive the same sweep via
+  `POST /internal/generation-tick` (X-Cron-Key, Cloud Scheduler job
+  `airos-generation-tick` */5min) — the embedded loop is unreliable
+  under Cloud Run CPU scheduling. `uq_tasks_series_due` = one row per
   (series_id, due_date).
 - **MaintenanceTicket**: `open → assigned → in_progress → on_hold → resolved
   → closed | cancelled`; disapprove reopens. Staff-only creation (the
@@ -140,7 +156,8 @@ frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-do
   `needs_review` (fail closed — never grants floor presence).
   `floor_eligible` = `working`/`on_break` only — a display flag on the
   Attendance board. Zone Board shows ALL assignable employees;
-  attendance does not gate floor visibility or allocation.
+  attendance does not gate floor visibility (it does gate allocation — see
+  Work allocation).
   Employees → Shifts/Attendance tabs expose `ShiftManager` +
   `AttendanceBoard` to SA and PM.
 - **WorkTemplate**: JSONB config (assignment/location/schedule/checklist/
@@ -151,9 +168,19 @@ frontend/               # React 19 + TS + Vite 8 + Tailwind v4 + react-router-do
   round-robin (ZoneAllocationState row locked FOR UPDATE), area-level
   employee pool as fallback, department eligibility by work_type
   (cleaning→housekeeping, maintenance→maintenance/engineering). Attendance
-  does NOT gate allocation — an assignee needs only
-  `employee_is_assignable` (active + not on leave); clock-in state is
-  ignored for both auto and manual assignment.
+  GATES allocation: an assignee must be `employee_is_assignable` (active +
+  not on leave) AND on duty — an open, started workday for today's op-date
+  with no open break (`on_duty` in `models/attendance.py`, applied to the
+  auto pool and to `employee_for_assignment`). Off-duty staff get no new
+  work. The employee backend's `AvailabilityService` hands pending
+  unassigned work to an employee when they Start Day or End Break.
+  Emergency override (`services/assignment_override.py`): `emergency_override`
+  + `override_reason` (≥10 chars) on `PATCH /tasks/{id}/assignee` and
+  `POST /maintenance/{id}/assign`. SUPER_ADMIN only (PMs get 403). It bypasses
+  ONLY the on-duty gate — attendance is not written and the employee does not
+  become eligible for automatic allocation. Recorded in the allocation history
+  (`emergency_override`), the item's history, and an `emergency_assignment_override`
+  audit event. No UI yet — API only.
   WorkAllocationBatch = one POST → N tickets, one employee per unit.
   `allocate_units()` = batched zone-aware path used by template
   generation: one property-wide staff/workload fetch, pools grouped by
@@ -214,6 +241,13 @@ cd frontend && npx tsc --noEmit && npm run build   # typecheck + build
 cd frontend && npm test                          # vitest
 cd backend && pytest tests/                      # needs requirements-dev.txt
 cd backend && alembic upgrade head               # migrate
+
+# E2E (Playwright, real Postgres stack):
+docker run -d --name airos-e2e-pg -p 55432:5432 \
+  -e POSTGRES_PASSWORD=e2e -e POSTGRES_DB=airos_e2e postgres:16-alpine
+cd backend && DATABASE_URL=postgresql+asyncpg://postgres:e2e@localhost:55432/airos_e2e \
+  py -3.12 -m alembic upgrade head && py -3.12 scripts/e2e_seed.py
+cd frontend && PYTHON_BIN=<python3.12 path> npm run test:e2e
 ```
 
 Env: backend reads `backend/.env` (see `.env.example` files). Required:
@@ -247,6 +281,19 @@ backend's env.
   /companies, /admin/settings. PM scoping is enforced per-service
   (`_property_for_write`, `_request_for_review`, `_assert_company_scope`
   pinning, `_scoped`) — never by hiding UI.
+- Employee coverage = `zone_id` ∪ `secondary_zone_id` ∪ zones inside
+  `area_id` ∪ zones inside every extra `employee_area_assignments` row
+  ∪ (`covers_property` → every zone). Coverage is ADDITIVE — an employee
+  may hold named zones AND whole areas at once; `area_id` is the PRIMARY
+  whole area, extras are `employee_area_assignments` join rows
+  (revision `b4e9f2a7c3d6`, mirrored in the EB repo). Only
+  `covers_property` is exclusive — setting it clears the rest; setting
+  zone/area coverage narrows it. PATCH `/employees/{id}/zone` fields are
+  independent directives (absent = untouched, null = clear that mode;
+  all-null = full unallocate); `POST|DELETE /employees/{id}/areas`
+  appends/removes single areas. Predicates live in
+  `backend/app/domain/coverage.py` — byte-identical with the Employee
+  Backend copy; edit both together.
 
 ## Source-of-truth indexing notes (2026-10-29)
 

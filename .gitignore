@@ -36,5 +36,11 @@ migration-backups/
 # OS/editor
 .DS_Store
 Thumbs.db
+nul
 .vscode/
 .idea/
+
+# E2E artifacts
+backend/e2e.db
+frontend/test-results/
+frontend/playwright-report/

@@ -17,7 +17,7 @@ Every case mocks the upstream HTTP call via respx so no employee service
 """
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import httpx
@@ -26,7 +26,6 @@ import respx
 
 from app.core.config import settings
 from app.models.attendance import AttendanceBreak, AttendanceDay
-from app.services import live_location
 from app.services.attendance import current_work_statuses
 from app.services.live_location import (
     LiveLocationBadRequest,
@@ -293,8 +292,8 @@ class TestUnconfigured:
 
 
 class TestHistory:
-    FROM = datetime(2026, 10, 8, 8, 0, tzinfo=timezone.utc)
-    TO = datetime(2026, 10, 8, 18, 0, tzinfo=timezone.utc)
+    FROM = datetime(2026, 10, 8, 8, 0, tzinfo=UTC)
+    TO = datetime(2026, 10, 8, 18, 0, tzinfo=UTC)
     URL = f"{BASE}/admin/location-history/{EMP_ID}"
 
     @respx.mock
@@ -466,7 +465,7 @@ class TestRoutes:
             # employee counts as clocked-in (working).
             yield _FakeSession(
                 owned=True,
-                days=[_day(started_at=datetime.now(timezone.utc))],
+                days=[_day(started_at=datetime.now(UTC))],
             )
 
         app.dependency_overrides[get_db] = _db
@@ -518,7 +517,7 @@ class TestRoutes:
         respx.get(LIVE_URL).mock(
             return_value=httpx.Response(200, json={"locations": [_location()]})
         )
-        ended = datetime.now(timezone.utc)
+        ended = datetime.now(UTC)
         day = _day(started_at=ended - timedelta(hours=8), ended_at=ended)
 
         async def _db():
@@ -540,11 +539,11 @@ class TestRoutes:
             return_value=httpx.Response(200, json={"locations": [_location()]})
         )
         day = _day(
-            started_at=datetime.now(timezone.utc) - timedelta(hours=3)
+            started_at=datetime.now(UTC) - timedelta(hours=3)
         )
         br = AttendanceBreak(
             attendance_day_id=day.id,
-            started_at=datetime.now(timezone.utc) - timedelta(minutes=20),
+            started_at=datetime.now(UTC) - timedelta(minutes=20),
             ended_at=None,
         )
 
@@ -568,7 +567,7 @@ class TestRoutes:
         respx.get(LIVE_URL).mock(
             return_value=httpx.Response(200, json={"locations": [_location()]})
         )
-        ended = datetime.now(timezone.utc)
+        ended = datetime.now(UTC)
         day = _day(started_at=ended - timedelta(hours=8), ended_at=ended)
 
         async def _db():
@@ -771,7 +770,7 @@ def _today_key() -> str:
         parse_day_start,
     )
     return current_operational_day(
-        datetime.now(timezone.utc), parse_day_start(None)
+        datetime.now(UTC), parse_day_start(None)
     )
 
 
@@ -792,7 +791,7 @@ def _day(emp=EMP_UUID, **kw) -> AttendanceDay:
 @pytest.mark.anyio
 class TestWorkStatuses:
     async def test_open_day_is_working(self):
-        started = datetime(2026, 10, 8, 5, 0, tzinfo=timezone.utc)
+        started = datetime(2026, 10, 8, 5, 0, tzinfo=UTC)
         out = await current_work_statuses(
             _StatusSession(days=[_day(started_at=started)]),
             USER,
@@ -804,10 +803,10 @@ class TestWorkStatuses:
 
     async def test_open_day_with_open_break_is_on_break(self):
         day = _day(started_at=datetime(
-            2026, 10, 8, 5, 0, tzinfo=timezone.utc))
+            2026, 10, 8, 5, 0, tzinfo=UTC))
         br = AttendanceBreak(
             attendance_day_id=day.id,
-            started_at=datetime(2026, 10, 8, 8, 0, tzinfo=timezone.utc),
+            started_at=datetime(2026, 10, 8, 8, 0, tzinfo=UTC),
             ended_at=None,
         )
         out = await current_work_statuses(
@@ -818,7 +817,7 @@ class TestWorkStatuses:
         assert st["since"] == br.started_at.isoformat()
 
     async def test_closed_day_is_off_duty(self):
-        ended = datetime(2026, 10, 8, 14, 0, tzinfo=timezone.utc)
+        ended = datetime(2026, 10, 8, 14, 0, tzinfo=UTC)
         out = await current_work_statuses(
             _StatusSession(days=[_day(
                 started_at=ended - timedelta(hours=8), ended_at=ended)]),
@@ -892,7 +891,9 @@ class TestSharedEBClient:
 
     async def test_client_limits_and_timeouts(self):
         from app.core.http_client import (
-            EB_CLIENT_LIMITS, close_eb_client, get_eb_client,
+            EB_CLIENT_LIMITS,
+            close_eb_client,
+            get_eb_client,
         )
 
         client = get_eb_client()

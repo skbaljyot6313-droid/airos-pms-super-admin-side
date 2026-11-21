@@ -142,6 +142,49 @@ class S3Storage(StorageBackend):
         return stream, obj.get("ContentType"), obj.get("ContentLength")
 
 
+class GCSStorage(StorageBackend):
+    def __init__(self):
+        from google.cloud import storage
+
+        if not settings.GCS_BUCKET:
+            raise RuntimeError("STORAGE_BACKEND=gcs requires GCS_BUCKET")
+        self.bucket = storage.Client().bucket(settings.GCS_BUCKET)
+
+    async def save(self, data: bytes, key: str, content_type: str) -> str:
+        await asyncio.to_thread(
+            self.bucket.blob(key).upload_from_string,
+            data, content_type=content_type, if_generation_match=0, timeout=30,
+        )
+        return f"/api/v1/media/file/{key}"
+
+    async def open(self, key: str) -> OpenedObject | None:
+        from google.api_core.exceptions import NotFound
+
+        blob = self.bucket.blob(key)
+        try:
+            await asyncio.to_thread(blob.reload, timeout=30)
+            body = await asyncio.to_thread(
+                blob.download_as_bytes,
+                if_generation_match=blob.generation, raw_download=True, timeout=30,
+            )
+        except NotFound:
+            return None
+
+        async def stream() -> AsyncIterator[bytes]:
+            for i in range(0, len(body), 64 * 1024):
+                yield body[i : i + 64 * 1024]
+
+        return stream, blob.content_type, len(body)
+
+    async def delete(self, key: str) -> None:
+        from google.api_core.exceptions import NotFound
+
+        try:
+            await asyncio.to_thread(self.bucket.blob(key).delete, timeout=30)
+        except NotFound:
+            pass
+
+
 class SupabaseStorage(StorageBackend):
     """Supabase Storage via its REST API — needs only SUPABASE_SECRET_KEY,
     which deployments already carry for the database. Objects land in a
@@ -180,46 +223,48 @@ class SupabaseStorage(StorageBackend):
             res.raise_for_status()
         self._bucket_ready = True
 
-    async def save(self, data: bytes, key: str, content_type: str) -> str:
-        import httpx  # deferred — only needed when this backend is selected
+    @staticmethod
+    def _client():
+        # Shared lifecycle-managed client — a fresh AsyncClient per upload
+        # pays DNS+TCP+TLS (~200ms) on every photo.
+        from app.core.http_client import get_eb_client
+        return get_eb_client()
 
-        async with httpx.AsyncClient(timeout=30) as client:
-            await self._ensure_bucket(client)
-            res = await client.post(
-                f"{self.base}/object/{self.bucket}/{key}",
-                content=data,
-                headers={**self._auth, "Content-Type": content_type},
-            )
-            res.raise_for_status()
+    async def save(self, data: bytes, key: str, content_type: str) -> str:
+        client = self._client()
+        await self._ensure_bucket(client)
+        res = await client.post(
+            f"{self.base}/object/{self.bucket}/{key}",
+            content=data,
+            headers={**self._auth, "Content-Type": content_type},
+            timeout=30,
+        )
+        res.raise_for_status()
         return f"{self.base}/object/public/{self.bucket}/{key}"
 
     async def delete(self, key: str) -> None:
         if not key:
             return
-        import httpx  # deferred — only needed when this backend is selected
-
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.delete(
-                f"{self.base}/object/{self.bucket}/{key}",
-                headers=self._auth,
-            )
-            if res.status_code != 404:
-                res.raise_for_status()
+        res = await self._client().delete(
+            f"{self.base}/object/{self.bucket}/{key}",
+            headers=self._auth,
+            timeout=30,
+        )
+        if res.status_code != 404:
+            res.raise_for_status()
 
     async def open(self, key: str) -> OpenedObject | None:
-        import httpx  # deferred — only needed when this backend is selected
-
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.get(
-                f"{self.base}/object/{self.bucket}/{key}",
-                headers=self._auth,
-            )
-            if res.status_code == 404:
-                return None
-            res.raise_for_status()
-            body = res.content
-            content_type = res.headers.get("Content-Type")
-            length = res.headers.get("Content-Length")
+        res = await self._client().get(
+            f"{self.base}/object/{self.bucket}/{key}",
+            headers=self._auth,
+            timeout=30,
+        )
+        if res.status_code == 404:
+            return None
+        res.raise_for_status()
+        body = res.content
+        content_type = res.headers.get("Content-Type")
+        length = res.headers.get("Content-Length")
 
         async def stream() -> AsyncIterator[bytes]:
             for i in range(0, len(body), 64 * 1024):
@@ -248,14 +293,20 @@ def get_storage() -> StorageBackend:
     container's disk silently loses every upload on the next deploy."""
     global _backend
     if _backend is None:
-        mode = settings.STORAGE_BACKEND.lower()
-        if mode == "s3" or (mode == "auto" and _s3_ready()):
+        mode = settings.STORAGE_BACKEND.strip().lower()
+        if mode not in {"auto", "local", "gcs", "s3", "supabase"}:
+            raise RuntimeError("Unknown STORAGE_BACKEND")
+        if mode == "gcs" or (mode == "auto" and settings.GCS_BUCKET):
+            _backend = GCSStorage()
+        elif mode == "s3" or (mode == "auto" and _s3_ready()):
             _backend = S3Storage()
         elif mode == "supabase" or (
             mode == "auto" and settings.SUPABASE_SECRET_KEY
         ):
             _backend = SupabaseStorage()
         else:
+            if settings.is_production:
+                raise RuntimeError("Production media requires durable storage; configure gcs, s3 or supabase")
             _backend = LocalStorage()
         logger.info("storage backend: %s", type(_backend).__name__)
     return _backend

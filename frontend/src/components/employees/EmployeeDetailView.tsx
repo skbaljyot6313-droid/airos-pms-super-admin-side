@@ -37,6 +37,14 @@ const TABS: [Tab, string][] = [
   ['overview', 'Overview'], ['allocations', 'Allocations'],
 ];
 
+/** "Zone A · Zone B" / "Whole property" / "Area X" — the staff coverage label. */
+function coverageLabel(context: EmployeeProfile['context']): string | null {
+  if (context.covers_property) return 'Whole property';
+  const parts = [context.zone_name, context.secondary_zone_name, context.area_name]
+    .filter((n): n is string => Boolean(n));
+  return parts.length ? parts.join(' · ') : null;
+}
+
 const dateTime = (value: string | null | undefined) =>
   value ? `${fmtAuditDateTimeIST(value)} IST` : 'Not recorded';
 const dateOnly = (value: string) =>
@@ -94,7 +102,7 @@ export const EmployeeDetailView: React.FC = () => {
     return () => { request.current += 1; };
   }, [employeeUid, propertyUid, refresh, period.bounds]);
 
-  const back = <Button variant="ghost" size="sm" onClick={() => navigate(`/property/${propertyUid}/employees`)}>
+  const back = <Button variant="ghost" size="sm" onClick={() => navigate(`/property/${propertyUid}/workforce/employees`)}>
     <ArrowLeft size={14} /> Back to employees</Button>;
   if (loading) return <section>{back}<BlockLoading label="Loading employee" /></section>;
   if (error || !profile || !employeeUid || !propertyUid)
@@ -102,11 +110,12 @@ export const EmployeeDetailView: React.FC = () => {
 
   const { employee, context, tasks, attendance, leave_requests } = profile;
   const active = employee.status === 'Active';
+  const coverage = coverageLabel(context);
   return <section className="mx-auto w-full max-w-[1440px] min-w-0 space-y-5">
     {/* Compact identity header — identity left, reporting controls right */}
     <header className={`${card} px-5 py-4`}>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <button onClick={() => navigate(`/property/${propertyUid}/employees`)}
+        <button onClick={() => navigate(`/property/${propertyUid}/workforce/employees`)}
           className="flex items-center gap-1.5 self-start pt-1 text-xs font-medium text-[#697586] transition-colors hover:text-[#17212B]">
           <ArrowLeft size={14} /> Employees</button>
         <div className="flex items-center gap-3.5">
@@ -124,9 +133,9 @@ export const EmployeeDetailView: React.FC = () => {
               {employee.job_title || 'Employee'}{employee.department ? ` · ${employee.department}` : ''}
               {employee.shift ? ` · ${employee.shift}` : ''}
             </p>
-            <p className="text-xs text-[#98A2B3]">
-              {context.property_name}{context.zone_name || context.area_name ? ` · ${context.zone_name || context.area_name}` : ' · Unallocated'}
-              <span className="mx-2 text-[#D8DEE6]">|</span>
+            <p className="text-xs text-[#8C867C]">
+              {context.property_name} · {coverage || 'Unallocated'}
+              <span className="mx-2 text-[#C8C1B4]">|</span>
               <span className="font-mono text-[11px]">ID {employee.employee_uid.slice(0, 8)}</span>
             </p>
           </div>
@@ -181,7 +190,8 @@ function ProfileDisclosure({ employee, context, attendance, leave_requests }: {
   if (employee.email) fields.Email = employee.email;
   if (employee.phone) fields.Phone = employee.phone;
   if (employee.username) fields.Username = employee.username;
-  if (context.zone_name || context.area_name) fields['Current zone / area'] = context.zone_name || context.area_name;
+  const coverage = coverageLabel(context);
+  if (coverage) fields['Current zone / area'] = coverage;
   if (employee.start_date) fields['Employment start'] = dateOnly(employee.start_date);
   if (employee.joined_date) fields['Record created'] = dateOnly(employee.joined_date);
   if (employee.salary?.trim()) fields['Recorded salary'] = employee.salary;

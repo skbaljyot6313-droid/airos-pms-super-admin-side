@@ -14,7 +14,7 @@ permanent record; the room status is derived state.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,18 +29,19 @@ from app.models.maintenance import (
 )
 from app.models.structure import Bed, Dorm, Room, Washroom, WashroomFixture
 from app.models.user import User, UserRole
-from app.services.work_allocation import AllocationResult, WorkAllocationService
 from app.schemas.maintenance import (
     MaintenanceCreateRequest,
     MaintenanceResolveRequest,
     MaintenanceUpdateRequest,
 )
+from app.services.assignment_override import audit_override, authorize_override
 from app.services.structure import (
     ConflictErr,
     NotFoundErr,
     StructureService,
     ValidationErr,
 )
+from app.services.work_allocation import AllocationResult, WorkAllocationService
 
 ACTIVE_STATUSES = {"open", "assigned", "in_progress", "on_hold"}
 PRIORITIES = {"low", "medium", "high", "critical"}
@@ -54,7 +55,7 @@ async def next_ticket_number(session: AsyncSession, kind: str) -> str:
     """
     seq = "maintenance_ticket_seq" if kind == "maintenance" else "task_ticket_seq"
     prefix = "MT" if kind == "maintenance" else "TASK"
-    year = datetime.now(timezone.utc).year
+    year = datetime.now(UTC).year
     try:
         res = await session.execute(text(f"SELECT nextval('{seq}')"))
         n = int(res.scalar_one())
@@ -175,39 +176,56 @@ class MaintenanceService:
     # Create — ticket + room status in ONE transaction
     # ------------------------------------------------------------------
 
-    async def _employee_coverage(self, user: User) -> tuple[set, uuid.UUID | None]:
-        """(zone_ids, area_id) the EMPLOYEE may raise tickets for.
+    async def _employee_coverage(self, user: User) -> tuple[set, set]:
+        """(zone_ids, area_ids) the EMPLOYEE may raise tickets for.
 
-        Zone assignment → that zone's targets. Area assignment → every
-        zone inside the area plus targets attached to the area directly.
-        Either or both may exist — the union defines coverage."""
+        Zone assignment → that zone's targets. Area assignment(s) — the
+        primary ``area_id`` plus every extra ``employee_area_assignments``
+        row — cover every zone inside those areas plus targets attached to
+        the areas directly. The union defines coverage."""
         zone_ids: set[uuid.UUID] = set()
-        area_id = None
+        area_ids: set[uuid.UUID] = set()
         if user.role == UserRole.EMPLOYEE:
             emp = await self.session.get(Employee, user.employee_id)
             if emp is None:
-                return zone_ids, area_id
-            if emp.zone_id:
-                zone_ids.add(emp.zone_id)
-            if emp.area_id:
-                area_id = emp.area_id
-                from app.models.structure import Zone
+                return zone_ids, area_ids
+            from app.models.employee import EmployeeAreaAssignment
+            from app.models.structure import Zone
+            if emp.covers_property:
+                # Property-wide staff may raise tickets for any zone.
                 res = await self.session.execute(
-                    select(Zone.id).where(Zone.area_id == emp.area_id)
+                    select(Zone.id).where(Zone.property_id == emp.property_id)
                 )
                 zone_ids |= set(res.scalars())
-        return zone_ids, area_id
+            if emp.zone_id:
+                zone_ids.add(emp.zone_id)
+            if emp.secondary_zone_id:
+                zone_ids.add(emp.secondary_zone_id)
+            if emp.area_id:
+                area_ids.add(emp.area_id)
+            res = await self.session.execute(
+                select(EmployeeAreaAssignment.area_id).where(
+                    EmployeeAreaAssignment.employee_id == emp.id
+                )
+            )
+            area_ids |= set(res.scalars())
+            if area_ids:
+                res = await self.session.execute(
+                    select(Zone.id).where(Zone.area_id.in_(area_ids))
+                )
+                zone_ids |= set(res.scalars())
+        return zone_ids, area_ids
 
     async def _enforce_employee_coverage(self, user: User, room=None,
                                        dorm=None, washroom=None) -> None:
         """Employees may only raise tickets inside their zone/area
         coverage — backend enforcement, never trust the submitted UID."""
-        zone_ids, area_id = await self._employee_coverage(user)
+        zone_ids, area_ids = await self._employee_coverage(user)
         target = room or dorm or washroom
         t_zone = getattr(target, "zone_id", None)
         t_area = getattr(target, "area_id", None)
         if (t_zone is not None and t_zone in zone_ids) or (
-                area_id is not None and t_area == area_id):
+                t_area is not None and t_area in area_ids):
             return
         from app.dependencies.auth import Forbidden
         raise Forbidden(
@@ -433,6 +451,7 @@ class MaintenanceService:
     async def list_tickets(
         self, user: User, *, property_id=None, room_id=None, washroom_id=None,
         status_=None, priority=None, assigned_to=None, search=None,
+        limit=None, offset=0,
     ) -> list[MaintenanceTicket]:
         q = (
             select(MaintenanceTicket)
@@ -476,6 +495,8 @@ class MaintenanceService:
                 | MaintenanceTicket.room_number.ilike(like)
                 | MaintenanceTicket.washroom_name.ilike(like)
             )
+        if limit is not None:
+            q = q.offset(offset).limit(limit)
         res = await self.session.execute(q)
         return list(res.scalars())
 
@@ -624,7 +645,8 @@ class MaintenanceService:
     # Workflow actions
     # ------------------------------------------------------------------
 
-    async def _assign_employee(self, user, ticket, employee_uid):
+    async def _assign_employee(self, user, ticket, employee_uid, *,
+                               emergency_override=False, override_reason=None):
         # Manual reassignment — audited, but never touches the round-robin
         # pointer (manual overrides don't corrupt the sequence). Terminal
         # tickets cannot be re-opened by assignment — that would resurrect
@@ -633,6 +655,9 @@ class MaintenanceService:
             raise ConflictErr(
                 f"Cannot assign a {ticket.status} ticket — reopen it first."
             )
+        reason = authorize_override(
+            user, emergency_override=emergency_override, reason=override_reason,
+        )
         prev_id, prev_name = ticket.assigned_to, ticket.assigned_to_name
         if employee_uid is None:
             ticket.assigned_to = None
@@ -651,29 +676,47 @@ class MaintenanceService:
             )
             return
         emp = await self.alloc.employee_for_assignment(
-            employee_uid, ticket.property_id, work_type="maintenance"
+            employee_uid, ticket.property_id, work_type="maintenance",
+            emergency_override=reason is not None,
         )
         ticket.assigned_to = emp.id
         ticket.assigned_to_name = emp.name
         ticket.status = "assigned"
         ticket.allocation_status = "manually_assigned"
-        ticket.allocation_method = "reassign" if prev_id else "manual"
+        ticket.allocation_method = (
+            "emergency_override" if reason
+            else "reassign" if prev_id else "manual"
+        )
         ticket.allocation_reason = None
-        self._event(ticket, "assigned", user, comment=f"Assigned to {emp.name}")
+        if reason:
+            self._event(ticket, "assigned", user,
+                        comment=f"EMERGENCY OVERRIDE — assigned to {emp.name} while off duty: {reason}")
+            audit_override(
+                self.session, user, property_id=ticket.property_id,
+                entity_type="maintenance_ticket", entity_id=ticket.id,
+                entity_name=ticket.ticket_number, employee_id=emp.id,
+                employee_name=emp.name, previous_employee_name=prev_name, reason=reason,
+            )
+        else:
+            self._event(ticket, "assigned", user, comment=f"Assigned to {emp.name}")
         await self.alloc.record(
             property_id=ticket.property_id, zone_id=ticket.zone_id, batch=None,
             ticket_kind="maintenance", ticket_id=ticket.id,
             ticket_number=ticket.ticket_number,
             employee_id=emp.id, employee_name=emp.name,
             previous_employee_id=prev_id, previous_employee_name=prev_name,
-            method=ticket.allocation_method, actor_name=user.name,
+            method=ticket.allocation_method, reason=reason, actor_name=user.name,
         )
 
-    async def assign(self, user: User, ticket_id: uuid.UUID, employee_uid):
+    async def assign(self, user: User, ticket_id: uuid.UUID, employee_uid, *,
+                     emergency_override=False, override_reason=None):
         ticket = await self._get_ticket(user, ticket_id)
         if ticket.status in {"resolved", "closed", "cancelled"}:
             raise ConflictErr(f"Cannot assign a {ticket.status} ticket.")
-        await self._assign_employee(user, ticket, employee_uid)
+        await self._assign_employee(
+            user, ticket, employee_uid,
+            emergency_override=emergency_override, override_reason=override_reason,
+        )
         self._emit_ticket(ticket, "maintenance.assigned")
         await self.session.commit()
         return await self._get_ticket(user, ticket.id)
@@ -775,7 +818,7 @@ class MaintenanceService:
                     field="photo_urls",
                 )
         ticket.status = "resolved"
-        ticket.resolved_at = datetime.now(timezone.utc)
+        ticket.resolved_at = datetime.now(UTC)
         ticket.resolution_notes = payload.resolution_notes.strip()
         # Fixture-level maintenance completion records on the fixture
         # itself — but the fixture stays `maintenance` while the ticket is
@@ -837,7 +880,7 @@ class MaintenanceService:
         if ticket.status != "resolved":
             raise ConflictErr("Only resolved tickets can be closed.")
         ticket.status = "closed"
-        ticket.closed_at = datetime.now(timezone.utc)
+        ticket.closed_at = datetime.now(UTC)
         self._event(ticket, "closed", user)
         # Supervisor acknowledgement — derive the target's status from any
         # remaining blocking work; a free target goes straight back to

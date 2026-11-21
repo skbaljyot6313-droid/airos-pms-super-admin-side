@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -19,8 +19,12 @@ from app.models.refresh_token import RefreshToken
 from app.models.user import User, UserRole
 from app.services.audit import AuditService, capture_mutations
 from app.services.auth import AuthService
-from app.services.logs import LogAttachmentNotFound, LogsService, TaskJourneyNotFound, activity_query
-
+from app.services.logs import (
+    LogAttachmentNotFound,
+    LogsService,
+    TaskJourneyNotFound,
+    activity_query,
+)
 
 COMPANY_ID = uuid.uuid4()
 PROPERTY_ID = uuid.uuid4()
@@ -89,7 +93,7 @@ async def test_logs_company_scope_filters_and_pagination():
             return 1
 
         def mappings(self):
-            return [{"source": "work_allocation", "event_uid": "event", "occurred_at": datetime.now(timezone.utc),
+            return [{"source": "work_allocation", "event_uid": "event", "occurred_at": datetime.now(UTC),
                      "company_uid": str(COMPANY_ID), "category": "allocation", "action": "manual",
                      "actor_name": "Manager", "entity_type": "task", "entity_uid": "task",
                      "entity_name": "TASK-1", "property_uid": str(PROPERTY_ID), "property_name": "Hotel",
@@ -99,8 +103,8 @@ async def test_logs_company_scope_filters_and_pagination():
     session.execute.return_value = Result()
     result = await LogsService(session).list_events(
         user(), property_id=PROPERTY_ID, category="allocation", search="50%_off", actor="Manager_1", action="manual", page=2, limit=10,
-        date_from=datetime(2026, 10, 1, tzinfo=timezone.utc),
-        date_to=datetime(2026, 11, 1, tzinfo=timezone.utc))
+        date_from=datetime(2026, 10, 1, tzinfo=UTC),
+        date_to=datetime(2026, 11, 1, tzinfo=UTC))
     for call in session.execute.call_args_list:
         compiled = call.args[0].compile(dialect=postgresql.dialect())
         params = compiled.params.values()
@@ -220,8 +224,8 @@ def task_summary_row():
     return {"task_uid": str(uuid.uuid4()), "title": "Recorded task", "ticket_number": "TASK-1",
             "property_uid": str(PROPERTY_ID), "property_name": "Hotel", "status": "completed",
             "assignee_name": "Current assignee", "zone_name": None,
-            "created_at": datetime(2026, 10, 1, tzinfo=timezone.utc), "submitted_at": None,
-            "completed_at": datetime(2026, 10, 2, tzinfo=timezone.utc),
+            "created_at": datetime(2026, 10, 1, tzinfo=UTC), "submitted_at": None,
+            "completed_at": datetime(2026, 10, 2, tzinfo=UTC),
             "abandoned_at": None, "abandoned_reason": None}
 
 

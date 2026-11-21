@@ -15,9 +15,33 @@ dependencies = [
     "argon2-cffi>=23.1",
     "pyjwt>=2.8",
     "redis>=5.2,<7",
-    "arq>=0.26",
     "boto3>=1.35",
+    "google-cloud-storage>=3.4,<4",
     "httpx>=0.27",
     "python-multipart>=0.0.9",
     "tzdata",
 ]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+# Baseline: report-only. Rules ratchet on new code; the existing codebase
+# intentionally keeps some broad-except and in-function imports (see
+# docs/engineering-audit/TECHNICAL_DEBT.md TD-08/TD-10).
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "ASYNC", "BLE"]
+ignore = [
+    "E501",     # line length handled by line-length + existing style
+    "BLE001",   # broad excepts are deliberate at documented boundaries (audit TD-08)
+    "B008",     # Depends()/Query() call-in-default is the FastAPI idiom
+    "B904",     # existing raise style — candidates for gradual `from` adoption
+    "E402",     # deferred imports are deliberate (layering, app/main.py boot order)
+    "E731", "E702",  # existing style — fix incrementally
+    "ASYNC110", "ASYNC109",  # test polling patterns are deliberate
+    "B023", "B905", "B017", "F841",  # isolated sites — fix incrementally
+    "UP046", "UP042",  # style choices, not errors
+]
+[tool.ruff.lint.per-file-ignores]
+"app/models/**" = ["F821"]  # SQLAlchemy forward-ref strings resolved by registry
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

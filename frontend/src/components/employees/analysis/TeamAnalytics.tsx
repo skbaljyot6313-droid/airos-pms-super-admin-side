@@ -101,7 +101,7 @@ export function TeamAnalyticsTab() {
                 const share = team && team.allocated ? e.allocated / team.allocated : 0;
                 return <tr key={e.employee_uid}
                   className="border-b border-[#F1F3F6] transition-colors last:border-0 hover:bg-[#FAFBFC] cursor-pointer"
-                  onClick={() => navigate(`/property/${propertyId}/employees/${e.employee_uid}`)}>
+                  onClick={() => navigate(`/property/${propertyId}/workforce/employees/${e.employee_uid}`)}>
                   <td className="px-3 py-2.5">
                     <p className="text-[13px] font-medium text-[#17212B]">{e.name}</p>
                     <p className="text-[10px] text-[#98A2B3]">{e.job_title || 'Employee'}{e.status && e.status !== 'Active' ? ` · ${e.status}` : ''}</p>

@@ -8,8 +8,8 @@ the allocation pool sees the leave immediately.
 
 import logging
 import uuid
-from datetime import date, datetime, timedelta, timezone
-from typing import Iterable
+from collections.abc import Iterable
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
@@ -17,10 +17,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centrifugo import prop_channel, queue_event
 from app.models.attendance import (
+    OPEN_REQUEST_STATUSES,
     AttendanceBreak,
     AttendanceDay,
     AttendanceRequest,
-    OPEN_REQUEST_STATUSES,
 )
 from app.models.employee import Employee
 from app.models.property import Property
@@ -211,7 +211,7 @@ class AttendanceService:
         req.status = "approved" if approve else "rejected"
         req.reviewed_by_id = user.id
         req.reviewed_by_name = user.name
-        req.reviewed_at = datetime.now(timezone.utc)
+        req.reviewed_at = datetime.now(UTC)
         req.review_comment = (review_comment or "").strip() or None
         AuditService(self.session).record(
             user,
@@ -285,7 +285,7 @@ async def current_work_statuses(
     start = parse_day_start(
         company.operational_day_start if company else None
     )
-    now_utc = now or datetime.now(timezone.utc)
+    now_utc = now or datetime.now(UTC)
     today = current_operational_day(now_utc, start)
 
     res = await session.execute(
@@ -508,7 +508,7 @@ async def day_status_board(
     day_start = parse_day_start(
         company.operational_day_start if company else None
     )
-    now_utc = now or datetime.now(timezone.utc)
+    now_utc = now or datetime.now(UTC)
     today = current_operational_day(now_utc, day_start)
     op_date = _validate_op_date_key(op_date) if op_date else today
 

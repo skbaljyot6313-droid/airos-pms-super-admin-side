@@ -7,7 +7,7 @@ post-commit and best-effort — every failure mode must be swallowed.
 
 import asyncio
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import httpx
@@ -29,7 +29,7 @@ NOTIFY_URL = f"{BASE}/admin/notify-allocation"
 TICKET_ID = uuid.uuid4()
 EMP_ID = uuid.uuid4()
 PREV_ID = uuid.uuid4()
-TS = datetime(2026, 10, 10, 16, 51, tzinfo=timezone.utc)
+TS = datetime(2026, 10, 10, 16, 51, tzinfo=UTC)
 
 
 @pytest.fixture(autouse=True)

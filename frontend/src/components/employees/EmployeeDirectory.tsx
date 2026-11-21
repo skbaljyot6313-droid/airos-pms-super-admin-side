@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Search,
   Filter,
@@ -16,6 +16,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { DEPARTMENTS } from './CreateEmployeeModal';
+import { listDepartments } from '../../api/departments';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 import { Employee } from '../../types';
 import { getInitials } from '../../lib/utils';
@@ -35,6 +36,8 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
     deleteEmployee,
     assignEmployeeToZone,
     assignEmployeeToArea,
+    assignEmployeeToPropertyWide,
+    assignEmployeeSecondaryZone,
     navigate,
     activePropertyUid,
   } = useApp();
@@ -47,6 +50,21 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
   const [activeMenuEmpUid, setActiveMenuEmpUid] = useState<string | null>(null);
   const [empToDeactivate, setEmpToDeactivate] = useState<Employee | null>(null);
   const [empToDelete, setEmpToDelete] = useState<Employee | null>(null);
+
+  // Live managed departments — static canonical list as fallback.
+  const [deptOptions, setDeptOptions] = useState<string[]>(DEPARTMENTS);
+  useEffect(() => {
+    if (!activePropertyUid) return;
+    let live = true;
+    listDepartments({ property_uid: activePropertyUid })
+      .then((ds) => {
+        if (live && ds.length) setDeptOptions(ds.map((d) => d.name));
+      })
+      .catch(() => {/* keep static fallback */});
+    return () => {
+      live = false;
+    };
+  }, [activePropertyUid]);
 
   // Edit employee modal state
   const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
@@ -155,7 +173,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
               className="w-full bg-white border border-[#DDD7CB] rounded-[8px] px-2.5 py-1.5 text-xs text-[#24221F] focus:outline-none"
             >
               <option value="all">All Departments</option>
-              {DEPARTMENTS.map((d) => (
+              {deptOptions.map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>
@@ -206,7 +224,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                 className="p-4 flex flex-col justify-between hover:border-[#8CA88C] relative cursor-pointer"
                 onClick={(e) => {
                   if (!(e.target as HTMLElement).closest('button, a, input, select, textarea, label, [role="menu"]'))
-                    navigate(`/property/${emp.property_uid}/employees/${emp.employee_uid}`);
+                    navigate(`/property/${emp.property_uid}/workforce/employees/${emp.employee_uid}`);
                 }}
               >
                 <div>
@@ -222,7 +240,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                       <div>
                         <div className="flex items-center gap-1.5">
                           <h4 className="font-semibold text-sm text-[#24221F] leading-tight">
-                            <button type="button" onClick={() => navigate(`/property/${emp.property_uid}/employees/${emp.employee_uid}`)} aria-label={`View employee profile for ${emp.name}`} className="text-left hover:text-[#386641] hover:underline focus-visible:outline-2 focus-visible:outline-[#386641]">{emp.name}</button>
+                            <button type="button" onClick={() => navigate(`/property/${emp.property_uid}/workforce/employees/${emp.employee_uid}`)} aria-label={`View employee profile for ${emp.name}`} className="text-left hover:text-[#386641] hover:underline focus-visible:outline-2 focus-visible:outline-[#386641]">{emp.name}</button>
                           </h4>
                           {isDeactivated && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#FDE8E8] text-[#A82828] font-medium">
@@ -251,7 +269,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
 
                       {isMenuOpen && (
                         <div
-                          className="absolute right-0 top-7 z-30 w-40 bg-white border border-[#E4DFD5] rounded-[10px] shadow-lg py-1 animate-in fade-in"
+                          className="absolute right-0 top-7 z-30 w-40 bg-white border border-[#DDD7CB] rounded-[10px] shadow-lg py-1 pop-in"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
@@ -330,10 +348,18 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                       {isDeactivated ? 'Last Zone / Area' : 'Assigned Zone / Area'}
                     </label>
                     <select
-                      value={emp.area_uid ? `area:${emp.area_uid}` : emp.zone_uid || ''}
+                      value={
+                        emp.covers_property
+                          ? 'property-wide'
+                          : emp.area_uid
+                          ? `area:${emp.area_uid}`
+                          : emp.zone_uid || ''
+                      }
                       onChange={(e) => {
                         const v = e.target.value;
-                        if (v.startsWith('area:')) {
+                        if (v === 'property-wide') {
+                          assignEmployeeToPropertyWide(emp.employee_uid);
+                        } else if (v.startsWith('area:')) {
                           assignEmployeeToArea(emp.employee_uid, v.slice(5));
                         } else {
                           assignEmployeeToZone(emp.employee_uid, v || null);
@@ -343,6 +369,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                       className="w-full bg-[#FAF8F5] border border-[#DDD7CB] rounded-[8px] px-2.5 py-1 text-xs text-[#24221F] focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <option value="">(Unallocated Pool)</option>
+                      <option value="property-wide">Whole property — every zone</option>
                       {currentPropertyAreas.map((a) => (
                         <option key={a.area_uid} value={`area:${a.area_uid}`}>
                           {a.name} — whole area
@@ -354,6 +381,30 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                         </option>
                       ))}
                     </select>
+                    {/* Second-zone coverage — only meaningful for zone-assigned staff */}
+                    {Boolean(emp.zone_uid && !emp.area_uid && !emp.covers_property) && (
+                      <select
+                        value={emp.secondary_zone_uid || ''}
+                        onChange={(e) =>
+                          assignEmployeeSecondaryZone(
+                            emp.employee_uid,
+                            e.target.value || null
+                          )
+                        }
+                        disabled={isDeactivated}
+                        title="More zone allocation — cover a second zone"
+                        className="mt-1 w-full bg-[#FAF8F5] border border-[#DDD7CB] rounded-[8px] px-2.5 py-1 text-xs text-[#24221F] focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <option value="">+ Second zone…</option>
+                        {currentPropertyZones
+                          .filter((z) => z.zone_uid !== emp.zone_uid)
+                          .map((z) => (
+                            <option key={z.zone_uid} value={z.zone_uid}>
+                              Also: {z.name} ({z.floor})
+                            </option>
+                          ))}
+                      </select>
+                    )}
                   </div>
                 </div>
 
@@ -427,7 +478,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                   onChange={(e) => setEditDept(e.target.value)}
                   className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
                 >
-                  {DEPARTMENTS.map((d) => (
+                  {deptOptions.map((d) => (
                     <option key={d} value={d}>
                       {d}
                     </option>

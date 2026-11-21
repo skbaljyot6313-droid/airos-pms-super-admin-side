@@ -75,7 +75,7 @@ export const TaskDayAnalysisView: React.FC = () => {
         <div>
           <div className="mb-2">
             <BackButton
-              to={`/property/${propertyUid}/tasks`}
+              to={`/property/${propertyUid}/operations/tasks`}
               label="Back to Tasks"
             />
           </div>

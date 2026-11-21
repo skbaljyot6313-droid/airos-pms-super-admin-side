@@ -1,9 +1,10 @@
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import String, and_, case, cast, column, exists, func, or_, select, table
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased, selectinload
 
 IST = ZoneInfo("Asia/Kolkata")
 
@@ -63,9 +64,12 @@ class EmployeeProfileService:
         return q
 
     async def employee(self, user: User, employee_id: uuid.UUID, property_id: uuid.UUID | None = None):
-        q = select(Employee, Property.name, Zone.name, Area.name).join(
+        SecondaryZone = aliased(Zone)
+        q = select(Employee, Property.name, Zone.name, Area.name, SecondaryZone.name).join(
             Property, Employee.property_id == Property.id
-        ).outerjoin(Zone, Employee.zone_id == Zone.id).outerjoin(Area, Employee.area_id == Area.id).where(
+        ).options(selectinload(Employee.area_assignments)).outerjoin(Zone, Employee.zone_id == Zone.id).outerjoin(
+            Area, Employee.area_id == Area.id
+        ).outerjoin(SecondaryZone, Employee.secondary_zone_id == SecondaryZone.id).where(
             Employee.id == employee_id, Employee.company_id == user.company_id,
             Employee.property_id.in_(self.properties(user)),
         )
@@ -74,7 +78,20 @@ class EmployeeProfileService:
         row = (await self.session.execute(q)).one_or_none()
         if row is None:
             raise NotFoundErr("Employee not found.")
-        return row[0], {"property_name": row[1], "zone_name": row[2], "area_name": row[3]}
+        emp = row[0]
+        extra_area_names = []
+        if emp.area_assignments:
+            res = await self.session.execute(
+                select(Area.name).where(
+                    Area.id.in_([a.area_id for a in emp.area_assignments])
+                )
+            )
+            extra_area_names = list(res.scalars())
+        return emp, {
+            "property_name": row[1], "zone_name": row[2], "area_name": row[3],
+            "secondary_zone_name": row[4], "covers_property": emp.covers_property,
+            "extra_area_names": extra_area_names,
+        }
 
     @staticmethod
     def task_matches(employee_id):
@@ -493,9 +510,9 @@ class EmployeeProfileService:
                 continue
             start_utc, end_utc = shift_window_utc(shift, day_key)
             started = r.started_at if r.started_at.tzinfo else r.started_at.replace(
-                tzinfo=timezone.utc)
+                tzinfo=UTC)
             ended = (r.ended_at if r.ended_at.tzinfo else r.ended_at.replace(
-                tzinfo=timezone.utc)) if r.ended_at else None
+                tzinfo=UTC)) if r.ended_at else None
             arr_dev = (started - start_utc).total_seconds()
             dep_dev = (end_utc - ended).total_seconds() if ended else None
             adher["evaluated"] += 1
@@ -868,7 +885,8 @@ class EmployeeProfileService:
 
         employees = (await self.session.execute(
             select(Employee.id, Employee.name, Employee.job_title, Employee.status,
-                   Employee.zone_id, Employee.area_id)
+                   Employee.zone_id, Employee.secondary_zone_id, Employee.area_id,
+                   Employee.covers_property)
             .where(Employee.property_id.in_(properties))
             .order_by(Employee.name))).all()
         emp_ids = [e.id for e in employees]
@@ -880,6 +898,14 @@ class EmployeeProfileService:
             select(Zone.id, Zone.name).where(Zone.property_id.in_(properties)))).all()}
         area_names = {a.id: a.name for a in (await self.session.execute(
             select(Area.id, Area.name).where(Area.property_id.in_(properties)))).all()}
+        # Multi-area coverage — all additional areas each employee covers.
+        from app.models.employee import EmployeeAreaAssignment
+        extra_areas: dict[uuid.UUID, list[str]] = {}
+        for emp_id, aid in (await self.session.execute(
+            select(EmployeeAreaAssignment.employee_id, EmployeeAreaAssignment.area_id)
+            .where(EmployeeAreaAssignment.employee_id.in_(emp_ids)))).all():
+            if aid in area_names:
+                extra_areas.setdefault(emp_id, []).append(area_names[aid])
 
         allocs = (await self.session.execute(
             select(WorkAllocationHistory.employee_id, WorkAllocationHistory.ticket_id,
@@ -941,10 +967,19 @@ class EmployeeProfileService:
             alloc = len(allocated.get(e.id, set()))
             done = len(completed.get(e.id, set()))
             aband = len(abandoned.get(e.id, set()))
+            if e.covers_property:
+                zone_label = "Whole property"
+            else:
+                zone_label = " · ".join(
+                    n for n in (zone_names.get(e.zone_id),
+                                zone_names.get(e.secondary_zone_id),
+                                area_names.get(e.area_id),
+                                *extra_areas.get(e.id, [])) if n
+                ) or None
             rows.append({
                 "employee_uid": str(e.id), "name": e.name,
                 "job_title": e.job_title, "status": e.status,
-                "zone_name": zone_names.get(e.zone_id) or area_names.get(e.area_id),
+                "zone_name": zone_label,
                 "allocated": alloc, "completed": done, "abandoned": aband,
                 "open": open_now.get(e.id, 0),
                 "completion_rate": round(done / alloc, 4) if alloc else None})

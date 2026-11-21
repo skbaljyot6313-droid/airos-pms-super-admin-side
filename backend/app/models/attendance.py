@@ -9,7 +9,7 @@ chain — models here are intentionally minimal column maps.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Uuid, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Uuid, exists, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models import Base
@@ -82,6 +82,25 @@ class AttendanceBreak(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+def on_duty(employee_id, op_date: str):
+    """Predicate: the employee is ON DUTY on `op_date` — an open, started
+    workday with no open break. Only on-duty employees may receive new
+    work (allocation pools and explicit assignment). Mirrors the employee
+    backend's models/attendance.py::on_duty — edit both together."""
+    open_break = exists().where(
+        AttendanceBreak.attendance_day_id == AttendanceDay.id,
+        AttendanceBreak.ended_at.is_(None),
+    )
+    return exists().where(
+        AttendanceDay.employee_id == employee_id,
+        AttendanceDay.attendance_date == op_date,
+        AttendanceDay.status == "present",
+        AttendanceDay.started_at.is_not(None),
+        AttendanceDay.ended_at.is_(None),
+        ~open_break,
     )
 
 

@@ -42,7 +42,7 @@ export const Drawer: React.FC<DrawerProps> = ({
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-[#1D1B18]/40 backdrop-blur-xs animate-in fade-in duration-200"
+        className="fixed inset-0 bg-[#24221F]/40 backdrop-blur-xs ea-fade"
         onClick={onClose}
       />
 
@@ -50,8 +50,8 @@ export const Drawer: React.FC<DrawerProps> = ({
       <div
         className={cn(
           'absolute inset-y-0 right-0 w-full sm:w-[520px] lg:w-[560px]',
-          'bg-[#FAF8F5] border-l border-[#E4DFD5] shadow-[-16px_0_40px_rgba(0,0,0,0.10)]',
-          'flex flex-col animate-in slide-in-from-right duration-250'
+          'bg-[#FAF8F5] border-l border-[#DDD7CB] shadow-[-16px_0_40px_rgba(0,0,0,0.10)]',
+          'flex flex-col drawer-in'
         )}
       >
         <div className="flex items-start justify-between gap-4 px-5 sm:px-6 py-5 border-b border-[#EAE5DC] bg-white">

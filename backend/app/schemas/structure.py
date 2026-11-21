@@ -1,6 +1,7 @@
 """Write DTOs for the property-structure module — frontend `*_uid` names."""
 
 import uuid
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -147,6 +148,16 @@ class CheckInRequest(BaseModel):
     guest_name: str | None = Field(default=None, max_length=255)
 
 
+class OccupancySwitchRequest(BaseModel):
+    """POST /occupancy/switch — move a guest between any two units."""
+    source_type: Literal["room", "bed"]
+    source_uid: uuid.UUID
+    target_type: Literal["room", "bed"]
+    target_uid: uuid.UUID
+    # Does the vacated unit need cleaning? False → releases to available.
+    clean_vacated: bool = True
+
+
 class ResourceTransitionRequest(BaseModel):
     """POST /resources/{type}/{id}/transition — Super Admin administrative
     transition. Still validated against the legal transition table."""
@@ -274,12 +285,30 @@ class EmployeeZoneAssignRequest(BaseModel):
     # Area-level assignment — mutually exclusive with zone_uid; an
     # area assignee is eligible for work in every zone inside the area
     area_uid: uuid.UUID | None = None
+    # Optional SECOND coverage zone — requires (or becomes) a primary
+    # zone; an explicit null clears the secondary slot only.
+    secondary_zone_uid: uuid.UUID | None = None
+    # Property-wide coverage — eligible for work in every zone;
+    # mutually exclusive with all zone/area fields.
+    property_wide: bool = False
 
 
 class EmployeeAllocationRequest(BaseModel):
     """PATCH /employees/{id}/allocation — dedicated allocation endpoint."""
     zone_uid: uuid.UUID | None = None
     area_uid: uuid.UUID | None = None
+    secondary_zone_uid: uuid.UUID | None = None
+
+
+class EmployeeAreaAssignRequest(BaseModel):
+    """POST /employees/{id}/areas — add ANOTHER whole area to coverage.
+
+    Unlike the mutually-exclusive ``area_uid`` directive (which replaces
+    the single primary area), this appends to the employee's area set —
+    the first area lands on ``area_id``, subsequent ones on
+    ``employee_area_assignments``."""
+    area_uid: uuid.UUID
+    property_wide: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +398,10 @@ class TaskCompleteRequest(BaseModel):
 
 class TaskReassignRequest(BaseModel):
     employee_uid: uuid.UUID | None = None
+    # Super-admin only; bypasses the attendance availability gate. Reason is
+    # mandatory when set (validated in services/assignment_override.py).
+    emergency_override: bool = False
+    override_reason: str | None = Field(default=None, max_length=500)
 
 
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { BarChart3, CalendarOff, ClipboardList, Clock, LayoutGrid, List, MapPin, Plus, UserX } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
@@ -46,23 +47,30 @@ export const EmployeesView: React.FC = () => {
     useApp();
 
   const isStaff = currentUser?.role === 'super_admin' || currentUser?.role === 'property_manager';
-  const [activeTab, setActiveTab] = useState<
-    | 'board'
-    | 'directory'
-    | 'deactivated'
-    | 'live'
-    | 'leaves'
-    | 'shifts'
-    | 'attendance'
-    | 'analytics'
-  >('board');
+  type EmpTab = 'board' | 'directory' | 'deactivated' | 'live' | 'leaves' | 'shifts' | 'attendance' | 'analytics';
+  const EMP_TABS: EmpTab[] = ['board', 'directory', 'deactivated', 'live', 'leaves', 'shifts', 'attendance', 'analytics'];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<EmpTab>(() => {
+    const t = searchParams.get('tab');
+    return EMP_TABS.includes(t as EmpTab) ? (t as EmpTab) : 'board';
+  });
+  const setTab = (t: EmpTab) => {
+    setActiveTab(t);
+    setSearchParams((prev) => {
+      const q = new URLSearchParams(prev);
+      q.set('tab', t);
+      return q;
+    });
+  };
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const activeEmployees = currentPropertyEmployees.filter(
     (e) => !isEmployeeDeactivated(e)
   );
   const deactivatedEmployees = currentPropertyEmployees.filter(isEmployeeDeactivated);
-  const assignedCount = activeEmployees.filter((e) => e.zone_uid || e.area_uid).length;
+  const assignedCount = activeEmployees.filter(
+    (e) => e.zone_uid || e.area_uid || e.covers_property
+  ).length;
 
   return (
     <div className="space-y-5">
@@ -70,10 +78,10 @@ export const EmployeesView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <div className="mb-2">
-            <BackButton to={`/property/${activeProperty?.property_uid}/zones`} />
+            <BackButton to={`/property/${activeProperty?.property_uid}/overview`} />
           </div>
           <h1 className="font-display font-semibold text-[28px] text-[#17221B] tracking-tight leading-tight">
-            Property Team & Zone Staffing
+            Employee Management
           </h1>
           <p className="font-body text-sm text-[#66706A] mt-1">
             Physical zone assignments, staff roster, and team scheduling for{' '}
@@ -102,11 +110,12 @@ export const EmployeesView: React.FC = () => {
         </Button>
       </div>
 
+
       {/* Segmented control + exception chip */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="inline-flex p-1 rounded-[10px] bg-[#EDEAE2] w-fit">
           <button
-            onClick={() => setActiveTab('board')}
+            onClick={() => setTab('board')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'board'
                 ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
@@ -119,7 +128,7 @@ export const EmployeesView: React.FC = () => {
             <span>Zone Board</span>
           </button>
           <button
-            onClick={() => setActiveTab('directory')}
+            onClick={() => setTab('directory')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'directory'
                 ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
@@ -141,7 +150,7 @@ export const EmployeesView: React.FC = () => {
             </span>
           </button>
           <button
-            onClick={() => setActiveTab('deactivated')}
+            onClick={() => setTab('deactivated')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'deactivated'
                 ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
@@ -163,7 +172,7 @@ export const EmployeesView: React.FC = () => {
             </span>
           </button>
           <button
-            onClick={() => setActiveTab('shifts')}
+            onClick={() => setTab('shifts')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'shifts'
                 ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
@@ -176,7 +185,7 @@ export const EmployeesView: React.FC = () => {
             <span>Shifts</span>
           </button>
           <button
-            onClick={() => setActiveTab('attendance')}
+            onClick={() => setTab('attendance')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'attendance'
                 ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
@@ -189,7 +198,7 @@ export const EmployeesView: React.FC = () => {
             <span>Attendance</span>
           </button>
           <button
-            onClick={() => setActiveTab('analytics')}
+            onClick={() => setTab('analytics')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'analytics'
                 ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
@@ -204,7 +213,7 @@ export const EmployeesView: React.FC = () => {
           {isStaff && (
             <>
               <button
-                onClick={() => setActiveTab('live')}
+                onClick={() => setTab('live')}
                 className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
                   activeTab === 'live'
                     ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
@@ -217,7 +226,7 @@ export const EmployeesView: React.FC = () => {
                 <span>Live Location</span>
               </button>
               <button
-                onClick={() => setActiveTab('leaves')}
+                onClick={() => setTab('leaves')}
                 className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
                   activeTab === 'leaves'
                     ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'

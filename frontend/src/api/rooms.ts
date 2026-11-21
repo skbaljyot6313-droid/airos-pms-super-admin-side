@@ -5,6 +5,8 @@ import {
   BulkUnitStatusResponse,
   CheckInRequest,
   ListResponse,
+  OccupancySwitchRequest,
+  OccupancySwitchResponse,
   ResourceTransitionRequest,
   ResourceTransitionResponse,
   RoomBulkCreateRequest,
@@ -77,6 +79,17 @@ export async function checkOutRoom(
 ): Promise<CheckoutResponse<Room>> {
   return apiFetch<CheckoutResponse<Room>>(`/rooms/${room_uid}/check-out`, {
     method: 'POST',
+  });
+}
+
+/** Move a guest (open occupancy) between any two units — the vacated
+ *  unit releases to Cleaning (+task) or Available per `clean_vacated`. */
+export async function switchOccupancy(
+  req: OccupancySwitchRequest
+): Promise<OccupancySwitchResponse> {
+  return apiFetch<OccupancySwitchResponse>('/occupancy/switch', {
+    method: 'POST',
+    body: req,
   });
 }
 

@@ -16,9 +16,32 @@ KEY = 'a' * 32 + '.png'
 PIXEL = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==')
 
 
-def session_for(tasks):
-    result = SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: tasks))
-    return SimpleNamespace(execute=AsyncMock(return_value=result))
+class _Scalars:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def all(self):
+        return self._rows
+
+    def __iter__(self):
+        return iter(self._rows)
+
+
+def session_for(tasks, props=None, attachment=True):
+    """Query results by call order: 1st execute → tasks, 2nd → the batched
+    property lookup (task-referenced keys) or the maintenance-attachment
+    existence check (`.first()`, unreferenced keys)."""
+    results = [
+        SimpleNamespace(scalars=lambda: _Scalars(tasks)),
+        SimpleNamespace(
+            scalars=lambda: _Scalars(props if props is not None else []),
+            first=lambda: (1,) if attachment else None,
+        ),
+    ]
+    it = iter(results)
+    return SimpleNamespace(
+        execute=AsyncMock(side_effect=lambda *a, **k: next(it, results[-1]))
+    )
 
 
 @pytest.fixture
@@ -43,10 +66,10 @@ async def test_property_scope_is_checked_before_storage(monkeypatch, storage):
     task = SimpleNamespace(property_id=uuid.uuid4())
     user = SimpleNamespace(role=UserRole.PROPERTY_MANAGER, company_id='company')
     monkeypatch.setattr(media, 'get_current_user', AsyncMock(return_value=user))
-    scope = AsyncMock(side_effect=Forbidden())
-    monkeypatch.setattr(media.StructureService, '_property_for_write', scope)
-    with pytest.raises(Forbidden):
-        await media.get_media_file(KEY, credentials=None, session=session_for([task]))
+    with pytest.raises(media.MediaNotFound):
+        await media.get_media_file(
+            KEY, credentials=None,
+            session=session_for([task], props=[SimpleNamespace(id=task.property_id, company_id='other')]))
     storage.open.assert_not_awaited()
 
 
@@ -55,9 +78,10 @@ async def test_employee_cannot_read_another_assignees_evidence(monkeypatch, stor
     task = SimpleNamespace(property_id=uuid.uuid4(), employee_id=uuid.uuid4())
     user = SimpleNamespace(role=UserRole.EMPLOYEE, employee_id=uuid.uuid4(), company_id='company')
     monkeypatch.setattr(media, 'get_current_user', AsyncMock(return_value=user))
-    monkeypatch.setattr(media.StructureService, '_property_for_write', AsyncMock(return_value=SimpleNamespace(company_id='company')))
     with pytest.raises(Forbidden):
-        await media.get_media_file(KEY, credentials=None, session=session_for([task]))
+        await media.get_media_file(
+            KEY, credentials=None,
+            session=session_for([task], props=[SimpleNamespace(id=task.property_id, company_id='company')]))
     storage.open.assert_not_awaited()
 
 
@@ -66,8 +90,9 @@ async def test_authorized_evidence_stream_is_private(monkeypatch, storage):
     task = SimpleNamespace(property_id=uuid.uuid4())
     user = SimpleNamespace(role=UserRole.PROPERTY_MANAGER, company_id='company')
     monkeypatch.setattr(media, 'get_current_user', AsyncMock(return_value=user))
-    monkeypatch.setattr(media.StructureService, '_property_for_write', AsyncMock(return_value=SimpleNamespace(company_id='company')))
-    response = await media.get_media_file(KEY, credentials=None, session=session_for([task]))
+    response = await media.get_media_file(
+        KEY, credentials=None,
+        session=session_for([task], props=[SimpleNamespace(id=task.property_id, company_id='company')]))
     assert response.headers['cache-control'] == 'private, no-store'
     assert response.media_type == 'image/png'
     assert b''.join([chunk async for chunk in response.body_iterator]) == PIXEL
@@ -120,6 +145,7 @@ def test_serializer_prefers_durable_key_over_expired_url():
 async def test_http_evidence_requires_valid_session(monkeypatch, storage, headers):
     import httpx
     from fastapi import FastAPI
+
     from app.core.exceptions import register_exception_handlers
 
     app = FastAPI()
@@ -139,9 +165,10 @@ async def test_cross_company_evidence_is_rejected(monkeypatch, storage):
     task = SimpleNamespace(property_id=uuid.uuid4())
     user = SimpleNamespace(role=UserRole.PROPERTY_MANAGER, company_id='other')
     monkeypatch.setattr(media, 'get_current_user', AsyncMock(return_value=user))
-    monkeypatch.setattr(media.StructureService, '_property_for_write', AsyncMock(return_value=SimpleNamespace(company_id='owner')))
     with pytest.raises(media.MediaNotFound):
-        await media.get_media_file(KEY, credentials=None, session=session_for([task]))
+        await media.get_media_file(
+            KEY, credentials=None,
+            session=session_for([task], props=[SimpleNamespace(id=task.property_id, company_id='owner')]))
     storage.open.assert_not_awaited()
 
 

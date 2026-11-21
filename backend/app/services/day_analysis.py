@@ -12,7 +12,7 @@ fetch so both surfaces always agree.
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,9 +54,9 @@ def _month_bounds(month: str) -> tuple[datetime, datetime]:
     y, m = (int(p) for p in month.split("-"))
     first = date(y, m, 1)
     nxt = date(y + (m == 12), 1 if m == 12 else m + 1, 1)
-    lo = datetime(first.year, first.month, first.day, tzinfo=timezone.utc) \
+    lo = datetime(first.year, first.month, first.day, tzinfo=UTC) \
         - timedelta(days=2)
-    hi = datetime(nxt.year, nxt.month, nxt.day, tzinfo=timezone.utc) \
+    hi = datetime(nxt.year, nxt.month, nxt.day, tzinfo=UTC) \
         + timedelta(days=2)
     return lo, hi
 
@@ -154,7 +154,7 @@ class DayAnalysisService:
             elif task.status in OPEN_STATUSES:
                 d["active"] += 1
 
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         return {
             "month": month,
             "today": current_operational_day(now_utc, start),
@@ -416,13 +416,13 @@ class DayAnalysisService:
             "date": day,
             "operational_day_start": start.strftime("%H:%M"),
             "is_today": day == current_operational_day(
-                datetime.now(timezone.utc), start
+                datetime.now(UTC), start
             ),
             "summary": out_summary,
             "tasks": sorted(
                 items,
                 key=lambda r: (r["generated_at"] or datetime.min.replace(
-                    tzinfo=timezone.utc),),
+                    tzinfo=UTC),),
                 reverse=True,
             ),
             "employees": sorted(

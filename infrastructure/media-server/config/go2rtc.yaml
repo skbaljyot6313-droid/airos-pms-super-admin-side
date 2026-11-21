@@ -1,0 +1,10 @@
+# go2rtc — camera ingest/restream. Streams are pushed by the AiROS backend
+# via the control API and persisted into this file (mounted writable), so
+# container restarts keep camera registrations.
+api:
+  listen: ":1984"
+rtsp:
+  listen: ":8554"
+webrtc:
+  listen: ":8555"
+streams: {}

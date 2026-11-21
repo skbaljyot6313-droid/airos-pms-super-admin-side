@@ -4,7 +4,20 @@ Property operations management platform — Super Admin / Property Manager surfa
 Monorepo: `backend/` (FastAPI + SQLAlchemy async + PostgreSQL) and `frontend/`
 (React 19 + TypeScript + Vite + Tailwind).
 
-## Production architecture
+## Development deployment (current — `development-branch`)
+
+The active deployment is the **dev environment on GCP project `final-airos-os`
+(asia-south1)**, deployed **manually via gcloud/firebase CLI** — no GitHub
+workflow deploys it:
+
+| Piece | Where |
+|---|---|
+| Super Admin API | Cloud Run `airos-sa-api-dev` (`asia-south1-docker.pkg.dev/final-airos-os/airos-dev/super-admin-api`, built via Cloud Build from `backend/Dockerfile`) |
+| Web SPA | Firebase Hosting site `airos-super-admin-dev` (`frontend/firebase.json`, deployed by `backend/scripts/firebase_deploy.py`) |
+| Database | Cloud SQL `airos-postgres-dev` / `airos_dev` — **shared with the Employee Backend** (`airos-eb-api-dev`); both Alembic chains extend the same `alembic_version` row |
+| Scheduler | Cloud Scheduler `airos-generation-tick` → `POST /internal/generation-tick` |
+
+## Production architecture (legacy — `main` branch)
 
 ```
 GitHub: airos-pms-super-admin-side
@@ -18,8 +31,9 @@ GitHub: airos-pms-super-admin-side
    └──▶ Shared AiROS PostgreSQL database (Supabase)
 ```
 
-Pushing to `main` automatically deploys the backend on Railway and the
-frontend on Vercel — no manual deploy step is required.
+`.github/workflows/deploy-production.yml` still targets Railway (backend) +
+Vercel (frontend) on pushes to `main`; `backend/railway.toml` and
+`frontend/vercel.json` remain in-tree.
 
 ## Local development
 
@@ -67,18 +81,21 @@ Frontend (Vercel environment):
 
 ## Migrations
 
-Railway runs `alembic upgrade head` at container start, before uvicorn
-(see `backend/railway.toml`). Locally: `cd backend && alembic upgrade head`.
-The API refuses to boot if `alembic_version` ≠ the script head.
+The Cloud Run image runs `alembic upgrade head` at container start (see
+`backend/Dockerfile` — failures are non-fatal because the shared DB's
+`alembic_version` row may be at an Employee-Backend revision; boot's own
+`check_schema_version` validates the stamp). Locally:
+`cd backend && alembic upgrade head`. The API refuses to boot if
+`alembic_version` ≠ the script head.
 
-## Deploying changes
+## Deploying changes (dev)
 
 ```bash
-git add . && git commit -m "…" && git push origin main
+git push origin development-branch          # code only — no auto-deploy
+gcloud builds submit backend/ --tag <ar-tag> # build API image
+gcloud run deploy airos-sa-api-dev ...       # rollout (see docs/)
+cd frontend && npm run build && firebase deploy --only hosting:airos-super-admin-dev
 ```
-
-GitHub → Railway rebuilds and redeploys the API; GitHub → Vercel rebuilds
-and redeploys the web app.
 
 ## Rollback
 
@@ -89,8 +106,11 @@ and redeploys the web app.
 
 ## Secrets
 
-Secrets live only in Railway/Vercel environment variables and local `.env`
-files — never in the repository. Deployment tokens are used by CI/CLI only
-and must never be committed or exposed to the browser.
+Secrets live only in GCP Secret Manager (dev), Railway/Vercel environment
+variables (legacy prod), and local `.env` files — never in the repository.
+Deployment tokens are used by CI/CLI only and must never be committed or
+exposed to the browser. `gcloud builds submit`/`run deploy --source` uploads
+respect `backend/.gcloudignore` — keep it in sync with `backend/.dockerignore`
+so `backend/.env` can never reach the build context.
 
-<!-- deployment pipeline: GitHub Actions -> Railway + Vercel -->
+<!-- deployment pipeline: dev = development-branch -> gcloud CLI -> Cloud Run + Firebase Hosting; legacy prod = main -> GitHub Actions -> Railway + Vercel -->

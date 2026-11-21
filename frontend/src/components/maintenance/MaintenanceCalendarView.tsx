@@ -56,7 +56,7 @@ export const MaintenanceCalendarView: React.FC = () => {
       loading={loading}
       error={error}
       onSelect={(date) =>
-        navigate(`/property/${activePropertyUid}/maintenance/history/${date}`)
+        navigate(`/property/${activePropertyUid}/operations/history/maintenance/${date}`)
       }
       renderDay={(_date, raw) => {
         const day = raw as MaintenanceCalendarDay;

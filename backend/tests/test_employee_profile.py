@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone, time
+from datetime import UTC, datetime, time, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -14,13 +14,13 @@ from app.core.database import get_db
 from app.core.exceptions import register_exception_handlers
 from app.dependencies.auth import Forbidden, get_current_user
 from app.models.attendance import AttendanceDay, AttendanceRequest
-from app.models.employee import Employee
+from app.models.employee import Employee, EmployeeAreaAssignment
+from app.models.maintenance import MaintenanceTicket
 from app.models.property import Property
 from app.models.shift import EmployeeShiftAssignment, Shift
 from app.models.structure import Area, Zone
 from app.models.task import Task, TaskCompletionImage, TaskCompletionSubmission, TaskHistoryEvent
 from app.models.user import UserRole
-from app.models.maintenance import MaintenanceTicket
 from app.models.work_allocation import WorkAllocationHistory
 from app.services.employee_profile import EmployeeProfileService
 from app.services.structure import NotFoundErr
@@ -29,7 +29,7 @@ from app.services.structure import NotFoundErr
 @pytest.fixture
 def data():
     engine = create_engine("sqlite://")
-    for model in (Property, Employee, Area, Zone, Task, TaskHistoryEvent, TaskCompletionSubmission,
+    for model in (Property, Employee, EmployeeAreaAssignment, Area, Zone, Task, TaskHistoryEvent, TaskCompletionSubmission,
                   TaskCompletionImage, WorkAllocationHistory, AttendanceDay, AttendanceRequest,
                   Shift, EmployeeShiftAssignment, MaintenanceTicket):
         model.__table__.create(engine)
@@ -38,7 +38,7 @@ def data():
         p1, p2, p3 = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
         a, b, foreign_employee = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
         t1, t2, t3, t4, t5, foreign_task = (uuid.uuid4() for _ in range(6))
-        base = datetime(2026, 10, 1, 3, tzinfo=timezone.utc)
+        base = datetime(2026, 10, 1, 3, tzinfo=UTC)
         at = lambda minutes: base + timedelta(minutes=minutes)
         for prop_id, co in ((p1, company), (p2, company), (p3, foreign_company)):
             session.add(Property(id=prop_id, company_id=co, name="Property", code=str(prop_id)[:8],

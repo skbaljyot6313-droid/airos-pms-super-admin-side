@@ -22,7 +22,12 @@ import { Drawer } from '../ui/Drawer';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 import { CompletionEvidenceLightbox } from '../tasks/CompletionEvidenceLightbox';
 import { MaintenanceTicket } from '../../types';
-import * as mediaApi from '../../api/media';
+import { mediaUrl } from '../../api/client';
+import { useEvidenceUploads } from '../../hooks/useEvidenceUploads';
+import {
+  ALLOWED_COMPLETION_IMAGE_TYPES,
+  MAX_UPLOAD_BYTES,
+} from '../../lib/mediaLimits';
 import {
   MAINTENANCE_STATUS_LABELS,
   MAINTENANCE_TYPE_OPTIONS,
@@ -94,17 +99,20 @@ export const TicketDrawer: React.FC<{
   const [disapproveReason, setDisapproveReason] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [resolveNotes, setResolveNotes] = useState('');
-  const [resolvePhotos, setResolvePhotos] = useState<{ file: File; previewUrl: string }[]>([]);
+  const evidence = useEvidenceUploads({
+    propertyUid: activeProperty?.property_uid,
+    maxCount: 10,
+    allowedTypes: ALLOWED_COMPLETION_IMAGE_TYPES,
+    maxBytes: MAX_UPLOAD_BYTES,
+    onToast: addToast,
+  });
   const [attachmentIndex, setAttachmentIndex] = useState<number | null>(null);
   const [isWorking, setIsWorking] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const resolvePhotosRef = useRef(resolvePhotos);
-  resolvePhotosRef.current = resolvePhotos;
+  const evidenceRef = useRef(evidence);
+  evidenceRef.current = evidence;
 
-  useEffect(
-    () => () => resolvePhotosRef.current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl)),
-    []
-  );
+  useEffect(() => () => evidenceRef.current.reset(), []);
 
   // Other tickets on the SAME target (room / dorm / bed / washroom) — nulls never match
   const roomHistory = currentPropertyMaintenance.filter(
@@ -131,14 +139,12 @@ export const TicketDrawer: React.FC<{
       addToast({ type: 'warning', title: 'Resolution notes required' });
       return;
     }
+    if (evidence.busy) return;
     setIsWorking(true);
     try {
-      const urls: string[] = [];
-      for (const p of resolvePhotos) {
-        const res = await mediaApi.uploadPhoto(p.file, activeProperty?.property_uid);
-        urls.push(res.url);
-      }
-      await resolveMaintenanceTicket(ticket.ticket_uid, resolveNotes.trim(), urls);
+      // Resolution photos compressed + uploaded at selection — reuse URLs.
+      await resolveMaintenanceTicket(ticket.ticket_uid, resolveNotes.trim(), evidence.readyUrls);
+      evidence.reset();
       setResolveMode(false);
     } finally {
       setIsWorking(false);
@@ -334,15 +340,11 @@ export const TicketDrawer: React.FC<{
             <input
               ref={fileRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
               multiple
               className="hidden"
               onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                setResolvePhotos((prev) => [
-                  ...prev,
-                  ...files.map((f) => ({ file: f, previewUrl: URL.createObjectURL(f) })),
-                ]);
+                evidence.add(Array.from(e.target.files || []));
                 e.target.value = '';
               }}
             />
@@ -354,15 +356,28 @@ export const TicketDrawer: React.FC<{
               >
                 <Camera className="w-3.5 h-3.5" /> Resolution Photo
               </button>
-              {resolvePhotos.map((p, i) => (
-                <div key={i} className="relative w-12 h-12 rounded-[8px] overflow-hidden border border-[#E5E0D6]">
-                  <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
+              {evidence.items.map((p) => (
+                <div key={p.id} className={`relative w-12 h-12 rounded-[8px] overflow-hidden border ${
+                  p.status === 'error' ? 'border-[#C53B3B]' : 'border-[#DDD7CB]'
+                }`}>
+                  <img src={p.previewUrl} alt="" className={`w-full h-full object-cover ${p.status === 'ready' ? '' : 'opacity-60'}`} />
+                  {p.status === 'error' ? (
+                    <button
+                      type="button"
+                      onClick={() => evidence.retry(p.id)}
+                      className="absolute inset-0 text-[9px] font-bold text-[#C53B3B] bg-white/75 cursor-pointer"
+                      title={p.error || 'Upload failed — tap to retry'}
+                    >
+                      retry
+                    </button>
+                  ) : p.status !== 'ready' ? (
+                    <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white bg-black/40">
+                      {p.status === 'compressing' ? 'prep' : 'up'}
+                    </span>
+                  ) : null}
                   <button
                     type="button"
-                    onClick={() => setResolvePhotos((prev) => {
-                      URL.revokeObjectURL(prev[i].previewUrl);
-                      return prev.filter((_, j) => j !== i);
-                    })}
+                    onClick={() => evidence.remove(p.id)}
                     className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer"
                   >
                     <X className="w-2.5 h-2.5" />
@@ -447,8 +462,8 @@ export const TicketDrawer: React.FC<{
                                ? 'Report evidence'
                                : `Resolution evidence — attempt ${a.attempt ?? 1}`
                            }
-                           className="block w-14 h-14 rounded-[8px] overflow-hidden border border-[#E5E0D6] hover:border-[#386641] transition-colors cursor-zoom-in">
-                          <img src={a.url} alt={a.file_name || ''} className="w-full h-full object-cover" />
+                           className="block w-14 h-14 rounded-[8px] overflow-hidden border border-[#DDD7CB] hover:border-[#386641] transition-colors cursor-zoom-in">
+                          <img src={mediaUrl(a.url)} alt={a.file_name || ''} className="w-full h-full object-cover" />
                         </button>
                       ))}
                     </div>
@@ -556,7 +571,7 @@ export const MaintenanceView: React.FC<{ embedded?: boolean }> = ({ embedded = f
       {!embedded && (
         <div>
           <div className="mb-2">
-            <BackButton to={`/property/${activePropertyUid}/zones`} />
+            <BackButton to={`/property/${activePropertyUid}/overview`} />
           </div>
           <div className="flex items-center gap-2">
             <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#24221F] tracking-tight">

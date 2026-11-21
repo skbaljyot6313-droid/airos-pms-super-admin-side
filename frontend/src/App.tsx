@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { perfLog } from './dev/perf';
 import { AppProvider, useApp } from './context/AppContext';
+import { SessionProvider } from './context/SessionContext';
 import { Header } from './components/navigation/Header';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { Skeleton } from './components/ui/Skeleton';
@@ -26,8 +27,20 @@ const RoomsDormsView = React.lazy(() =>
 const EmployeesView = React.lazy(() =>
   import('./components/employees/EmployeesView').then((m) => ({ default: m.EmployeesView }))
 );
+const SalariesView = React.lazy(() =>
+  import('./components/payroll/SalariesView').then((m) => ({ default: m.SalariesView }))
+);
 const EmployeeDetailView = React.lazy(() =>
   import('./components/employees/EmployeeDetailView').then((m) => ({ default: m.EmployeeDetailView }))
+);
+const EmployeeDashboard = React.lazy(() =>
+  import('./components/employees/management/EmployeeDashboard').then((m) => ({ default: m.EmployeeDashboard }))
+);
+const DepartmentsView = React.lazy(() =>
+  import('./components/employees/management/DepartmentsView').then((m) => ({ default: m.DepartmentsView }))
+);
+const DepartmentDetailView = React.lazy(() =>
+  import('./components/employees/management/DepartmentDetailView').then((m) => ({ default: m.DepartmentDetailView }))
 );
 const TasksView = React.lazy(() =>
   import('./components/tasks/TasksView').then((m) => ({ default: m.TasksView }))
@@ -38,17 +51,23 @@ const TaskDayAnalysisView = React.lazy(() =>
 const MaintenanceDayAnalysisView = React.lazy(() =>
   import('./components/maintenance/MaintenanceDayAnalysisView').then((m) => ({ default: m.MaintenanceDayAnalysisView }))
 );
-const TemplatesView = React.lazy(() =>
-  import('./components/templates/TemplatesView').then((m) => ({ default: m.TemplatesView }))
-);
 const ProfileView = React.lazy(() =>
   import('./components/profile/ProfileView').then((m) => ({ default: m.ProfileView }))
+);
+const VaView = React.lazy(() =>
+  import('./components/va/VaView').then((m) => ({ default: m.VaView }))
 );
 const AdminSettingsView = React.lazy(() =>
   import('./components/admin/AdminSettingsView').then((m) => ({ default: m.AdminSettingsView }))
 );
 const LogsView = React.lazy(() =>
   import('./components/admin/LogsView').then((m) => ({ default: m.LogsView }))
+);
+const DashboardView = React.lazy(() =>
+  import('./components/dashboard/DashboardView').then((m) => ({ default: m.DashboardView }))
+);
+const InsightsView = React.lazy(() =>
+  import('./components/insights/InsightsView').then((m) => ({ default: m.InsightsView }))
 );
 
 /**
@@ -104,9 +123,7 @@ const WorkspaceGate: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 /**
  * Handles property-scoped views while ensuring activePropertyUid is synchronized
  */
-const PropertyScopedView: React.FC<{
-  view: 'zones' | 'rooms' | 'employees' | 'tasks' | 'templates' | 'task_day' | 'maint_day' | 'employee_detail';
-}> = ({ view }) => {
+const PropertyScopedView: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { propertyUid } = useParams<{ propertyUid: string }>();
   const { activePropertyUid, setActivePropertyUid, companyProperties, currentRole, currentUser } =
     useApp();
@@ -129,7 +146,7 @@ const PropertyScopedView: React.FC<{
     currentUser?.property_uid &&
     propertyUid !== currentUser.property_uid
   ) {
-    return <Navigate to={`/property/${currentUser.property_uid}/zones`} replace />;
+    return <Navigate to={`/property/${currentUser.property_uid}/overview`} replace />;
   }
 
   // Super Admins cannot open another company's property via URL
@@ -142,36 +159,18 @@ const PropertyScopedView: React.FC<{
     return <Navigate to="/admin/properties" replace />;
   }
 
-  const viewEl =
-    view === 'zones' ? (
-      <ZonesView />
-    ) : view === 'rooms' ? (
-      <RoomsDormsView />
-    ) : view === 'tasks' ? (
-      <TasksView />
-    ) : view === 'task_day' ? (
-      <TaskDayAnalysisView />
-    ) : view === 'maint_day' ? (
-      <MaintenanceDayAnalysisView />
-    ) : view === 'templates' ? (
-      <TemplatesView />
-    ) : view === 'employee_detail' ? (
-      <EmployeeDetailView />
-    ) : view === 'employees' ? (
-      <EmployeesView />
-    ) : (
-      <Navigate to={`/property/${propertyUid}/zones`} replace />
-    );
-  return <WorkspaceGate>{viewEl}</WorkspaceGate>;
+  return <WorkspaceGate>{children}</WorkspaceGate>;
 };
 
-/** Legacy deep link — maintenance lives inside the Tasks page as a tab. */
-const MaintenanceRedirect: React.FC = () => {
-  const { propertyUid } = useParams();
+/** Redirect preserving route params (:date, :employeeUid…) and query params. */
+const LegacyRedirect: React.FC<{ to: string }> = ({ to }) => {
+  const params = useParams();
   const [searchParams] = useSearchParams();
-  const q = new URLSearchParams(searchParams);
-  q.set('tab', 'maintenance');
-  return <Navigate to={`/property/${propertyUid}/tasks?${q.toString()}`} replace />;
+  // If `to` already carries a query string, merge legacy params after it.
+  const [path, inlineQ] = to.split('?');
+  const resolved = path.replace(/:([A-Za-z_]+)/g, (_, k) => params[k] || '');
+  const q = [inlineQ, searchParams.toString()].filter(Boolean).join('&');
+  return <Navigate to={`/property/${params.propertyUid}/${resolved}${q ? `?${q}` : ''}`} replace />;
 };
 
 /**
@@ -187,7 +186,7 @@ const RequireRole: React.FC<{ roles: string[]; children: React.ReactNode }> = ({
     if (currentRole === 'employee' || currentRole === 'human_resource' || currentRole === 'department_manager')
       return <Navigate to="/" replace />;
     if (currentRole === 'property_manager')
-      return <Navigate to={`/property/${activePropertyUid}/zones`} replace />;
+      return <Navigate to={`/property/${activePropertyUid}/overview`} replace />;
     return <Navigate to="/admin/properties" replace />;
   }
   return <>{children}</>;
@@ -206,7 +205,7 @@ const RootRedirect: React.FC = () => {
     return <Navigate to="/admin/properties" replace />;
   }
   if (currentRole === 'property_manager') {
-    return <Navigate to={`/property/${activePropertyUid}/zones`} replace />;
+    return <Navigate to={`/property/${activePropertyUid}/overview`} replace />;
   }
   return <Navigate to="/" replace />;
 };
@@ -247,18 +246,49 @@ const AppContent: React.FC = () => {
           <Route path="/admin/settings" element={<RequireAuth><RequireRole roles={['super_admin']}><WorkspaceGate><AdminSettingsView /></WorkspaceGate></RequireRole></RequireAuth>} />
           <Route path="/admin/logs" element={<RequireAuth><RequireRole roles={['super_admin']}><WorkspaceGate><LogsView /></WorkspaceGate></RequireRole></RequireAuth>} />
 
-          {/* Property workspace routes (Property Manager & Super Admin inside a property) */}
-          <Route path="/property/:propertyUid/zones" element={<RequireAuth><PropertyScopedView view="zones" /></RequireAuth>} />
-          <Route path="/property/:propertyUid/rooms" element={<RequireAuth><PropertyScopedView view="rooms" /></RequireAuth>} />
-          <Route path="/property/:propertyUid/employees" element={<RequireAuth><PropertyScopedView view="employees" /></RequireAuth>} />
-          <Route path="/property/:propertyUid/employees/:employeeUid" element={<RequireAuth><PropertyScopedView view="employee_detail" /></RequireAuth>} />
-          <Route path="/property/:propertyUid/tasks" element={<RequireAuth><PropertyScopedView view="tasks" /></RequireAuth>} />
-          <Route path="/property/:propertyUid/tasks/history/:date" element={<RequireAuth><RequireRole roles={['super_admin', 'property_manager']}><PropertyScopedView view="task_day" /></RequireRole></RequireAuth>} />
-          <Route path="/property/:propertyUid/maintenance" element={<RequireAuth><MaintenanceRedirect /></RequireAuth>} />
-          <Route path="/property/:propertyUid/maintenance/history/:date" element={<RequireAuth><RequireRole roles={['super_admin', 'property_manager']}><PropertyScopedView view="maint_day" /></RequireRole></RequireAuth>} />
-          <Route path="/property/:propertyUid/templates" element={<RequireAuth><PropertyScopedView view="templates" /></RequireAuth>} />
+          {/* Property workspace — new five-destination IA */}
+          <Route path="/property/:propertyUid/overview" element={<RequireAuth><PropertyScopedView><DashboardView /></PropertyScopedView></RequireAuth>} />
+
+          <Route path="/property/:propertyUid/workforce" element={<RequireAuth><Navigate to="dashboard" replace /></RequireAuth>} />
+          <Route path="/property/:propertyUid/workforce/dashboard" element={<RequireAuth><PropertyScopedView><EmployeeDashboard /></PropertyScopedView></RequireAuth>} />
+          <Route path="/property/:propertyUid/workforce/employees" element={<RequireAuth><PropertyScopedView><EmployeesView /></PropertyScopedView></RequireAuth>} />
+          <Route path="/property/:propertyUid/workforce/employees/:employeeUid" element={<RequireAuth><PropertyScopedView><EmployeeDetailView /></PropertyScopedView></RequireAuth>} />
+          <Route path="/property/:propertyUid/workforce/salaries" element={<RequireAuth><PropertyScopedView><RequireRole roles={['super_admin', 'human_resource']}><SalariesView /></RequireRole></PropertyScopedView></RequireAuth>} />
+          <Route path="/property/:propertyUid/workforce/departments" element={<RequireAuth><PropertyScopedView><DepartmentsView /></PropertyScopedView></RequireAuth>} />
+          <Route path="/property/:propertyUid/workforce/departments/:departmentUid" element={<RequireAuth><PropertyScopedView><DepartmentDetailView /></PropertyScopedView></RequireAuth>} />
+
+          <Route path="/property/:propertyUid/property" element={<RequireAuth><Navigate to="spaces/zones" replace /></RequireAuth>} />
+          <Route path="/property/:propertyUid/property/spaces" element={<RequireAuth><Navigate to="zones" replace /></RequireAuth>} />
+          <Route path="/property/:propertyUid/property/spaces/zones" element={<RequireAuth><PropertyScopedView><ZonesView /></PropertyScopedView></RequireAuth>} />
+          <Route path="/property/:propertyUid/property/spaces/units" element={<RequireAuth><PropertyScopedView><RoomsDormsView /></PropertyScopedView></RequireAuth>} />
+          <Route path="/property/:propertyUid/property/video/:tab" element={<RequireAuth><RequireRole roles={['super_admin', 'property_manager']}><WorkspaceGate><VaView /></WorkspaceGate></RequireRole></RequireAuth>} />
+          <Route path="/property/:propertyUid/property/video" element={<RequireAuth><Navigate to="vms" replace /></RequireAuth>} />
+
+          <Route path="/property/:propertyUid/operations" element={<RequireAuth><Navigate to="tasks" replace /></RequireAuth>} />
+          <Route path="/property/:propertyUid/operations/tasks" element={<RequireAuth><PropertyScopedView><TasksView /></PropertyScopedView></RequireAuth>} />
+          <Route path="/property/:propertyUid/operations/history/tasks/:date" element={<RequireAuth><RequireRole roles={['super_admin', 'property_manager']}><PropertyScopedView><TaskDayAnalysisView /></PropertyScopedView></RequireRole></RequireAuth>} />
+          <Route path="/property/:propertyUid/operations/history/maintenance/:date" element={<RequireAuth><RequireRole roles={['super_admin', 'property_manager']}><PropertyScopedView><MaintenanceDayAnalysisView /></PropertyScopedView></RequireRole></RequireAuth>} />
+
+          <Route path="/property/:propertyUid/insights" element={<RequireAuth><PropertyScopedView><InsightsView /></PropertyScopedView></RequireAuth>} />
+          <Route path="/property/:propertyUid/insights/audit" element={<RequireAuth><RequireRole roles={['super_admin']}><WorkspaceGate><LogsView /></WorkspaceGate></RequireRole></RequireAuth>} />
           <Route path="/property/:propertyUid/profile" element={<RequireAuth><WorkspaceGate><ProfileView /></WorkspaceGate></RequireAuth>} />
-          <Route path="/property/:propertyUid" element={<RequireAuth><Navigate to="zones" replace /></RequireAuth>} />
+
+          {/* Legacy route redirects (query params preserved) */}
+          <Route path="/property/:propertyUid/zones" element={<RequireAuth><LegacyRedirect to="property/spaces/zones" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/rooms" element={<RequireAuth><LegacyRedirect to="property/spaces/units" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/employees" element={<RequireAuth><LegacyRedirect to="workforce/dashboard" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/employees/staff" element={<RequireAuth><LegacyRedirect to="workforce/employees" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/employees/departments" element={<RequireAuth><LegacyRedirect to="workforce/departments" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/employees/departments/:departmentUid" element={<RequireAuth><LegacyRedirect to="workforce/departments/:departmentUid" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/employees/:employeeUid" element={<RequireAuth><LegacyRedirect to="workforce/employees/:employeeUid" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/tasks" element={<RequireAuth><LegacyRedirect to="operations/tasks" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/tasks/history/:date" element={<RequireAuth><LegacyRedirect to="operations/history/tasks/:date" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/maintenance" element={<RequireAuth><LegacyRedirect to="operations/tasks?tab=maintenance" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/maintenance/history/:date" element={<RequireAuth><LegacyRedirect to="operations/history/maintenance/:date" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/templates" element={<RequireAuth><LegacyRedirect to="operations/tasks?tab=templates" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/va/:tab" element={<RequireAuth><LegacyRedirect to="property/video/:tab" /></RequireAuth>} />
+          <Route path="/property/:propertyUid/va" element={<RequireAuth><LegacyRedirect to="property/video" /></RequireAuth>} />
+          <Route path="/property/:propertyUid" element={<RequireAuth><Navigate to="overview" replace /></RequireAuth>} />
 
           {/* Role-based fallback redirects */}
           <Route path="*" element={<RootRedirect />} />
@@ -275,7 +305,8 @@ const AppContent: React.FC = () => {
 export function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
+      <SessionProvider>
+        <AppProvider>
         {/* dev-only render instrumentation — Profiler counts/measures
             commits caused by each refresh; production tree unchanged */}
         <React.Profiler
@@ -289,7 +320,8 @@ export function App() {
         >
           <AppContent />
         </React.Profiler>
-      </AppProvider>
+        </AppProvider>
+      </SessionProvider>
     </BrowserRouter>
   );
 }

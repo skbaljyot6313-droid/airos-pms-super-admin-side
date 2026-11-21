@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,8 +23,18 @@ class RefreshTokenRepository:
             select(RefreshToken).where(
                 RefreshToken.token_hash == token_hash,
                 RefreshToken.revoked.is_(False),
-                RefreshToken.expires_at > datetime.now(timezone.utc),
+                RefreshToken.expires_at > datetime.now(UTC),
             )
+        )
+        return res.scalar_one_or_none()
+
+    async def get_by_hash(self, token_hash: str) -> RefreshToken | None:
+        """Lookup by hash regardless of revoked/expired state — lets the
+        service distinguish a replayed rotated token from an unknown one."""
+        res = await self.session.execute(
+            select(RefreshToken)
+            .where(RefreshToken.token_hash == token_hash)
+            .with_for_update()
         )
         return res.scalar_one_or_none()
 

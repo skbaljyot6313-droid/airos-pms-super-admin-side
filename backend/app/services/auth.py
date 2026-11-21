@@ -4,9 +4,9 @@ AuthService — signup, login, token issue/refresh/revocation, profile.
 Router → Service → Repository → SQLAlchemy.
 """
 
-import uuid
 import logging
-from datetime import datetime, timezone
+import uuid
+from datetime import UTC, datetime
 
 from fastapi import status
 from sqlalchemy import text
@@ -25,8 +25,8 @@ from app.core.security import (
     verify_password,
 )
 from app.core.verify_queue import dummy_hash, get_verify_queue
-from app.models.user import User, UserRole
 from app.models.audit import AuditEvent
+from app.models.user import User, UserRole
 from app.repositories.company import CompanyRepository
 from app.repositories.refresh_token import RefreshTokenRepository
 from app.repositories.user import UserRepository
@@ -91,7 +91,7 @@ class AuthService:
             # INSERT previously flushed as two statements (~1 extra remote
             # RTT per login under a measured pool-wait-dominated path).
             # The CTE keeps them atomic inside the existing commit.
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             await self.session.execute(
                 text(
                     "WITH u AS ("
@@ -242,17 +242,42 @@ class AuthService:
     # ------------------------------------------------------------------
     # Refresh / logout
     # ------------------------------------------------------------------
-    async def refresh(self, refresh_token: str) -> str:
-        stored = await self.tokens.get_valid(hash_refresh_token(refresh_token))
-        if stored is None:
+    async def refresh(self, refresh_token: str) -> tuple[str, str]:
+        """Rotate: every refresh consumes the presented token and issues a
+        new pair. Reuse of an already-revoked token is treated as
+        compromise — the user's entire token family is revoked."""
+        token_hash = hash_refresh_token(refresh_token)
+        stored = await self.tokens.get_by_hash(token_hash)
+
+        if stored is not None and stored.revoked:
+            count = await self.tokens.revoke_all_for_user(stored.user_id)
+            user = await self.users.get_by_id(stored.user_id)
+            if user is not None:
+                AuditService(self.session).record(
+                    user, entity_type="session", entity_id=user.id, entity_name=user.name,
+                    action="refresh_reuse_detected", property_id=user.property_id,
+                    detail={"category": "session", "actor_role": user.role.value,
+                            "outcome": "failed", "reason_code": "REFRESH_TOKEN_REUSE",
+                            "revoked_count": count, "http_status": 401,
+                            "channel": "management_api", "actor_identity_verified": False},
+                )
+            await self.session.commit()
+            raise InvalidRefreshToken()
+
+        now = datetime.now(UTC)
+        if stored is None or stored.expires_at <= now:
             error = InvalidRefreshToken()
             await self._record_failed_attempt(None, "refresh_failed", error)
             raise error
+
         user = await self.users.get_by_id(stored.user_id)
         if user is None or not user.is_active:
             error = InvalidRefreshToken()
             await self._record_failed_attempt(user, "refresh_failed", error)
             raise error
+
+        stored.revoked = True
+        access, new_refresh = await self._issue_tokens(user)
         AuditService(self.session).record(
             user, entity_type="session", entity_id=user.id, entity_name=user.name,
             action="session_refreshed", property_id=user.property_id,
@@ -260,11 +285,7 @@ class AuthService:
                     "http_status": 200, "channel": "management_api", "actor_identity_verified": True},
         )
         await self.session.commit()
-        return create_access_token(
-            user_id=str(user.id),
-            company_id=str(user.company_id),
-            role=user.role.value,
-        )
+        return access, new_refresh
 
     async def logout(self, refresh_token: str | None) -> None:
         if refresh_token:

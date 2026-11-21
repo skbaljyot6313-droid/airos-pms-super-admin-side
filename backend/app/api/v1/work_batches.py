@@ -22,8 +22,8 @@ from app.models.task import Task, TaskCompletionSubmission
 from app.models.user import User
 from app.models.work_allocation import WorkAllocationBatch
 from app.schemas.maintenance import MaintenanceCreateRequest, ticket_out
-from app.schemas.workspace import task_out
 from app.schemas.work_allocation import WorkBatchCreateRequest, batch_out
+from app.schemas.workspace import task_out
 from app.services.maintenance import MaintenanceService
 from app.services.structure import NotFoundErr, StructureService, ValidationErr
 from app.services.work_allocation import WorkAllocationService

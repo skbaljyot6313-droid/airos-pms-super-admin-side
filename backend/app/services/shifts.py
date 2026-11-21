@@ -14,8 +14,8 @@ rows are always validated against that property/company before use.
 """
 
 import uuid
-from datetime import date, datetime, time, timedelta, timezone
-from typing import Iterable
+from collections.abc import Iterable
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -118,7 +118,7 @@ def shift_window_utc(shift: Shift, op_date: str) -> tuple[datetime, datetime]:
     start = datetime.combine(d, shift.start_time, IST)
     end_d = d + timedelta(days=1) if shift.end_time <= shift.start_time else d
     end = datetime.combine(end_d, shift.end_time, IST)
-    return start.astimezone(timezone.utc), end.astimezone(timezone.utc)
+    return start.astimezone(UTC), end.astimezone(UTC)
 
 
 async def effective_assignments(

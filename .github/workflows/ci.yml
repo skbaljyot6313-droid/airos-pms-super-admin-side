@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [development-branch, main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies (locked)
+        run: pip install -r requirements.lock -r requirements-dev.txt
+      - name: Ruff
+        run: |
+          pip install ruff
+          ruff check app tests
+      - name: Alembic single-head check
+        run: |
+          python - <<'PY'
+          from alembic.config import Config
+          from alembic.script import ScriptDirectory
+          heads = ScriptDirectory.from_config(Config("alembic.ini")).get_heads()
+          assert len(heads) == 1, f"expected one alembic head, got {heads}"
+          print("alembic head:", heads[0])
+          PY
+      - name: Tests
+        run: pytest tests/ -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Unit tests
+        run: npm test
+      # Report-only until the codebase is formatted — ratchet by running
+      # `npm run format` once, then flip this to a required check.
+      - name: Format check (informational)
+        run: npx prettier --check src || true
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: airos_e2e
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:e2e@localhost:55432/airos_e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: backend
+        run: pip install -r requirements.lock
+      - name: Migrate + seed fixture database
+        working-directory: backend
+        run: |
+          python -m alembic upgrade head
+          python scripts/e2e_seed.py
+      - name: Install frontend + browsers
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Playwright
+        working-directory: frontend
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/test-results/
+          retention-days: 7

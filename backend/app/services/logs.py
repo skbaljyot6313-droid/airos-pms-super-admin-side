@@ -5,20 +5,23 @@ from sqlalchemy import String, case, cast, func, literal, or_, select, union_all
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies.auth import Forbidden
 from app.core.exceptions import AppError
 from app.core.storage import storage_key_from_url
-from app.models.structure import Zone
+from app.dependencies.auth import Forbidden
 from app.models.allocation import AllocationEvent
 from app.models.attendance import AttendanceBreak, AttendanceDay, AttendanceRequest
 from app.models.audit import AuditEvent
-from app.models.maintenance import MaintenanceTicket, MaintenanceTicketAttachment, MaintenanceTicketEvent
+from app.models.maintenance import (
+    MaintenanceTicket,
+    MaintenanceTicketAttachment,
+    MaintenanceTicketEvent,
+)
 from app.models.property import Property
 from app.models.resource_state_event import ResourceStateEvent
+from app.models.structure import Zone
 from app.models.task import Task, TaskCompletionImage, TaskCompletionSubmission, TaskHistoryEvent
 from app.models.user import User, UserRole
 from app.models.work_allocation import WorkAllocationHistory
-
 
 CATEGORIES = ("audit", "session", "task", "photo", "maintenance", "allocation", "resource", "attendance")
 

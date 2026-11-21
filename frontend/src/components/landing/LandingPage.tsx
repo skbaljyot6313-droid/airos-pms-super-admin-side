@@ -786,7 +786,7 @@ export const LandingPage: React.FC = () => {
   if (isAuthenticated && currentUser) {
     if (currentUser.role === 'super_admin') return <Navigate to="/admin/properties" replace />;
     if (currentUser.role === 'property_manager')
-      return <Navigate to={`/property/${currentUser.property_uid}/zones`} replace />;
+      return <Navigate to={`/property/${currentUser.property_uid}/overview`} replace />;
     return <Navigate to="/employee/tasks" replace />;
   }
 

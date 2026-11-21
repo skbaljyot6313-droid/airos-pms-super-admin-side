@@ -131,7 +131,7 @@ Frontend:
   http://localhost:{fe}
 
 Database:
-  Supabase PostgreSQL
+  Per backend/.env (Cloud SQL dev / Supabase)
 
 ========================================
  Press CTRL+C to stop all services.
@@ -147,7 +147,7 @@ _SHADOWING_ENV_KEYS = {
     "DATABASE_URL",
     "SUPABASE_DB_HOST",
     "SUPABASE_DB_PORT",
-    "SUPABASE_DB_NAME",
+    "SUPABASE_DB_NAME", 
     "SUPABASE_DB_USER",
     "SUPABASE_DB_PASSWORD",
 }
@@ -192,7 +192,6 @@ def terminate(proc: subprocess.Popen, name: str) -> None:
             proc.kill()
         except Exception:
             pass
-
 
 def main() -> int:
     banner()

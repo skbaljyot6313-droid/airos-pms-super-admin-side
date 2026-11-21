@@ -18,6 +18,7 @@ import {
   Wrench,
   Bath,
   ConciergeBell,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../ui/Card';
@@ -40,6 +41,7 @@ import { WashroomDetailModal } from '../rooms/WashroomDetailModal';
 import { WashroomModal, WashroomCreateDefaults } from '../rooms/WashroomModal';
 import { OccupancyToggle } from '../rooms/OccupancyToggle';
 import { RequestItemModal } from '../rooms/RequestItemModal';
+import { SwitchGuestModal, SwitchSource } from '../rooms/SwitchGuestModal';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 
 interface ZoneWorkspaceProps {
@@ -129,6 +131,8 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
     label: string;
     guest: string | null;
   } | null>(null);
+  // Guest switch — the occupied unit whose guest is being moved
+  const [switchSource, setSwitchSource] = useState<SwitchSource | null>(null);
   const [busyUnits, setBusyUnits] = useState<Set<string>>(new Set());
 
   const runUnitAction = async (key: string, fn: () => Promise<void>) => {
@@ -440,7 +444,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/property/${activePropertyUid}/tasks`)}
+              onClick={() => navigate(`/property/${activePropertyUid}/operations/tasks`)}
             >
               <CheckSquare className="w-4 h-4 mr-1.5" />
               <span>Zone Tasks ({zoneOpenTasks.length})</span>
@@ -448,7 +452,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/property/${activePropertyUid}/rooms`)}
+              onClick={() => navigate(`/property/${activePropertyUid}/property/spaces/units`)}
             >
               <Bed className="w-4 h-4 mr-1.5" />
               <span>Rooms & Dorms</span>
@@ -456,7 +460,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
             <Button
               variant="primary"
               size="sm"
-              onClick={() => navigate(`/property/${activePropertyUid}/employees`)}
+              onClick={() => navigate(`/property/${activePropertyUid}/workforce/employees`)}
             >
               <Users className="w-4 h-4 mr-1.5" />
               <span>Zone Staff Board</span>
@@ -817,6 +821,35 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                           </button>
                           <button
                             type="button"
+                            disabled={
+                              !(room.is_occupied ?? room.status === 'occupied') ||
+                              busyUnits.has(`room:${room.room_uid}`)
+                            }
+                            onClick={() =>
+                              setSwitchSource({
+                                kind: 'room',
+                                uid: room.room_uid,
+                                label: `Room ${room.room_number}`,
+                                guest: room.current_guest ?? null,
+                              })
+                            }
+                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-[#386641] ${
+                              (room.is_occupied ?? room.status === 'occupied') &&
+                              !busyUnits.has(`room:${room.room_uid}`)
+                                ? 'text-[#386641] border-[#CDE0CF] bg-[#F4F8F4] hover:bg-[#EBF3EC] cursor-pointer'
+                                : 'text-[#C4BDB1] border-[#EDE8DD] bg-[#FAF8F5] cursor-not-allowed'
+                            }`}
+                            title={
+                              room.is_occupied ?? room.status === 'occupied'
+                                ? 'Move the guest to another room or dorm bed'
+                                : 'No active occupancy'
+                            }
+                          >
+                            <ArrowRightLeft className="w-3 h-3" />
+                            Switch
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => setRequestTarget({ room })}
                             className="px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#B45309] text-[#9A4C07] border-[#F0D5B8] bg-[#FDF6EE] hover:bg-[#FBEEDA]"
                             title="Raise a guest request — towel, extra mattress, etc. (urgent priority)"
@@ -1010,6 +1043,28 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                             );
                             return (
                               <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={occupiedScope.length !== 1}
+                            onClick={() => {
+                              const b = occupiedScope[0];
+                              setSwitchSource({
+                                kind: 'bed',
+                                uid: b.bed_uid,
+                                label: `${dorm.name} — ${b.bed_number}`,
+                                guest: b.guest_name ?? null,
+                              });
+                            }}
+                            title={
+                              occupiedScope.length === 1
+                                ? `Move ${occupiedScope[0].guest_name || 'the guest'} to another room or bed`
+                                : 'Select exactly one occupied bed to switch its guest'
+                            }
+                          >
+                            <ArrowRightLeft className="w-3.5 h-3.5 mr-1" />
+                            Switch
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -1308,6 +1363,23 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                                           )
                                         }
                                       />
+                                      {(bed.is_occupied || bed.status === 'occupied') && (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setSwitchSource({
+                                              kind: 'bed',
+                                              uid: bed.bed_uid,
+                                              label: `${dorm.name} — ${bed.bed_number}`,
+                                              guest: bed.guest_name ?? null,
+                                            })
+                                          }
+                                          className="p-1 rounded-[6px] border transition-colors inline-flex items-center cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#386641] text-[#386641] border-[#CDE0CF] bg-[#F4F8F4] hover:bg-[#EBF3EC]"
+                                          title="Switch — move the guest to another room or bed"
+                                        >
+                                          <ArrowRightLeft className="w-3 h-3" />
+                                        </button>
+                                      )}
                                       <button
                                         type="button"
                                         onClick={() =>
@@ -1362,12 +1434,19 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
           }}
           onViewTicket={() => {
             clearSelection();
-            navigate(`/property/${activePropertyUid}/tasks?tab=maintenance`);
+            navigate(`/property/${activePropertyUid}/operations/tasks?tab=maintenance`);
           }}
         />
       )}
 
       {/* Guest request flow — same modal as the Rooms view */}
+      {/* Guest switch — move an open occupancy to any available unit */}
+      <SwitchGuestModal
+        isOpen={!!switchSource}
+        source={switchSource}
+        onClose={() => setSwitchSource(null)}
+      />
+
       {requestTarget && (
         <RequestItemModal
           isOpen={!!requestTarget}

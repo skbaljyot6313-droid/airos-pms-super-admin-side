@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CalendarCheck, CalendarDays, ClipboardCheck, History, OctagonX, Plus, Sunrise, Wrench } from 'lucide-react';
+import { CalendarCheck, CalendarDays, ClipboardCheck, History, LayoutTemplate, OctagonX, Plus, Sunrise, Wrench } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
@@ -12,6 +12,7 @@ import { TaskCalendarView } from './TaskCalendarView';
 import { AbandonedTodayView } from './AbandonedTodayView';
 import { TaskReviewPanel } from './TaskReviewPanel';
 import { MaintenanceView } from '../maintenance/MaintenanceView';
+import { TemplatesView } from '../templates/TemplatesView';
 import { BackButton } from '../ui/BackButton';
 import { Task } from '../../types';
 
@@ -29,14 +30,16 @@ export const TasksView: React.FC = () => {
     activeProperty, freshDay,
   } = useApp();
 
-  const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState<'today' | 'abandoned' | 'review' | 'maintenance' | 'history' | 'calendar'>(
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTab] = useState<'today' | 'abandoned' | 'review' | 'maintenance' | 'templates' | 'history' | 'calendar'>(
     () =>
       searchParams.get('tab') === 'maintenance' || searchParams.get('ticket')
         ? 'maintenance'
         : searchParams.get('tab') === 'review'
           ? 'review'
-          : 'today'
+          : searchParams.get('tab') === 'templates'
+            ? 'templates'
+            : 'today'
   );
   const isStaff = currentUser?.role === 'super_admin' || currentUser?.role === 'property_manager';
   const [selectedTaskUid, setSelectedTaskUid] = useState<string | null>(null);
@@ -56,7 +59,7 @@ export const TasksView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="mb-2">
-            <BackButton to={`/property/${activePropertyUid}/zones`} />
+            <BackButton to={`/property/${activePropertyUid}/overview`} />
           </div>
           <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#24221F] tracking-tight">
             Tasks
@@ -100,6 +103,7 @@ export const TasksView: React.FC = () => {
           { v: 'abandoned' as const, l: "Today's Abandoned", icon: OctagonX },
           { v: 'review' as const, l: 'Review', icon: ClipboardCheck },
           { v: 'maintenance' as const, l: 'Maintenance', icon: Wrench },
+          { v: 'templates' as const, l: 'Templates', icon: LayoutTemplate },
           { v: 'history' as const, l: 'Task History', icon: History },
           ...(isStaff ? [{ v: 'calendar' as const, l: 'Calendar', icon: CalendarDays }] : []),
         ]).map((t) => {
@@ -107,7 +111,14 @@ export const TasksView: React.FC = () => {
           return (
             <button
               key={t.v}
-              onClick={() => setTab(t.v)}
+              onClick={() => {
+                setTab(t.v);
+                setSearchParams((prev) => {
+                  const q = new URLSearchParams(prev);
+                  q.set('tab', t.v);
+                  return q;
+                });
+              }}
               className={`flex items-center gap-2 px-4 py-2 rounded-[9px] text-[13px] font-semibold transition-all cursor-pointer ${
                 tab === t.v
                   ? 'bg-white text-[#24221F] shadow-sm'
@@ -129,6 +140,8 @@ export const TasksView: React.FC = () => {
         <TaskReviewPanel onOpenTask={setSelectedTaskUid} />
       ) : tab === 'maintenance' ? (
         <MaintenanceView embedded />
+      ) : tab === 'templates' ? (
+        <TemplatesView />
       ) : tab === 'calendar' ? (
         <TaskCalendarView />
       ) : (

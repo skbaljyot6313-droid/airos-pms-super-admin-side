@@ -7,7 +7,7 @@ the shared `notifications` table.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
@@ -44,7 +44,7 @@ def _task(**kw) -> Task:
         id=uuid.uuid4(), property_id=PID, title="Clean corridor",
         status="submitted", task_type="fixed", employee_id=EID,
         assigned_to_name="Ram", zone_id=ZONE, recurrence=None,
-        submitted_at=datetime.now(timezone.utc),
+        submitted_at=datetime.now(UTC),
         room_id=None, dorm_id=None, washroom_id=None,
         washroom_fixture_id=None, template_id=None,
     )
@@ -56,7 +56,7 @@ def _submission(task: Task, status="pending") -> TaskCompletionSubmission:
     s = TaskCompletionSubmission(
         id=uuid.uuid4(), task_id=task.id, status=status,
         employee_id=EID, employee_name="Ram", attempt_number=1,
-        submitted_at=datetime.now(timezone.utc),
+        submitted_at=datetime.now(UTC),
     )
     task.completion_submissions = [s]
     return s

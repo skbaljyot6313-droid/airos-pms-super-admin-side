@@ -5,9 +5,11 @@ Environment variables → Settings → application. No other module should
 call os.getenv() directly; everything flows through `settings`.
 """
 
+import secrets
+import warnings
 from functools import lru_cache
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL, make_url
 
@@ -63,8 +65,13 @@ class Settings(BaseSettings):
     REDIS_CONNECT_TIMEOUT: float = 5.0
     REDIS_SOCKET_TIMEOUT: float = 5.0
 
-    # Embedded scheduler — dev convenience. In production the arq worker owns
-    # scheduled work (cron) so the API process stays stateless and scalable.
+    # Shared secret for the internal cron-tick endpoint — POST
+    # /internal/generation-tick requires X-Cron-Key to match. Unset → the
+    # endpoint 404s (inert by default).
+    CRON_SECRET: str | None = None
+    # Embedded scheduler — dev convenience. Deployed envs drive scheduled
+    # work via POST /internal/generation-tick (Cloud Scheduler) so the API
+    # process stays stateless and scalable.
     RUN_EMBEDDED_SCHEDULER: bool = True
 
     # Rate limiting — Redis sliding window when REDIS_URL is set, in-memory
@@ -145,11 +152,72 @@ class Settings(BaseSettings):
     # CENTRIFUGO_URL + /connection/websocket).
     CENTRIFUGO_WS_URL: str | None = None
 
+    # Video Analytics — two-tier media pipeline:
+    #   camera --RTSP--> go2rtc (ingest, auth, compat, restream) --RTSP-->
+    #   MediaMTX (distribution) --WebRTC/HLS--> browser
+    # Streaming is disabled when the required URLs are unset: camera CRUD
+    # still works; stream sessions and test-connection return honest 503s.
+    #   GO2RTC_API_URL        — go2rtc control API (e.g. http://go2rtc:1984)
+    #   GO2RTC_RTSP_URL       — go2rtc's restream base MediaMTX pulls from
+    #                           (e.g. rtsp://go2rtc:8554) — MUST be reachable
+    #                           from the MediaMTX container, not localhost
+    #   MEDIAMTX_API_URL      — MediaMTX control API (e.g. http://mediamtx:9997)
+    #   MEDIAMTX_SIGNAL_URL   — MediaMTX WHEP endpoint the backend proxies
+    #                           browser SDP to (e.g. http://mediamtx:8889)
+    #   MEDIAMTX_PUBLIC_URL   — browser-reachable HLS base (e.g. http://host:8888
+    #                           or https://media.example.com)
+    #   VA_STREAM_TOKEN_SECRET— HS256 key for short-lived playback tokens
+    #   VA_TRANSCODE_ENABLED  — register an ffmpeg transcode source on each
+    #                           go2rtc stream (needed for H265 cameras)
+    #   CAMERA_CREDENTIAL_KEY — dedicated Fernet key for stored RTSP
+    #                           passwords (optional; derived from
+    #                           JWT_SECRET_KEY when unset)
+    GO2RTC_API_URL: str | None = None
+    GO2RTC_RTSP_URL: str | None = None
+    # Optional HTTP basic-auth for the media control APIs ("user:pass") —
+    # required when the media server runs authenticated (production).
+    GO2RTC_API_AUTH: str | None = None
+    MEDIAMTX_API_URL: str | None = None
+    MEDIAMTX_SIGNAL_URL: str | None = None
+    MEDIAMTX_PUBLIC_URL: str | None = None
+    MEDIAMTX_API_AUTH: str | None = None
+    VA_STREAM_TOKEN_SECRET: str | None = None
+    VA_TRANSCODE_ENABLED: bool = False
+    MEDIA_MTX_JWT_SECRET: str | None = None  # deprecated alias for VA_STREAM_TOKEN_SECRET
+    VA_STREAM_TOKEN_TTL_SECONDS: int = 300
+    # A single viewer legitimately needs up to a 4x4 grid (16) plus fullscreen
+    # swaps — the user cap must exceed the largest grid, and the per-camera
+    # viewer cap must allow several staff watching one incident at once.
+    VA_MAX_STREAMS_PER_USER: int = 32
+    VA_MAX_STREAMS_PER_PROPERTY: int = 128
+    VA_MAX_VIEWERS_PER_CAMERA: int = 16
+    VA_STREAM_SESSION_IDLE_SECONDS: int = 180
+    VA_SOURCE_IDLE_SECONDS: int = 60  # upstream stays up briefly after last viewer leaves
+    # Idle-session sweep is amortized — it runs at most this often per
+    # process, not on every stream-session request.
+    VA_SESSION_SWEEP_INTERVAL_SECONDS: int = 30
+    # A reused session's last_activity is rewritten at most this often —
+    # keeps the warm-session hot path to a single SELECT.
+    VA_SESSION_ACTIVITY_TOUCH_SECONDS: int = 30
+    # Warm cameras: keep an upstream camera connection hot so first-frame
+    # skips the cold RTSP dial/describe. Bounded — each warm transcode
+    # camera holds one keepalive pull; passthrough cameras serve from the
+    # warm path directly.
+    VA_WARM_ENABLED: bool = True
+    VA_WARM_MAX_STREAMS: int = 16
+    # How often stream-session creation re-verifies its in-memory media
+    # registration cache against the live go2rtc/MediaMTX indexes — bounds
+    # staleness after a media-server restart without paying HTTP per call.
+    VA_MEDIA_INDEX_TTL_SECONDS: int = 15
+    VA_CONNECT_TEST_TIMEOUT_SECONDS: float = 4.0
+    CAMERA_CREDENTIAL_KEY: str | None = None
+
     # Media storage — "auto" picks durable object storage when credentials
     # exist (S3_BUCKET+keys, else the Supabase service key) and falls back to
     # UPLOAD_DIR otherwise. "local"/"s3"/"supabase" force a backend.
     # Container filesystems are disposable — prod must not land on local.
     STORAGE_BACKEND: str = "auto"
+    GCS_BUCKET: str | None = None
     UPLOAD_DIR: str = "uploads"
     MAX_TASK_COMPLETION_IMAGES: int = 10
     SUPABASE_STORAGE_BUCKET: str = "uploads"
@@ -159,6 +227,22 @@ class Settings(BaseSettings):
     S3_ACCESS_KEY: str | None = None
     S3_SECRET_KEY: str | None = None
     S3_PUBLIC_BASE_URL: str | None = None  # CDN/public URL prefix for stored objects
+
+    def __repr_args__(self):
+        hidden = {
+            "DATABASE_URL",
+            "SUPABASE_DB_PASSWORD",
+            "SUPABASE_PUBLISHABLE_KEY",
+            "SUPABASE_SECRET_KEY",
+            "JWT_SECRET_KEY",
+            "REDIS_URL",
+            "LOCATION_SERVICE_API_KEY",
+            "CENTRIFUGO_API_KEY",
+            "CENTRIFUGO_TOKEN_SECRET",
+            "S3_ACCESS_KEY",
+            "S3_SECRET_KEY",
+        }
+        return ((name, value) for name, value in super().__repr_args__() if name not in hidden)
 
     @property
     def is_production(self) -> bool:
@@ -176,10 +260,9 @@ class Settings(BaseSettings):
                 warnings.append("DEBUG=true in production")
             if self.STORAGE_BACKEND == "local" or (
                 self.STORAGE_BACKEND == "auto"
-                and not (
-                    self.S3_BUCKET and self.S3_ACCESS_KEY and self.S3_SECRET_KEY
-                )
+                and not (self.S3_BUCKET and self.S3_ACCESS_KEY and self.S3_SECRET_KEY)
                 and not self.SUPABASE_SECRET_KEY
+                and not self.GCS_BUCKET
             ):
                 warnings.append(
                     "media storage resolves to local in production — uploads "
@@ -207,6 +290,23 @@ class Settings(BaseSettings):
             return v
         return v
 
+    @model_validator(mode="after")
+    def _jwt_secret_never_empty(self):
+        """An empty JWT secret signs forgeable tokens. Production boot is
+        already blocked by production_warnings(); outside prod we still
+        refuse to sign with a known-empty key — an ephemeral secret is
+        generated per process instead (sessions just don't survive a
+        restart, which is the correct signal that env is unconfigured)."""
+        if not self.JWT_SECRET_KEY:
+            if not self.is_production:
+                self.JWT_SECRET_KEY = secrets.token_hex(32)
+                warnings.warn(
+                    "JWT_SECRET_KEY is unset — generated an ephemeral key; "
+                    "sessions will not survive restarts. Set it in .env.",
+                    stacklevel=2,
+                )
+        return self
+
     @field_validator("DATABASE_URL", mode="after")
     @classmethod
     def _strip_sync_driver(cls, v: str | None) -> str | None:
@@ -222,18 +322,12 @@ class Settings(BaseSettings):
             url = self.DATABASE_URL
             # Allow a ${SUPABASE_DB_PASSWORD} placeholder inside DATABASE_URL
             if "${SUPABASE_DB_PASSWORD}" in url:
-                url = url.replace(
-                    "${SUPABASE_DB_PASSWORD}", self.SUPABASE_DB_PASSWORD or ""
-                )
+                url = url.replace("${SUPABASE_DB_PASSWORD}", self.SUPABASE_DB_PASSWORD or "")
             return url
         if not self.SUPABASE_DB_PASSWORD:
-            raise ValueError(
-                "Database not configured: set DATABASE_URL or SUPABASE_DB_PASSWORD"
-            )
+            raise ValueError("Database not configured: set DATABASE_URL or SUPABASE_DB_PASSWORD")
         if not self.SUPABASE_DB_HOST:
-            raise ValueError(
-                "SUPABASE_DB_HOST is required when building the URL from parts"
-            )
+            raise ValueError("SUPABASE_DB_HOST is required when building the URL from parts")
         # URL.create quotes the credentials correctly — passwords containing
         # @, :, /, %, etc. would corrupt a hand-built connection string.
         return URL.create(

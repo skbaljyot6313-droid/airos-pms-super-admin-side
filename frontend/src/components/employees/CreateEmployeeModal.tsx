@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -6,6 +6,7 @@ import { PasswordInput } from '../auth/PasswordInput';
 import { ApiError } from '../../api/client';
 import { istDateKey } from '../../lib/datetime';
 import { shiftsApi } from '../../api/shifts';
+import { listDepartments } from '../../api/departments';
 
 interface CreateEmployeeModalProps {
   isOpen: boolean;
@@ -27,6 +28,21 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({
   onClose,
 }) => {
   const { createEmployee, currentPropertyZones, activeProperty, addToast } = useApp();
+  // Live managed departments — falls back to the canonical picklist when
+  // the property's department set hasn't materialised yet.
+  const [deptOptions, setDeptOptions] = useState<string[]>(DEPARTMENTS);
+  useEffect(() => {
+    if (!isOpen || !activeProperty?.property_uid) return;
+    let live = true;
+    listDepartments({ property_uid: activeProperty.property_uid })
+      .then((ds) => {
+        if (live && ds.length) setDeptOptions(ds.map((d) => d.name));
+      })
+      .catch(() => {/* keep static fallback */});
+    return () => {
+      live = false;
+    };
+  }, [isOpen, activeProperty?.property_uid]);
 
   const [name, setName] = useState('');
   const [jobTitle, setJobTitle] = useState('Front Desk Associate');
@@ -191,7 +207,7 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({
               onChange={(e) => setDepartment(e.target.value)}
               className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
             >
-              {DEPARTMENTS.map((d) => (
+              {deptOptions.map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>

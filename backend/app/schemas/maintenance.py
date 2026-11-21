@@ -1,10 +1,8 @@
 """Maintenance ticket request/response schemas — flat *_uid conventions."""
 
 import uuid
-from datetime import datetime
 
 from pydantic import BaseModel, Field
-
 
 MAINTENANCE_TYPES = {
     "electrical", "plumbing", "civil", "carpentry", "hvac", "painting",
@@ -45,6 +43,9 @@ class MaintenanceUpdateRequest(BaseModel):
 
 class MaintenanceAssignRequest(BaseModel):
     employee_uid: uuid.UUID | None = None  # null → unassign
+    # Super-admin only; bypasses the attendance availability gate.
+    emergency_override: bool = False
+    override_reason: str | None = Field(default=None, max_length=500)
 
 
 class MaintenanceActionRequest(BaseModel):

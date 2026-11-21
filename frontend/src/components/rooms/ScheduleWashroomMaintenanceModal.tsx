@@ -4,7 +4,11 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Camera, X } from 'lucide-react';
 import { fixtureMeta, isCustomKind } from '../../lib/washroomFixtures';
-import * as mediaApi from '../../api/media';
+import { useEvidenceUploads } from '../../hooks/useEvidenceUploads';
+import {
+  ALLOWED_COMPLETION_IMAGE_TYPES,
+  MAX_UPLOAD_BYTES,
+} from '../../lib/mediaLimits';
 import { Dorm, MaintenancePriority, WashroomFixture, Zone } from '../../types';
 
 interface ScheduleWashroomMaintenanceModalProps {
@@ -69,17 +73,20 @@ export const ScheduleWashroomMaintenanceModal: React.FC<
   const [employeeUid, setEmployeeUid] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [description, setDescription] = useState('');
-  const [photos, setPhotos] = useState<{ file: File; previewUrl: string }[]>([]);
+  const evidence = useEvidenceUploads({
+    propertyUid: activeProperty?.property_uid,
+    maxCount: 10,
+    allowedTypes: ALLOWED_COMPLETION_IMAGE_TYPES,
+    maxBytes: MAX_UPLOAD_BYTES,
+    onToast: addToast,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const photosRef = useRef(photos);
-  photosRef.current = photos;
+  const evidenceRef = useRef(evidence);
+  evidenceRef.current = evidence;
 
   // Release object URLs on unmount — they outlive the files themselves
-  useEffect(
-    () => () => photosRef.current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl)),
-    []
-  );
+  useEffect(() => () => evidenceRef.current.reset(), []);
 
   const selectedFixture = fixtures.find((f) => f.fixture_uid === fixtureId) || null;
   const targetFixtures = bulkTargets ?? (selectedFixture ? [selectedFixture] : []);
@@ -99,7 +106,7 @@ export const ScheduleWashroomMaintenanceModal: React.FC<
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit || isSubmitting) return;
+    if (!canSubmit || isSubmitting || evidence.busy) return;
     setIsSubmitting(true);
     try {
       const scopeLabel = bulkTargets
@@ -108,11 +115,8 @@ export const ScheduleWashroomMaintenanceModal: React.FC<
       const typeLabel =
         MAINTENANCE_TYPES.find(([v]) => v === maintenanceType)?.[1] ??
         maintenanceType;
-      const attachment_urls: string[] = [];
-      for (const p of photos) {
-        const res = await mediaApi.uploadPhoto(p.file, activeProperty?.property_uid);
-        attachment_urls.push(res.url);
-      }
+      // Photos were compressed + uploaded at selection — reuse URLs.
+      const attachment_urls = evidence.readyUrls;
       const targets = scope === 'washroom' ? [null] : targetFixtures;
       const batches = await createMaintenanceBatch(
         targets.map((f) => ({
@@ -299,22 +303,18 @@ export const ScheduleWashroomMaintenanceModal: React.FC<
           />
         </div>
 
-        {/* Evidence photos — uploaded on submit, attached to every ticket
-            created by this batch */}
+        {/* Evidence photos — compressed + uploaded at selection, attached to
+            every ticket created by this batch */}
         <div>
           <label className={labelCls}>Photos</label>
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
             multiple
             className="hidden"
             onChange={(e) => {
-              const files = Array.from(e.target.files || []);
-              setPhotos((prev) => [
-                ...prev,
-                ...files.map((f) => ({ file: f, previewUrl: URL.createObjectURL(f) })),
-              ]);
+              evidence.add(Array.from(e.target.files || []));
               e.target.value = '';
             }}
           />
@@ -328,19 +328,19 @@ export const ScheduleWashroomMaintenanceModal: React.FC<
             </span>
             <span>
               <span className="block text-[13px] font-medium text-[#45413B]">
-                {photos.length > 0 ? 'Add another photo' : 'Upload photo'}
+                {evidence.items.length > 0 ? 'Add another photo' : 'Upload photo'}
               </span>
               <span className="block text-[10px] text-[#8C867C] mt-0.5">
                 Optional — helps the technician locate the issue
               </span>
             </span>
           </button>
-          {photos.length > 0 && (
+          {evidence.items.length > 0 && (
             <div className="mt-2 space-y-1.5">
-              {photos.map((p, i) => (
+              {evidence.items.map((p) => (
                 <div
-                  key={i}
-                  className="flex items-center gap-3 px-3 py-2 rounded-[10px] border border-[#EBE6DC] bg-white"
+                  key={p.id}
+                  className="flex items-center gap-3 px-3 py-2 rounded-[10px] border border-[#DDD7CB] bg-white"
                 >
                   <img
                     src={p.previewUrl}
@@ -350,17 +350,29 @@ export const ScheduleWashroomMaintenanceModal: React.FC<
                   <span className="flex-1 text-[13px] text-[#45413B] truncate">
                     {p.file.name}
                   </span>
-                  <span className="text-[11px] text-[#A39D92] shrink-0">
-                    {Math.max(1, Math.round(p.file.size / 1024))} KB
+                  <span className="text-[11px] text-[#8C867C] shrink-0">
+                    {p.status === 'ready'
+                      ? '✓ uploaded'
+                      : p.status === 'error'
+                        ? 'failed'
+                        : p.status === 'compressing'
+                          ? 'preparing…'
+                          : 'uploading…'}
                   </span>
+                  {p.status === 'error' && (
+                    <button
+                      type="button"
+                      onClick={() => evidence.retry(p.id)}
+                      className="text-[11px] font-semibold text-[#A32A2A] shrink-0 cursor-pointer"
+                    >
+                      retry
+                    </button>
+                  )}
                   <button
                     type="button"
                     aria-label={`Remove ${p.file.name}`}
-                    onClick={() => setPhotos((prev) => {
-                      URL.revokeObjectURL(prev[i].previewUrl);
-                      return prev.filter((_, j) => j !== i);
-                    })}
-                    className="w-7 h-7 rounded-[7px] flex items-center justify-center text-[#8C867C] hover:text-[#B3372C] hover:bg-[#F7EDEB] transition-colors cursor-pointer shrink-0"
+                    onClick={() => evidence.remove(p.id)}
+                    className="w-7 h-7 rounded-[7px] flex items-center justify-center text-[#8C867C] hover:text-[#A32A2A] hover:bg-[#FDE8E8] transition-colors cursor-pointer shrink-0"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>

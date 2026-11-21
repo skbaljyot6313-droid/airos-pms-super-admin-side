@@ -155,8 +155,8 @@ async def generate_occurrence(
 ):
     """'Generate Now' for one scheduled occurrence — validates, creates the
     task, runs the shared allocation engine, returns the task."""
-    from app.services.task_ops import TaskOpsService
     from app.schemas.workspace import task_out
+    from app.services.task_ops import TaskOpsService
     task = await TaskOpsService(session).generate_occurrence(
         user, template_id, payload.get("occurrence_key", "")
     )

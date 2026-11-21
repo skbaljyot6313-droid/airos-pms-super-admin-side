@@ -9,11 +9,9 @@ import uuid
 from datetime import date, datetime
 from enum import Enum
 
-from sqlalchemy import event, inspect
-from sqlalchemy.orm import Session
-
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, event, func, inspect, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.audit import AuditEvent
 from app.models.property import Property

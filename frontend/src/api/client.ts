@@ -159,9 +159,10 @@ async function tryRefreshToken(): Promise<boolean> {
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
     if (!res.ok) return false;
-    const data = (await res.json()) as { access_token?: string };
+    const data = (await res.json()) as { access_token?: string; refresh_token?: string };
     if (!data.access_token) return false;
     setAuthToken(data.access_token);
+    if (data.refresh_token) setRefreshToken(data.refresh_token);
     return true;
   } catch {
     return false;
@@ -186,6 +187,8 @@ interface RequestOptions {
   formData?: FormData;
   timeoutMs?: number;
   responseType?: 'json' | 'blob';
+  /** External cancellation — aborting it cancels the request (upload queue). */
+  signal?: AbortSignal;
   /** Internal: prevents infinite 401→refresh→retry loops */
   _retried?: boolean;
 }
@@ -216,6 +219,8 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const onExternalAbort = () => controller.abort();
+  options.signal?.addEventListener('abort', onExternalAbort, { once: true });
 
   // dev-only perf instrumentation — mutation correlation + request timing
   const perfCorr = corrForRequest(method);
@@ -240,6 +245,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     throw new ApiError(0, 'Could not reach the server. Check your connection and try again.');
   } finally {
     clearTimeout(timeout);
+    options.signal?.removeEventListener('abort', onExternalAbort);
   }
 
   if (response.status === 401) {

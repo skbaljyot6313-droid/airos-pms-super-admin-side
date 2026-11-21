@@ -1,5 +1,5 @@
 """
-Redis infrastructure — cache, rate limiting, and the arq job queue all share
+Redis infrastructure — cache and rate limiting share
 one connection-pooled client.
 
 Design contract:

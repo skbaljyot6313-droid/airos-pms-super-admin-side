@@ -2,7 +2,7 @@
 uniform credential failure, inactive accounts. Faked session: no DB."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
@@ -78,7 +78,7 @@ def _user(password="secret-pw", active=True):
             id=uuid.uuid4(), company_name="Co", legal_name=None,
             brand_name="Co", email="c@x.dev", phone_number="1",
             address=None, pin_code=None, operational_day_start="06:00",
-            created_at=datetime.now(timezone.utc)),
+            created_at=datetime.now(UTC)),
     )
 
 

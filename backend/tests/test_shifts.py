@@ -8,7 +8,7 @@ Levels:
 """
 
 import uuid
-from datetime import datetime, time, timedelta, timezone
+from datetime import UTC, datetime, time, timedelta
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
@@ -20,10 +20,11 @@ from app.models.employee import Employee
 from app.models.shift import EmployeeShiftAssignment, Shift
 from app.services.attendance import current_work_statuses, day_status_board
 from app.services.shifts import shift_applies_on, shift_window_utc
+from app.services.structure import ValidationErr
 from app.services.work_allocation import WorkAllocationService
 
 IST = ZoneInfo("Asia/Kolkata")
-UTC = timezone.utc
+UTC = UTC
 
 CID = uuid.uuid4()
 PID = uuid.uuid4()
@@ -618,31 +619,58 @@ class _AssignmentResult:
         return self.value if isinstance(self.value, list) else [self.value]
 
 
-class _AssignmentSession:
-    def __init__(self, employee):
+class _DutySession:
+    """First execute → the employee row; later executes → the company
+    day-start; scalar → the on-duty EXISTS result."""
+
+    def __init__(self, employee, on_duty):
         self.employee = employee
+        self.on_duty = on_duty
+        self.calls = 0
 
     async def execute(self, _query):
-        return _AssignmentResult(self.employee)
+        self.calls += 1
+        return _AssignmentResult(self.employee if self.calls == 1 else "06:00")
+
+    async def scalar(self, _query):
+        return self.on_duty
+
+
+class _PoolSession:
+    def __init__(self, employees):
+        self.employees = employees
+        self.statements = []
+
+    async def execute(self, query):
+        self.statements.append(query)
+        if len(self.statements) == 1:
+            return _AssignmentResult("06:00")
+        return _AssignmentResult(self.employees)
 
 
 @pytest.mark.asyncio
-async def test_manual_assignment_allows_employee_without_attendance():
-    """Attendance no longer gates assignment — an employee with no open
-    workday may still be picked explicitly."""
+async def test_manual_assignment_requires_on_duty():
+    """Explicit assignment follows the same availability rule as the
+    pool: an employee who has not started their workday is refused."""
     employee = _emp()
-    service = WorkAllocationService(_AssignmentSession(employee))
+    with pytest.raises(ValidationErr, match="not on duty"):
+        await WorkAllocationService(_DutySession(employee, on_duty=False)) \
+            .employee_for_assignment(employee.id, PID)
 
-    assigned = await service.employee_for_assignment(employee.id, PID)
+    assigned = await WorkAllocationService(_DutySession(employee, on_duty=True)) \
+        .employee_for_assignment(employee.id, PID)
     assert assigned is employee
 
 
 @pytest.mark.asyncio
-async def test_auto_allocation_pool_includes_employees_without_attendance():
-    """The allocation pool is every active, non-leave employee of the
-    property — clock-in state is not an eligibility filter."""
+async def test_auto_allocation_pool_filters_to_on_duty_employees():
+    """The auto-allocation pool carries the on-duty predicate (open,
+    started workday, no open break) — off-duty staff are never selected."""
     employee = _emp()
-    service = WorkAllocationService(_AssignmentSession([employee]))
+    session = _PoolSession([employee])
+    service = WorkAllocationService(session)
 
     pool = await service._employee_pool(PID)
     assert pool == [employee]
+    sql = str(session.statements[-1])
+    assert "attendance_days" in sql and "attendance_breaks" in sql

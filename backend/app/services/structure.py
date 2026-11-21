@@ -10,12 +10,13 @@ Client-supplied company/property ids are never trusted for authorization.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 IST = ZoneInfo("Asia/Kolkata")
 
-from sqlalchemy import delete as sa_delete, func, or_, select
+from sqlalchemy import delete as sa_delete
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -23,13 +24,11 @@ from sqlalchemy.orm import selectinload
 from app.core.database import bounded_lock_wait, is_lock_timeout
 from app.core.exceptions import AppError
 from app.models.allocation import AllocationEvent
-from app.models.employee import Employee
 from app.models.maintenance import MaintenanceTicket, MaintenanceTicketEvent
 from app.models.property import Property
 from app.models.structure import Area, Bed, Dorm, Room, Washroom, WashroomFixture, Zone
 from app.models.task import Task, TaskHistoryEvent
 from app.models.user import User, UserRole
-from app.models.work_allocation import WorkAllocationBatch
 from app.schemas.structure import (
     AreaCreateRequest,
     AreaUpdateRequest,
@@ -47,7 +46,6 @@ from app.schemas.structure import (
     ZoneCreateRequest,
     ZoneUpdateRequest,
 )
-
 
 # ---------------------------------------------------------------------------
 # Errors
@@ -1281,7 +1279,7 @@ class StructureService:
                 MaintenanceTicket.status.in_(BLOCKING_MAINTENANCE),
             ).with_for_update()
         )
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for ticket in res.scalars():
             if ticket.status != "resolved":
                 ticket.resolved_at = now
@@ -1501,7 +1499,7 @@ class StructureService:
             )
             dorms = {d.id: d for d in res.scalars()}
         selected_bed_ids = {str(b.id) for b in beds}
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         for task in tasks:
             # admin_close every open task on the targeted units — an explicit
@@ -1606,7 +1604,7 @@ class StructureService:
                     "retry the release in a few seconds."
                 )
             raise
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for ticket in res.scalars():
             if ticket.status != "resolved":
                 ticket.resolved_at = now
@@ -1897,11 +1895,12 @@ class StructureService:
         from app.services.audit import AuditService
         from app.services.resource_state import ResourceStateService
         from app.services.rollover import (
-            current_operational_day, parse_day_start,
+            current_operational_day,
+            parse_day_start,
         )
 
         prop = await self._property_for_write(user, property_id)
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         cres = await self.session.execute(
             select(Company.operational_day_start)
             .where(Company.id == prop.company_id)

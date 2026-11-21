@@ -1,10 +1,14 @@
-"""Operational-day rollover — abandon unfinished tasks at the day boundary.
+"""Daily rollover — abandon unfinished tasks when the day expires at
+midnight IST.
 
-An operational day runs from `company.operational_day_start` (HH:MM, IST)
-to the same time the next calendar day. When the clock crosses that
-boundary every still-open task anchored to a PAST operational day is
-marked `abandoned` with the full audit trail stamped on the row and an
-`abandoned` TaskHistoryEvent.
+Every task carries an operational anchor date (`operational_date`, else
+`due_date`, else `scheduled_for`, else `created_at`). The moment the IST
+clock crosses 00:00 into a new calendar date, every still-open task
+anchored to a PAST date is marked `abandoned` with the full audit trail
+stamped on the row and an `abandoned` TaskHistoryEvent. This is a hard
+calendar boundary — `company.operational_day_start` still governs op-day
+stamping and analytics bucketing, but it does NOT extend a task's life
+past midnight.
 
 Safety model:
   * Conditional UPDATE — a row is only abandoned while its status is in
@@ -13,8 +17,8 @@ Safety model:
     completion race.
   * Idempotent — abandoned rows are no longer in the open set, so
     re-running the sweep is a no-op; no duplicate history events.
-  * Tick-friendly — called from the embedded scheduler loop and the arq
-    generation_tick; double execution is harmless by construction.
+  * Tick-friendly — called from the embedded scheduler loop and the
+    generation-tick endpoint; double execution is harmless by construction.
 
 Maintenance tickets are deliberately NOT touched here — a ticket records
 a real-world defect that persists across operational days (carry-forward
@@ -24,8 +28,8 @@ policy). Their daily history is reconstructed window-wise by
 This module ALSO owns the recurring-occurrence expiry sweep
 (`expire_due`) — a deliberately DISTINCT concept from the daily rollover:
 
-  * Daily rollover (REASON_SYSTEM_DAILY_ROLLOVER) closes live work whose
-    operational DAY has ended.
+  * Daily rollover (REASON_MIDNIGHT_EXPIRY) closes live work whose
+    operational date ended at the last 00:00 IST boundary.
   * Occurrence expiry (REASON_NEXT_SCHEDULED_OCCURRENCE) closes a
     recurring instance whose own validity window (`expires_at`) has
     ended — i.e. the next scheduled boundary of its template/series has
@@ -39,10 +43,10 @@ instance can never block its successor.
 
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta, timezone
+from datetime import UTC, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import String, and_, func, or_, select, update
+from sqlalchemy import String, and_, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
@@ -57,6 +61,10 @@ IST = ZoneInfo("Asia/Kolkata")
 # Statuses the rollover is allowed to close. `scheduled` is a future-plan
 # marker, not live work — it is deliberately NOT abandoned. Terminal
 # states (completed/cancelled/abandoned) are excluded by definition.
+# `submitted` work awaiting review is abandoned like any other unfinished
+# task — the daily lifecycle is absolute and its evidence/history is
+# preserved on the row (occurrence-boundary expiry is the one place
+# `submitted` is spared — see EXPIRABLE_STATUSES).
 OPEN_STATUSES = frozenset(
     {"pending", "assigned", "in_progress", "submitted", "reopened", "overdue"}
 )
@@ -67,7 +75,7 @@ OPEN_STATUSES = frozenset(
 # ever needed, is a separate lifecycle concept).
 EXPIRABLE_STATUSES = OPEN_STATUSES - {"submitted"}
 
-REASON = "SYSTEM_DAILY_ROLLOVER"
+REASON_MIDNIGHT = "MIDNIGHT_EXPIRY"
 REASON_NEXT_OCCURRENCE = "NEXT_SCHEDULED_OCCURRENCE"
 
 DEFAULT_DAY_START = "06:00"
@@ -111,8 +119,50 @@ def operational_day_bounds(now_utc: datetime, start: time) -> tuple[datetime, da
                       second=0, microsecond=0)
     if local < s:
         s -= timedelta(days=1)
-    return (s.astimezone(timezone.utc),
-            (s + timedelta(days=1)).astimezone(timezone.utc))
+    return (s.astimezone(UTC),
+            (s + timedelta(days=1)).astimezone(UTC))
+
+
+def _ist_date_key(value: datetime | None) -> str | None:
+    """UTC/naive instant → 'YYYY-MM-DD' calendar date in IST."""
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return value.astimezone(IST).date().isoformat()
+
+
+def _midnight_anchor_key(task: Task) -> str | None:
+    """Calendar date (IST) a task belongs to, for the midnight sweep.
+
+    Priority: operational_date > due_date > scheduled_for > created_at.
+      * operational_date — an op-day key (company day-start applied). It is
+        clamped to the task's creation calendar date so a task stamped
+        'yesterday' by the pre-start rule still gets its creation day —
+        a task cannot expire before it exists.
+      * due_date 'YYYY-MM-DD' — that calendar date.
+      * due_date ISO timestamp — naive-IST wall clock (template scheduler
+        convention); aware values convert to IST.
+      * scheduled_for / created_at — UTC instants converted to IST dates.
+    """
+    if task.operational_date:
+        created_key = _ist_date_key(task.created_at) or ""
+        return max(task.operational_date, created_key)
+    due = (task.due_date or "").strip()
+    if due:
+        if "T" not in due and len(due) >= 10:
+            return due[:10]
+        try:
+            dt = datetime.fromisoformat(due.replace("Z", "+00:00"))
+        except ValueError:
+            dt = None
+        if dt is not None:
+            local = dt.astimezone(IST) if dt.tzinfo else dt
+            return local.date().isoformat()
+    sched_key = _ist_date_key(task.scheduled_for)
+    if sched_key:
+        return sched_key
+    return _ist_date_key(task.created_at)
 
 
 def _task_anchor_key(task: Task, start: time) -> str | None:
@@ -143,7 +193,7 @@ def _task_anchor_key(task: Task, start: time) -> str | None:
     if task.created_at is not None:
         created = task.created_at
         if created.tzinfo is None:
-            created = created.replace(tzinfo=timezone.utc)
+            created = created.replace(tzinfo=UTC)
         return operational_day_key(created.astimezone(IST), start)
     return None
 
@@ -153,60 +203,37 @@ class RolloverService:
         self.session = session
 
     async def run(self, now: datetime | None = None) -> dict:
-        """Abandon unfinished tasks whose operational day has ended.
+        """Abandon unfinished tasks whose operational date expired at
+        midnight IST.
 
-        One pass over every company; each company's own configured day
-        start applies. Returns per-company counts for the scheduler log.
+        One global pass — the boundary is the IST calendar date, not the
+        per-company op-day start, so no company config is needed. Every
+        open task whose anchor date is strictly before today's IST date
+        is abandoned, including recurring instances still inside their
+        `expires_at` window (a daily lifecycle is absolute — occurrence
+        windows are superseded by expire_due, day-expiry by this sweep).
+        Re-running is a no-op: abandoned rows leave the open set, so the
+        every-tick call doubles as crash/downtime catch-up — the first
+        tick after a restart reconciles everything stale.
         """
-        now_utc = (now or datetime.now(timezone.utc))
+        now_utc = (now or datetime.now(UTC))
         if now_utc.tzinfo is None:
-            now_utc = now_utc.replace(tzinfo=timezone.utc)
+            now_utc = now_utc.replace(tzinfo=UTC)
+        today = now_utc.astimezone(IST).date().isoformat()
 
-        res = await self.session.execute(select(Company))
-        companies = list(res.scalars())
-
-        stats = {"companies": 0, "abandoned": 0}
-        for company in companies:
-            start = parse_day_start(company.operational_day_start)
-            current_key = current_operational_day(now_utc, start)
-            stats["companies"] += 1
-            stats["abandoned"] += await self._roll_company(
-                company, current_key, start, now_utc
-            )
-        if stats["abandoned"]:
-            await self.session.commit()
-            logger.info("Daily rollover: %s", stats)
-        return stats
-
-    async def _roll_company(
-        self,
-        company: Company,
-        current_key: str,
-        start: time,
-        now_utc: datetime,
-    ) -> int:
         # Column-only candidate scan (B-06) — the sweep runs every 60 s
         # and only needs the anchor fields + id/status for the
         # conditional update; full rows were pure payload overhead.
         res = await self.session.execute(
             select(Task.id, Task.status, Task.operational_date,
-                   Task.due_date, Task.created_at)
-            .join(Property, Task.property_id == Property.id)
-            .where(
-                Property.company_id == company.id,
-                Task.status.in_(OPEN_STATUSES),
-                # A recurring instance still inside its validity window
-                # survives the day boundary — `expires_at` (next scheduled
-                # occurrence) is its lifecycle clock, not the op-day.
-                or_(Task.expires_at.is_(None),
-                    Task.expires_at <= now_utc),
-            )
+                   Task.due_date, Task.scheduled_for, Task.created_at)
+            .where(Task.status.in_(OPEN_STATUSES))
         )
-        abandoned = 0
+        stats = {"today": today, "abandoned": 0}
         for task in res:
-            key = _task_anchor_key(task, start)
-            if key is None or key >= current_key:
-                continue  # current or future op-day — still live
+            key = _midnight_anchor_key(task)
+            if key is None or key >= today:
+                continue  # today or future-dated — still live
             from_status = task.status
             # Conditional update wins the completion race: if the row's
             # status changed since the scan (e.g. just completed), the
@@ -217,7 +244,7 @@ class RolloverService:
                 .values(
                     status="abandoned",
                     abandoned_at=now_utc,
-                    abandoned_reason=REASON,
+                    abandoned_reason=REASON_MIDNIGHT,
                     abandoned_from_status=from_status,
                     operational_date=key,
                 )
@@ -229,14 +256,18 @@ class RolloverService:
                         type="abandoned",
                         actor_name="System",
                         note=(
-                            f"Daily rollover: unfinished '{from_status}' "
-                            f"task closed at the start of operational day "
-                            f"{current_key}."
+                            "Automatically abandoned because the "
+                            "operational day expired at midnight — "
+                            f"unfinished '{from_status}' task anchored "
+                            f"to {key}."
                         ),
                     )
                 )
-                abandoned += 1
-        return abandoned
+                stats["abandoned"] += 1
+        if stats["abandoned"]:
+            await self.session.commit()
+            logger.info("Midnight rollover: %s", stats)
+        return stats
 
     async def expire_due(
         self,
@@ -275,12 +306,12 @@ class RolloverService:
         global tick sweep leaves it off — windowless rows stay under
         daily-rollover governance.
         """
-        now_utc = (now or datetime.now(timezone.utc))
+        now_utc = (now or datetime.now(UTC))
         if now_utc.tzinfo is None:
-            now_utc = now_utc.replace(tzinfo=timezone.utc)
+            now_utc = now_utc.replace(tzinfo=UTC)
         cutoff = boundary or now_utc
         if cutoff.tzinfo is None:
-            cutoff = cutoff.replace(tzinfo=timezone.utc)
+            cutoff = cutoff.replace(tzinfo=UTC)
 
         window_pred = Task.expires_at <= cutoff
         if include_windowless:
@@ -384,7 +415,7 @@ def _occurrence_op_key(task: Task, start: time | None) -> str | None:
     if sched is None:
         return _task_anchor_key(task, start or time(6, 0))
     if sched.tzinfo is None:
-        sched = sched.replace(tzinfo=timezone.utc)
+        sched = sched.replace(tzinfo=UTC)
     return operational_day_key(
         sched.astimezone(IST), start or time(6, 0))
 

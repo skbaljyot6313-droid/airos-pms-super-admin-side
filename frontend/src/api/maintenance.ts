@@ -16,6 +16,9 @@ export interface MaintenanceListParams {
   status?: string;
   priority?: string;
   search?: string;
+  /** Opt-in bounded read — omitted returns the full list (board view). */
+  page?: number;
+  limit?: number;
 }
 
 export async function listMaintenance(
