@@ -57,29 +57,29 @@ export const Login: React.FC = () => {
         </div>
         {/* Logo & Headline */}
         <div className="text-center mb-7">
-          <div className="inline-flex w-12 h-12 rounded-[14px] bg-[#386641] text-white items-center justify-center font-display font-bold text-xl mb-3 shadow-xs">
+          <div className="inline-flex w-12 h-12 rounded-[14px] bg-[#800020] text-white items-center justify-center font-display font-bold text-xl mb-3 shadow-xs">
             MT
           </div>
-          <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#24221F] tracking-tight">
+          <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#0D1C42] tracking-tight">
             Welcome back
           </h1>
-          <p className="font-body text-sm text-[#6C675F] mt-1.5">
+          <p className="font-body text-sm text-[#667085] mt-1.5">
             Sign in to access your operations workspace.
           </p>
         </div>
 
         {/* Auth Card */}
-        <Card className="p-7 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border-[#E5E0D6]">
+        <Card className="p-7 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border-[#E7E5E4]">
           {error && (
             <div
               role="alert"
-              className="mb-5 p-3 rounded-[10px] bg-[#FDE8E8] border border-[#F9C3C3] text-[#A32A2A] text-xs font-medium"
+              className="mb-5 p-3 rounded-[10px] bg-[#FAEBEB] border border-[#F0C8C8] text-[#A83434] text-xs font-medium"
             >
               {error}
             </div>
           )}
           {resetNote && (
-            <div className="mb-5 p-3 rounded-[10px] bg-[#EFF0FA] border border-[#D5DAF0] text-[#3F4C8C] text-xs font-medium">
+            <div className="mb-5 p-3 rounded-[10px] bg-[#EAF1FB] border border-[#C3D6F0] text-[#2457A8] text-xs font-medium">
               Password resets are handled by your company's Super Admin.
             </div>
           )}
@@ -106,7 +106,7 @@ export const Login: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setResetNote((v) => !v)}
-                    className="text-xs text-[#386641] hover:underline cursor-pointer normal-case tracking-normal"
+                    className="text-xs text-[#800020] hover:underline cursor-pointer normal-case tracking-normal"
                   >
                     Forgot password?
                   </button>
@@ -128,11 +128,11 @@ export const Login: React.FC = () => {
         </Card>
 
         {/* Switch to Signup */}
-        <p className="text-center text-sm text-[#6C675F] mt-5 font-body">
+        <p className="text-center text-sm text-[#667085] mt-5 font-body">
           Don't have an account?{' '}
           <button
             onClick={() => navigate('/signup')}
-            className="text-[#386641] font-medium hover:underline cursor-pointer"
+            className="text-[#800020] font-medium hover:underline cursor-pointer"
           >
             Create your company
           </button>

@@ -1,34 +1,75 @@
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /*
- * AiROS design tokens — the approved warm palette (discovery report 02 §10).
- * Additive: existing hex classes are unchanged; new code should use these
- * (bg-brand, text-ink-2, border-line…). Radius and font-family are deliberately
- * NOT overridden here (would change Tailwind defaults / .font-display).
+ * AiROS design tokens — enterprise cool palette (redesign spec §2).
+ * Green = positive/available, red = critical/overdue, amber = attention,
+ * blue = informational. bg-brand / text-ink-2 / border-line remain the
+ * public token names.
  */
 @theme {
-  --color-brand: #386641;
-  --color-brand-hover: #2F5736;
-  --color-brand-ink: #244E2C;
-  --color-brand-soft: #EBF3EC;
-  --color-brand-line: #CEE4D1;
-  --color-ink: #24221F;
-  --color-ink-2: #6C675F;
-  --color-ink-3: #8C867C;
-  --color-canvas: #FAF8F5;
-  --color-shell: #F7F4EE;
+  /* AiROS brand — burgundy + charcoal, muted accent family */
+  --color-brand: #800020;
+  --color-brand-hover: #66001A;
+  --color-brand-ink: #800020;
+  --color-brand-soft: #F7E9EE;
+  --color-brand-line: #EAD3DB;
+  --color-accent-rose: #B34A68;
+  --color-accent-mauve: #C18B9B;
+  --color-accent-gold: #FF9137;
+  --color-accent-steel: #3478D4;
+  --color-accent-slate: #7A8495;
+  --color-accent-violet: #7554C8;
+  --color-accent-midnight: #0D1C42;
+  --color-accent-deepviolet: #4C1D5F;
+  --color-accent-orange: #FF9137;
+  --color-accent-orange-soft: #FFF1E4;
+  --color-accent-navy-soft: #E9EDF5;
+  --color-ink: #0D1C42;
+  --color-ink-deep: #0A1633;
+  --color-ink-2: #667085;
+  --color-ink-3: #98A2B3;
+  --color-canvas: #FFFCFA;
+  --color-shell: #F6F4F2;
   --color-surface: #FFFFFF;
-  --color-line: #EAE5DC;
-  --color-line-strong: #DDD7CB;
-  --color-hover: #F6F3EE;
-  --color-danger: #C53B3B;
-  --color-danger-ink: #A32A2A;
-  --color-danger-soft: #FDE8E8;
-  --color-warn-ink: #9A4C07;
-  --color-warn-soft: #FEF3E8;
-  --color-info-ink: #554388;
-  --color-info-soft: #F2EFF9;
+  --color-line: #E7E5E4;
+  --color-line-strong: #D6D3D1;
+  --color-hover: #F6F4F2;
+  /* Semantic operational palette — dark, saturated, each state distinct.
+     Soft variants are supporting surfaces only; the saturated colour
+     carries status on text, icons, borders, indicators and charts. */
+  --color-success: #16865B;
+  --color-success-ink: #0F6847;
+  --color-success-soft: #E6F4EE;
+  --color-success-line: #BFE3D2;
+  --color-danger: #D64545;
+  --color-danger-ink: #A83434;
+  --color-danger-soft: #FAEBEB;
+  --color-danger-line: #F0C8C8;
+  --color-progress: #7554C8;
+  --color-progress-ink: #5C41A5;
+  --color-progress-soft: #F0EBFA;
+  --color-progress-line: #D8CAF0;
+  --color-warn: #E99A23;
+  --color-warn-ink: #A56514;
+  --color-warn-soft: #FDF3E2;
+  --color-warn-line: #F2D9AF;
+  --color-info: #3478D4;
+  --color-info-ink: #2457A8;
+  --color-info-soft: #EAF1FB;
+  --color-info-line: #C3D6F0;
+  --color-pending: #7554C8;
+  --color-pending-ink: #5C41A5;
+  --color-pending-soft: #F0EBFA;
+  --color-pending-line: #D8CAF0;
+  --color-inactive: #7A8495;
+  --color-inactive-ink: #5F6776;
+  --color-inactive-soft: #EFF1F4;
+  --color-inactive-line: #D9DDE3;
+  --color-scheduled: #14616B;
+  --color-scheduled-ink: #104E56;
+  --color-scheduled-soft: #E2EEF0;
+  --color-scheduled-line: #C0D9DD;
 
   /* Type scale — minimum body size 13px; ≤11px reserved for uppercase labels */
   --text-micro: 0.6875rem;
@@ -41,26 +82,32 @@
   --text-body-lg--line-height: 1.375rem;
   --text-section: 1rem;
   --text-section--line-height: 1.5rem;
-  --text-title: 1.25rem;
-  --text-title--line-height: 1.75rem;
+  --text-title: 1.5rem;
+  --text-title--line-height: 2rem;
   --text-kpi: 1.5rem;
   --text-kpi--line-height: 2rem;
 }
 
 @layer base {
   body {
-    font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: #24221F;
-    background-color: #FAF8F5;
+    font-family: 'Satoshi', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0D1C42;
+    background-color: #FFFCFA;
   }
 }
 
 .font-display {
-  font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Satoshi', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .font-body {
-  font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Satoshi', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Dense numerical information — Inter with tabular figures */
+.font-num {
+  font-family: 'Inter', 'Satoshi', system-ui, sans-serif;
+  font-feature-settings: 'tnum' 1;
 }
 
 /* Custom smooth scrollbar */
@@ -72,11 +119,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D9D4CB;
+  background: #D6D3D1;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #BCB6AA;
+  background: #CDC9C7;
 }
 
 /* ---- AiROS analysis motion system ---- */

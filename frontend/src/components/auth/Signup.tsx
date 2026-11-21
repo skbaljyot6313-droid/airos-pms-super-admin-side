@@ -112,22 +112,22 @@ export const Signup: React.FC = () => {
         </div>
         {/* Title */}
         <div className="text-center mb-7">
-          <div className="inline-flex w-12 h-12 rounded-[14px] bg-[#386641] text-white items-center justify-center font-display font-bold text-xl mb-3 shadow-xs">
+          <div className="inline-flex w-12 h-12 rounded-[14px] bg-[#800020] text-white items-center justify-center font-display font-bold text-xl mb-3 shadow-xs">
             MT
           </div>
-          <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#24221F] tracking-tight">
+          <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#0D1C42] tracking-tight">
             Create your company account
           </h1>
-          <p className="font-body text-sm text-[#6C675F] mt-1.5">
+          <p className="font-body text-sm text-[#667085] mt-1.5">
             Set up your organization and create your management workspace.
           </p>
         </div>
 
-        <Card className="p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border-[#E5E0D6]">
+        <Card className="p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border-[#E7E5E4]">
           {formError && (
             <div
               role="alert"
-              className="mb-5 p-3 rounded-[10px] bg-[#FDE8E8] border border-[#F9C3C3] text-[#A32A2A] text-xs font-medium"
+              className="mb-5 p-3 rounded-[10px] bg-[#FAEBEB] border border-[#F0C8C8] text-[#A83434] text-xs font-medium"
             >
               {formError}
             </div>
@@ -138,7 +138,7 @@ export const Signup: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
               {/* Company Information */}
               <div className="space-y-4">
-                <p className="text-[11px] font-semibold text-[#8C867C] uppercase tracking-widest border-b border-[#F0ECE4] pb-2">
+                <p className="text-[11px] font-semibold text-[#667085] uppercase tracking-widest border-b border-[#F6F4F2] pb-2">
                   Company Information
                 </p>
                 <FormField
@@ -181,7 +181,7 @@ export const Signup: React.FC = () => {
 
               {/* Account Information */}
               <div className="space-y-4">
-                <p className="text-[11px] font-semibold text-[#8C867C] uppercase tracking-widest border-b border-[#F0ECE4] pb-2">
+                <p className="text-[11px] font-semibold text-[#667085] uppercase tracking-widest border-b border-[#F6F4F2] pb-2">
                   Account Information
                 </p>
                 <FormField
@@ -225,7 +225,7 @@ export const Signup: React.FC = () => {
               </div>
             </div>
 
-            <p className="text-[11px] text-[#8C867C] font-body mt-5">
+            <p className="text-[11px] text-[#667085] font-body mt-5">
               The registering account becomes the company's Super Admin with full access.
             </p>
 
@@ -243,11 +243,11 @@ export const Signup: React.FC = () => {
         </Card>
 
         {/* Switch to Login */}
-        <p className="text-center text-sm text-[#6C675F] mt-5 font-body">
+        <p className="text-center text-sm text-[#667085] mt-5 font-body">
           Already have an account?{' '}
           <button
             onClick={() => navigate('/login')}
-            className="text-[#386641] font-medium hover:underline cursor-pointer"
+            className="text-[#800020] font-medium hover:underline cursor-pointer"
           >
             Login
           </button>

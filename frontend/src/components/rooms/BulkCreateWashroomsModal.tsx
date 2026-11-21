@@ -25,9 +25,9 @@ interface WashroomRow {
 }
 
 const inputCls =
-  'w-full px-2.5 py-1.5 bg-[#FAF8F5] border rounded-[8px] text-sm text-[#24221F] focus:outline-none focus:ring-2';
-const okBorder = 'border-[#DDD7CB] focus:ring-[#386641]';
-const badBorder = 'border-[#E5A3A3] focus:ring-[#C53B3B]';
+  'w-full px-2.5 py-1.5 bg-[#FFFFFF] border rounded-[8px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2';
+const okBorder = 'border-[#D6D3D1] focus:ring-[#800020]';
+const badBorder = 'border-[#B34A68] focus:ring-[#D64545]';
 
 const emptyRow = (key: number): WashroomRow => ({
   key,
@@ -130,7 +130,7 @@ export const BulkCreateWashroomsModal: React.FC<
       maxWidth="xl"
       footer={
         <div className="flex items-center justify-between gap-3">
-          <span className="text-[11px] text-[#8C867C] font-body">
+          <span className="text-[11px] text-[#667085] font-body">
             {rows.length} washroom{rows.length === 1 ? '' : 's'} · up to {MAX_ROWS} per batch
           </span>
           <div className="flex items-center gap-3">
@@ -151,36 +151,36 @@ export const BulkCreateWashroomsModal: React.FC<
     >
       <div className="space-y-3">
         {submitError && (
-          <div className="flex items-start gap-2 p-3 rounded-[10px] bg-[#FDE8E8] border border-[#F9C3C3] text-xs text-[#A82828] font-body">
+          <div className="flex items-start gap-2 p-3 rounded-[10px] bg-[#FAEBEB] border border-[#F0C8C8] text-xs text-[#A83434] font-body">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span>{submitError}</span>
           </div>
         )}
 
-        <div className="rounded-[12px] border border-[#E4DFD5] overflow-hidden">
+        <div className="rounded-[12px] border border-[#E7E5E4] overflow-hidden">
           <div className="overflow-x-auto">
             <div className="max-h-[48vh] overflow-y-auto">
               <table className="min-w-[940px] w-full text-left border-collapse">
                 <thead className="sticky top-0 z-10">
-                  <tr className="bg-[#F4F0E8] text-[10px] font-semibold uppercase tracking-wider text-[#736E65]">
-                    <th className="px-2.5 py-2.5 w-8 bg-[#F4F0E8]">#</th>
-                    <th className="px-2.5 py-2.5 min-w-[220px] bg-[#F4F0E8]">Washroom Name *</th>
-                    <th className="px-2.5 py-2.5 min-w-[140px] bg-[#F4F0E8]">Type *</th>
-                    <th className="px-2 py-2.5 w-[74px] bg-[#F4F0E8]">Stalls</th>
-                    <th className="px-2 py-2.5 w-[74px] bg-[#F4F0E8]">Urinals</th>
-                    <th className="px-2 py-2.5 w-[74px] bg-[#F4F0E8]">Showers</th>
-                    <th className="px-2.5 py-2.5 min-w-[180px] bg-[#F4F0E8]">Assign to Zone</th>
-                    <th className="px-2 py-2.5 w-9 bg-[#F4F0E8]" />
+                  <tr className="bg-[#F6F4F2] text-[10px] font-semibold uppercase tracking-wider text-[#667085]">
+                    <th className="px-2.5 py-2.5 w-8 bg-[#F6F4F2]">#</th>
+                    <th className="px-2.5 py-2.5 min-w-[220px] bg-[#F6F4F2]">Washroom Name *</th>
+                    <th className="px-2.5 py-2.5 min-w-[140px] bg-[#F6F4F2]">Type *</th>
+                    <th className="px-2 py-2.5 w-[74px] bg-[#F6F4F2]">Stalls</th>
+                    <th className="px-2 py-2.5 w-[74px] bg-[#F6F4F2]">Urinals</th>
+                    <th className="px-2 py-2.5 w-[74px] bg-[#F6F4F2]">Showers</th>
+                    <th className="px-2.5 py-2.5 min-w-[180px] bg-[#F6F4F2]">Assign to Zone</th>
+                    <th className="px-2 py-2.5 w-9 bg-[#F6F4F2]" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F0ECE4]">
+                <tbody className="divide-y divide-[#F6F4F2]">
                   {rows.map((row, i) => {
                     const nameErr = rowErrors[row.key];
                     const visibleErr =
                       nameErr && (attempted || row.name.trim()) ? nameErr : undefined;
                     return (
                       <tr key={row.key} className="align-top">
-                        <td className="px-2.5 py-2.5 text-xs text-[#8C867C] font-mono pt-3.5">
+                        <td className="px-2.5 py-2.5 text-xs text-[#667085] font-mono pt-3.5">
                           {i + 1}
                         </td>
                         <td className="px-2.5 py-2">
@@ -192,7 +192,7 @@ export const BulkCreateWashroomsModal: React.FC<
                             className={`${inputCls} ${visibleErr ? badBorder : okBorder}`}
                           />
                           {visibleErr && (
-                            <p className="text-[10px] text-[#A82828] font-body mt-1">
+                            <p className="text-[10px] text-[#A83434] font-body mt-1">
                               {visibleErr}
                             </p>
                           )}
@@ -262,7 +262,7 @@ export const BulkCreateWashroomsModal: React.FC<
                               )
                             }
                             disabled={rows.length === 1}
-                            className="p-1.5 text-[#A59F95] hover:text-[#C53B3B] hover:bg-[#FDE8E8] rounded-[7px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                            className="p-1.5 text-[#98A2B3] hover:text-[#D64545] hover:bg-[#FAEBEB] rounded-[7px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                             title="Remove row"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

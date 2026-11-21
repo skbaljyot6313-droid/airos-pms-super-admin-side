@@ -22,7 +22,7 @@ from app.models.payroll import PayrollLine, PayrollPeriod, PayrollPolicy, Salary
 from app.models.property import Property
 from app.models.user import User, UserRole
 from app.services import payroll as svc
-from app.services.structure import NotFoundErr
+from app.services.structure import NotFoundErr, ValidationErr
 
 router = APIRouter(prefix="/payroll", tags=["payroll"])
 
@@ -60,6 +60,16 @@ class StructureIn(BaseModel):
     overtime_rate: Decimal = Field(default=Decimal("0"), ge=0)
     # Statutory deductions are opt-in: empty means none apply.
     deductions: list[DeductionIn] = []
+
+
+class LeaveEntryIn(BaseModel):
+    leave_type: str  # CL|SL|EL|other — LWP is usage, never an entitlement
+    days: Decimal = Field(gt=0, le=365)
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class LeaveEntriesIn(BaseModel):
+    entries: list[LeaveEntryIn] = Field(min_length=1, max_length=20)
 
 
 class AdjustmentIn(BaseModel):
@@ -161,6 +171,41 @@ async def create_structure(employee_uid: uuid.UUID, payload: StructureIn,
     return _structure_out(row)
 
 
+@router.post("/employees/{employee_uid}/leave-entries", status_code=201)
+async def post_leave_entries(employee_uid: uuid.UUID, payload: LeaveEntriesIn,
+                             user: User = PayrollStaff, session: AsyncSession = Depends(get_db)):
+    """Append opening entitlement rows to the leave ledger — e.g. CL 12, SL 6
+    at onboarding. Deltas are positive; usage decrements live elsewhere."""
+    from app.models.payroll import LeaveLedger
+
+    emp = await session.get(Employee, employee_uid)
+    if emp is None or emp.company_id != user.company_id:
+        raise NotFoundErr("Employee not found.")
+    _scope(user, emp.property_id)
+    allowed = {"CL", "SL", "EL", "OTHER"}
+    out = []
+    for e in payload.entries:
+        lt = e.leave_type.strip().upper()
+        if lt not in allowed:
+            raise ValidationErr(
+                f"Leave type must be one of CL, SL, EL, other — got '{e.leave_type}'.",
+                field="leave_type",
+            )
+        row = LeaveLedger(
+            employee_id=emp.id,
+            leave_type="other" if lt == "OTHER" else lt,
+            delta=e.days,
+            reason=(e.reason or "Opening leave entitlement").strip(),
+            reference_type="opening",
+            created_by_id=user.id,
+            created_by_name=user.name,
+        )
+        session.add(row)
+        out.append({"leave_type": row.leave_type, "days": float(row.delta)})
+    await session.commit()
+    return {"items": out}
+
+
 @router.get("/periods/{period}")
 async def get_period(period: str, property_uid: uuid.UUID, user: User = PayrollStaff,
                      session: AsyncSession = Depends(get_db)):
@@ -196,6 +241,18 @@ async def generate(period: str, property_uid: uuid.UUID, user: User = PayrollSta
                                    period=period, actor_name=user.name)
     await session.commit()
     return _period_out(pr)
+
+
+@router.get("/periods/{period}/preview")
+async def preview(period: str, property_uid: uuid.UUID, user: User = PayrollStaff,
+                  session: AsyncSession = Depends(get_db)):
+    """Month-to-date table — every employee's attendance split and earned
+    amounts as they stand today. Read-only: nothing is persisted."""
+    prop = await _property(session, user, property_uid)
+    svc.period_bounds(period)
+    rows = await svc.preview_period(
+        session, property_id=prop.id, company_id=prop.company_id, period=period)
+    return {"items": rows}
 
 
 @router.post("/periods/{period}/submit")

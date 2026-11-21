@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.auth import (
     get_current_user,
+    require_role,
 )
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas import workspace as ws
 from app.schemas.structure import (
     TaskActionRequest,
@@ -117,7 +118,9 @@ async def request_redo(
 async def reassign_task(
     task_id: uuid.UUID,
     payload: TaskReassignRequest,
-    user: User = Staff,
+    user: User = Depends(require_role(
+        UserRole.SUPER_ADMIN, UserRole.PROPERTY_MANAGER,
+        UserRole.DEPARTMENT_MANAGER)),
     session: AsyncSession = Depends(get_db),
 ):
     return ws.task_out(

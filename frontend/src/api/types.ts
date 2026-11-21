@@ -12,6 +12,7 @@ import {
   RecurrenceSchedule,
   Room,
   RoomStatus,
+  Section,
   Task,
   TaskCompletionImage,
   TaskCompletionSubmission,
@@ -22,6 +23,7 @@ import {
   WashroomStatus,
   WashroomType,
   Zone,
+  ZoneCustomUnit,
   ZoneType,
 } from '../types';
 
@@ -134,10 +136,19 @@ export interface PropertyUpdateRequest {
 // Areas (floors / structural levels within a property)
 // ---------------------------------------------------------------------------
 
+export interface SectionCreateRequest {
+  property_uid: string;
+  name: string;
+  description?: string;
+}
+
+export type SectionUpdateRequest = Partial<Pick<Section, 'name' | 'description'>>;
+
 export interface AreaCreateRequest {
   property_uid: string;
   name: string;
   level_number?: number;
+  section_uid?: string | null;
   description?: string;
 }
 
@@ -154,6 +165,7 @@ export interface ZoneCreateRequest {
   area_uid?: string | null;
   zone_type?: ZoneType;
   description?: string;
+  custom_units?: (ZoneCustomUnit | string)[];
 }
 
 export type ZoneUpdateRequest = Partial<

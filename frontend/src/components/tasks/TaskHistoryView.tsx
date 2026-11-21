@@ -7,7 +7,7 @@ import { Badge } from '../ui/Badge';
 import { fmtTimeIST, fmtDateTimeIST, parseIso, isSameISTDay, istDateKeyOffset } from '../../lib/datetime';
 
 const inputCls =
-  'px-2.5 py-2 text-xs bg-white border border-[#E2DCD0] rounded-[9px] focus:outline-none focus:ring-[3px] focus:ring-[#386641]/15 focus:border-[#386641]';
+  'px-2.5 py-2 text-xs bg-white border border-[#E7E5E4] rounded-[9px] focus:outline-none focus:ring-[3px] focus:ring-[#800020]/15 focus:border-[#800020]';
 
 const STATUS_VARIANT: Record<string, 'sage' | 'orange' | 'red' | 'lavender' | 'neutral'> = {
   assigned: 'lavender', pending: 'neutral', in_progress: 'orange',
@@ -102,25 +102,25 @@ export const TaskHistoryView: React.FC<Props> = ({ onOpenTask }) => {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="font-display font-bold text-xl text-[#24221F] flex items-center gap-2">
+        <h2 className="font-display font-bold text-xl text-[#0D1C42] flex items-center gap-2">
           Task History
-          {p && <span className="text-xs font-semibold text-[#8C867C] bg-[#F0EDE6] px-2 py-0.5 rounded-full">{p.total} generated</span>}
+          {p && <span className="text-xs font-semibold text-[#667085] bg-[#F6F4F2] px-2 py-0.5 rounded-full">{p.total} generated</span>}
         </h2>
-        <p className="text-sm text-[#8C867C]">All generated and allocated work — every actual task instance.</p>
+        <p className="text-sm text-[#667085]">All generated and allocated work — every actual task instance.</p>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#A59F95]" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#98A2B3]" />
           <input value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Task ID, name, employee, room…" className={`${inputCls} w-full pl-8`} />
         </div>
-        <div className="flex items-center gap-1 bg-[#F0EDE6] rounded-[9px] p-1">
+        <div className="flex items-center gap-1 bg-[#F6F4F2] rounded-[9px] p-1">
           {DATE_PRESETS.map((d) => (
             <button key={d.v} onClick={() => setPreset(d.v)}
               className={`px-2.5 py-1.5 text-[11px] font-medium rounded-[7px] cursor-pointer ${
-                preset === d.v ? 'bg-white text-[#24221F] shadow-sm' : 'text-[#6C675F]'
+                preset === d.v ? 'bg-white text-[#0D1C42] shadow-sm' : 'text-[#667085]'
               }`}>
               {d.l}
             </button>
@@ -157,38 +157,38 @@ export const TaskHistoryView: React.FC<Props> = ({ onOpenTask }) => {
 
       {/* Table */}
       {loading ? (
-        <p className="text-sm text-[#8C867C] py-12 text-center">Loading history…</p>
+        <p className="text-sm text-[#667085] py-12 text-center">Loading history…</p>
       ) : !data || data.items.length === 0 ? (
         <div className="py-16 text-center">
-          <History className="w-10 h-10 text-[#D5CFC3] mx-auto mb-3" />
-          <p className="text-sm font-medium text-[#6C675F]">No generated tasks found</p>
-          <p className="text-xs text-[#8C867C] mt-1">
+          <History className="w-10 h-10 text-[#D6D3D1] mx-auto mb-3" />
+          <p className="text-sm font-medium text-[#667085]">No generated tasks found</p>
+          <p className="text-xs text-[#667085] mt-1">
             Generated tasks will appear here once work is created and allocated.
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-[14px] border border-[#EAE5DC] overflow-hidden">
+        <div className="bg-white rounded-[14px] border border-[#E7E5E4] overflow-hidden">
           <table className="w-full text-[12.5px]">
             <thead>
-              <tr className="bg-[#F6F4EF] border-b border-[#EAE5DC] text-left">
+              <tr className="bg-[#FFFCFA] border-b border-[#E7E5E4] text-left">
                 {['Task ID', 'Task', 'Location', 'Zone', 'Assigned To', 'Generated', 'Scheduled', 'Status', 'Priority', 'Source'].map((h) => (
-                  <th key={h} className="px-3 py-2.5 text-[10.5px] font-semibold text-[#8C867C] uppercase tracking-wider whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-3 py-2.5 text-[10.5px] font-semibold text-[#667085] uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F0ECE4]">
+            <tbody className="divide-y divide-[#F6F4F2]">
               {data.items.map((t: TaskHistoryItem) => (
                 <tr key={t.task_uid} onClick={() => onOpenTask(t.task_uid)}
-                  className="hover:bg-[#FAF8F5] cursor-pointer transition-colors">
-                  <td className="px-3 py-2.5 font-mono text-[11px] font-semibold text-[#386641] whitespace-nowrap">
+                  className="hover:bg-[#FFFFFF] cursor-pointer transition-colors">
+                  <td className="px-3 py-2.5 font-mono text-[11px] font-semibold text-[#800020] whitespace-nowrap">
                     {t.ticket_number || '—'}
                   </td>
-                  <td className="px-3 py-2.5 font-medium text-[#24221F] max-w-[200px] truncate">{t.title}</td>
-                  <td className="px-3 py-2.5 text-[#58534C]">{t.room_number || '—'}</td>
-                  <td className="px-3 py-2.5 text-[#58534C]">{t.zone_name || '—'}</td>
-                  <td className="px-3 py-2.5 text-[#58534C]">{t.assigned_to || <span className="text-[#B5AEA2]">Unassigned</span>}</td>
-                  <td className="px-3 py-2.5 text-[#8C867C] whitespace-nowrap">{fmtTs(t.generated_at)}</td>
-                  <td className="px-3 py-2.5 text-[#8C867C] whitespace-nowrap">{fmtTs(t.scheduled_for)}</td>
+                  <td className="px-3 py-2.5 font-medium text-[#0D1C42] max-w-[200px] truncate">{t.title}</td>
+                  <td className="px-3 py-2.5 text-[#667085]">{t.room_number || '—'}</td>
+                  <td className="px-3 py-2.5 text-[#667085]">{t.zone_name || '—'}</td>
+                  <td className="px-3 py-2.5 text-[#667085]">{t.assigned_to || <span className="text-[#98A2B3]">Unassigned</span>}</td>
+                  <td className="px-3 py-2.5 text-[#667085] whitespace-nowrap">{fmtTs(t.generated_at)}</td>
+                  <td className="px-3 py-2.5 text-[#667085] whitespace-nowrap">{fmtTs(t.scheduled_for)}</td>
                   <td className="px-3 py-2.5">
                     <Badge variant={STATUS_VARIANT[t.status] || 'neutral'} size="sm">
                       {t.status.replace(/_/g, ' ')}
@@ -199,7 +199,7 @@ export const TaskHistoryView: React.FC<Props> = ({ onOpenTask }) => {
                       {t.priority}
                     </Badge>
                   </td>
-                  <td className="px-3 py-2.5 text-[#8C867C] capitalize">
+                  <td className="px-3 py-2.5 text-[#667085] capitalize">
                     {t.source}{t.template_version ? ` v${t.template_version}` : ''}
                   </td>
                 </tr>
@@ -209,17 +209,17 @@ export const TaskHistoryView: React.FC<Props> = ({ onOpenTask }) => {
 
           {/* Pagination */}
           {p && p.total_pages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-[#EAE5DC] bg-[#FAF8F5]">
-              <p className="text-[11px] text-[#8C867C]">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-[#E7E5E4] bg-[#FFFFFF]">
+              <p className="text-[11px] text-[#667085]">
                 Page {p.page} of {p.total_pages} · {p.total} tasks
               </p>
               <div className="flex gap-1.5">
                 <button disabled={page <= 1} onClick={() => setPage((x) => x - 1)}
-                  className="p-1.5 rounded-[7px] border border-[#E2DCD0] text-[#58534C] hover:bg-white disabled:opacity-40 cursor-pointer">
+                  className="p-1.5 rounded-[7px] border border-[#E7E5E4] text-[#667085] hover:bg-white disabled:opacity-40 cursor-pointer">
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
                 <button disabled={page >= p.total_pages} onClick={() => setPage((x) => x + 1)}
-                  className="p-1.5 rounded-[7px] border border-[#E2DCD0] text-[#58534C] hover:bg-white disabled:opacity-40 cursor-pointer">
+                  className="p-1.5 rounded-[7px] border border-[#E7E5E4] text-[#667085] hover:bg-white disabled:opacity-40 cursor-pointer">
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>

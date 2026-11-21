@@ -41,8 +41,8 @@ export function TeamAnalyticsTab() {
   });
 
   const Th = ({ k, label, className }: { k: SortKey; label: string; className?: string }) => (
-    <th className={`px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-[#98A2B3] ${className || ''}`}>
-      <button onClick={() => sortBy(k)} className="inline-flex items-center gap-0.5 hover:text-[#17212B]">
+    <th className={`px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-[#7FA8CE] ${className || ''}`}>
+      <button onClick={() => sortBy(k)} className="inline-flex items-center gap-0.5 hover:text-[#2457A8]">
         {label}{sort === k && (asc ? <ArrowUp size={10} /> : <ArrowDown size={10} />)}
       </button>
     </th>);
@@ -57,8 +57,8 @@ export function TeamAnalyticsTab() {
   return <div className="space-y-5">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-[#17212B]">Team performance</h2>
-        <p className="mt-0.5 text-xs text-[#98A2B3]">Workload and completion across all staff · {data?.total ?? 0} employees</p>
+        <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-[#2457A8]">Team performance</h2>
+        <p className="mt-0.5 text-xs text-[#7FA8CE]">Workload and completion across all staff · {data?.total ?? 0} employees</p>
       </div>
       <PeriodSelector period={period} onChange={setPeriod} />
     </div>
@@ -70,54 +70,54 @@ export function TeamAnalyticsTab() {
         {/* Team summary strip */}
         <div role="list" aria-label="Team metrics" className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {cols.map(([l, v]) => <div role="listitem" key={l} className={`${card} px-5 py-4`}>
-            <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#98A2B3]">{l}</p>
-            <p className="mt-1.5 text-[28px] font-semibold leading-none tabular-nums text-[#17212B]">{v}</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#7FA8CE]">{l}</p>
+            <p className="mt-1.5 text-[28px] font-semibold leading-none tabular-nums text-[#2457A8]">{v}</p>
           </div>)}
           <div role="listitem" className={`${card} px-5 py-4`} title="Team completed ÷ allocated">
-            <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#98A2B3]">Completion rate</p>
-            <p className="mt-1.5 text-[28px] font-semibold leading-none tabular-nums text-[#17212B]">{pct(teamRate)}</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#7FA8CE]">Completion rate</p>
+            <p className="mt-1.5 text-[28px] font-semibold leading-none tabular-nums text-[#2457A8]">{pct(teamRate)}</p>
           </div>
         </div>
 
         {/* Per-employee table */}
         <section aria-label="Employee performance table" className={`${card} overflow-hidden`}>
-          <div className="flex items-center justify-between border-b border-[#E9EDF2] px-5 py-3.5">
-            <p className="text-[13px] font-semibold text-[#17212B]">By employee
-              <span className="ml-2 text-xs font-normal text-[#98A2B3]">{activeCount} of {data.total} allocated work · sorted by {sort}</span></p>
+          <div className="flex items-center justify-between border-b border-[#EAF1FB] px-5 py-3.5">
+            <p className="text-[13px] font-semibold text-[#2457A8]">By employee
+              <span className="ml-2 text-xs font-normal text-[#7FA8CE]">{activeCount} of {data.total} allocated work · sorted by {sort}</span></p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left">
-              <thead><tr className="border-b border-[#E9EDF2] bg-[#FAFBFC]">
+              <thead><tr className="border-b border-[#EAF1FB] bg-[#FFFFFF]">
                 <Th k="name" label="Employee" />
-                <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-[#98A2B3]">Zone</th>
+                <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-[#7FA8CE]">Zone</th>
                 <Th k="allocated" label="Allocated" />
                 <Th k="completed" label="Done" />
                 <Th k="abandoned" label="Aband." />
                 <Th k="open" label="Open" />
                 <Th k="completion_rate" label="Rate" />
-                <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-[#98A2B3]">Share</th>
+                <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-[#7FA8CE]">Share</th>
               </tr></thead>
               <tbody>{rows.map((e: TeamAnalyticsRow) => {
                 const share = team && team.allocated ? e.allocated / team.allocated : 0;
                 return <tr key={e.employee_uid}
-                  className="border-b border-[#F1F3F6] transition-colors last:border-0 hover:bg-[#FAFBFC] cursor-pointer"
+                  className="border-b border-[#FFFCFA] transition-colors last:border-0 hover:bg-[#FFFFFF] cursor-pointer"
                   onClick={() => navigate(`/property/${propertyId}/workforce/employees/${e.employee_uid}`)}>
                   <td className="px-3 py-2.5">
-                    <p className="text-[13px] font-medium text-[#17212B]">{e.name}</p>
-                    <p className="text-[10px] text-[#98A2B3]">{e.job_title || 'Employee'}{e.status && e.status !== 'Active' ? ` · ${e.status}` : ''}</p>
+                    <p className="text-[13px] font-medium text-[#2457A8]">{e.name}</p>
+                    <p className="text-[10px] text-[#7FA8CE]">{e.job_title || 'Employee'}{e.status && e.status !== 'Active' ? ` · ${e.status}` : ''}</p>
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-[#697586]">{e.zone_name || '—'}</td>
-                  <td className="px-3 py-2.5 text-[13px] font-semibold tabular-nums text-[#17212B]">{e.allocated}</td>
-                  <td className="px-3 py-2.5 text-[13px] tabular-nums text-[#17212B]">{e.completed}</td>
+                  <td className="px-3 py-2.5 text-xs text-[#2457A8]">{e.zone_name || '—'}</td>
+                  <td className="px-3 py-2.5 text-[13px] font-semibold tabular-nums text-[#2457A8]">{e.allocated}</td>
+                  <td className="px-3 py-2.5 text-[13px] tabular-nums text-[#2457A8]">{e.completed}</td>
                   <td className="px-3 py-2.5 text-[13px] tabular-nums" style={{ color: e.abandoned > 0 ? C.danger : C.faint }}>{e.abandoned}</td>
-                  <td className="px-3 py-2.5 text-[13px] tabular-nums text-[#17212B]">{e.open}</td>
+                  <td className="px-3 py-2.5 text-[13px] tabular-nums text-[#2457A8]">{e.open}</td>
                   <td className="px-3 py-2.5 text-[13px] tabular-nums" style={{ color: e.completion_rate != null ? (e.completion_rate >= 0.7 ? C.success : e.completion_rate < 0.3 ? C.danger : C.text) : C.faint }}>
                     {pct(e.completion_rate)}</td>
                   <td className="w-32 px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#F1F3F6]">
-                        <span className="block h-full rounded-full bg-[#6686A0]" style={{ width: `${Math.round(share * 100)}%` }} /></span>
-                      <span className="text-[10px] tabular-nums text-[#98A2B3]">{Math.round(share * 100)}%</span>
+                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#FFFCFA]">
+                        <span className="block h-full rounded-full bg-[#3478D4]" style={{ width: `${Math.round(share * 100)}%` }} /></span>
+                      <span className="text-[10px] tabular-nums text-[#7FA8CE]">{Math.round(share * 100)}%</span>
                     </div>
                   </td>
                 </tr>; })}
@@ -125,7 +125,7 @@ export function TeamAnalyticsTab() {
             </table>
           </div>
         </section>
-        <p className="text-[11px] text-[#98A2B3]">
+        <p className="text-[11px] text-[#7FA8CE]">
           Allocated = distinct tasks via ledger or current assignment · Completed = approved submissions ·
           Abandoned = last assignee before abandonment · Open = current point-in-time (not period-bound) ·
           Rate = completed ÷ allocated. Click a row to open the employee's full analysis.

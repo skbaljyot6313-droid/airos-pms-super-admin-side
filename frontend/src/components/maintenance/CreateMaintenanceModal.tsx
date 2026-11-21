@@ -192,45 +192,45 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
     return (
       <Modal isOpen onClose={onClose} title="Maintenance Ticket Created" maxWidth="sm">
         <div className="text-center space-y-4 py-2">
-          <div className="w-14 h-14 rounded-full bg-[#EBF3EC] text-[#386641] flex items-center justify-center mx-auto">
+          <div className="w-14 h-14 rounded-full bg-[#F7E9EE] text-[#800020] flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-7 h-7" />
           </div>
           <div>
-            <p className="font-mono font-bold text-xl text-[#24221F] tracking-tight">
+            <p className="font-mono font-bold text-xl text-[#0D1C42] tracking-tight">
               {createdTicket.ticket_number}
             </p>
-            <p className="text-sm text-[#6C675F] mt-1">
+            <p className="text-sm text-[#667085] mt-1">
               {MAINTENANCE_TYPE_OPTIONS.find((o) => o.value === createdTicket.maintenance_type)?.label || createdTicket.maintenance_type}
               {' · '}
               {PRIORITY_LABELS[createdTicket.priority]} priority
             </p>
-            <p className="text-sm font-semibold text-[#24221F] mt-0.5">
+            <p className="text-sm font-semibold text-[#0D1C42] mt-0.5">
               {createdTicket.location_label || targetLabel}
             </p>
-            <p className="text-xs text-[#8C867C] mt-0.5">{createdTicket.issue}</p>
+            <p className="text-xs text-[#667085] mt-0.5">{createdTicket.issue}</p>
           </div>
 
           {/* Allocation result — backend round-robin decision */}
           {createdBatches.map((b) => (
             <div
               key={b.batch_id}
-              className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F6F4EF] border border-[#EAE5DC] text-left"
+              className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#FFFCFA] border border-[#E7E5E4] text-left"
             >
-              <p className="text-[11px] font-semibold text-[#8C867C] uppercase tracking-wider">
+              <p className="text-[11px] font-semibold text-[#667085] uppercase tracking-wider">
                 {b.batch_number}
                 {b.zone_name ? ` · ${b.zone_name}` : ''}
               </p>
               {b.employee_name ? (
-                <p className="text-sm font-semibold text-[#24221F] mt-1">
+                <p className="text-sm font-semibold text-[#0D1C42] mt-1">
                   Assigned to {b.employee_name}
-                  <span className="block text-[11px] font-normal text-[#6C675F] mt-0.5">
+                  <span className="block text-[11px] font-normal text-[#667085] mt-0.5">
                     Automatic zone round-robin
                   </span>
                 </p>
               ) : (
-                <p className="text-sm font-semibold text-[#A32A2A] mt-1">
+                <p className="text-sm font-semibold text-[#A83434] mt-1">
                   Unassigned — no eligible employee in this zone
-                  <span className="block text-[11px] font-normal text-[#8C867C] mt-0.5">
+                  <span className="block text-[11px] font-normal text-[#667085] mt-0.5">
                     A manager can assign it manually from Maintenance
                   </span>
                 </p>
@@ -259,19 +259,19 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
     return (
       <Modal isOpen onClose={onClose} title="Active Maintenance" maxWidth="sm">
         <div className="space-y-4">
-          <div className="p-4 rounded-[12px] bg-[#FDF6EC] border border-[#EFDDBE]">
-            <p className="font-mono font-bold text-sm text-[#24221F]">
+          <div className="p-4 rounded-[12px] bg-[#FFFCFA] border border-[#F2D9AF]">
+            <p className="font-mono font-bold text-sm text-[#0D1C42]">
               {activeTicket.ticket_number}
             </p>
-            <p className="text-xs text-[#6C675F] mt-1">
+            <p className="text-xs text-[#667085] mt-1">
               {MAINTENANCE_TYPE_OPTIONS.find((o) => o.value === activeTicket.maintenance_type)?.label || activeTicket.maintenance_type}
               {' · '}
               {PRIORITY_LABELS[activeTicket.priority]} ·{' '}
               {MAINTENANCE_STATUS_LABELS[activeTicket.status]}
             </p>
-            <p className="text-sm text-[#24221F] mt-1.5">{activeTicket.issue}</p>
+            <p className="text-sm text-[#0D1C42] mt-1.5">{activeTicket.issue}</p>
           </div>
-          <p className="text-xs text-[#8C867C]">
+          <p className="text-xs text-[#667085]">
             {targetLabel} already has an active maintenance ticket. Open
             it to track progress, or report a separate issue.
           </p>
@@ -293,18 +293,18 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
   }
 
   // --------------------------- create form ---------------------------
-  const sectionLabel = 'block text-[11px] font-semibold text-[#8C867C] uppercase tracking-[0.08em] mb-2';
-  const fieldLabel = 'block text-[13px] font-medium text-[#45413B] mb-1.5';
+  const sectionLabel = 'block text-[11px] font-semibold text-[#667085] uppercase tracking-[0.08em] mb-2';
+  const fieldLabel = 'block text-[13px] font-medium text-[#0D1C42] mb-1.5';
   const inputCls =
-    'w-full h-[42px] px-3.5 bg-white border border-[#E2DCD0] rounded-[10px] ' +
-    'text-sm text-[#24221F] placeholder:text-[13px] placeholder:text-[#A39D92] ' +
-    'focus:outline-none focus:ring-[3px] focus:ring-[#386641]/15 focus:border-[#386641] ' +
+    'w-full h-[42px] px-3.5 bg-white border border-[#E7E5E4] rounded-[10px] ' +
+    'text-sm text-[#0D1C42] placeholder:text-[13px] placeholder:text-[#98A2B3] ' +
+    'focus:outline-none focus:ring-[3px] focus:ring-[#800020]/15 focus:border-[#800020] ' +
     'transition-[border-color,box-shadow] duration-150';
   const PRIORITY_DOT: Record<MaintenancePriority, string> = {
-    low: '#6BAA75',
-    medium: '#D9A441',
-    high: '#D05B4B',
-    critical: '#B3372C',
+    low: '#800020',
+    medium: '#A56514',
+    high: '#D64545',
+    critical: '#A83434',
   };
 
   return (
@@ -345,7 +345,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
             {targets.map((t, i) => (
               <span
                 key={i}
-                className="px-2 py-1 rounded-[7px] bg-[#F2EEE7] border border-[#E4DFD5] text-[11px] font-medium text-[#555047]"
+                className="px-2 py-1 rounded-[7px] bg-[#F6F4F2] border border-[#E7E5E4] text-[11px] font-medium text-[#667085]"
               >
                 {labelFor(t)}
               </span>
@@ -377,20 +377,20 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
                   }}
                   className={`flex items-center gap-2.5 h-[54px] px-3 rounded-[11px] border text-left transition-colors duration-150 cursor-pointer ${
                     selected
-                      ? 'border-[#386641] bg-[#EDF4EE]'
-                      : 'border-[#E2DCD0] bg-white hover:border-[#C5BFB2] hover:bg-[#FAF8F4]'
+                      ? 'border-[#800020] bg-[#F7E9EE]'
+                      : 'border-[#E7E5E4] bg-white hover:border-[#CDC9C7] hover:bg-[#FFFCFA]'
                   }`}
                 >
                   <span
                     className={`w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0 transition-colors duration-150 ${
-                      selected ? 'bg-[#386641] text-white' : 'bg-[#F2EEE7] text-[#736E65]'
+                      selected ? 'bg-[#800020] text-white' : 'bg-[#F6F4F2] text-[#667085]'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
                   </span>
                   <span
                     className={`text-[13px] font-medium leading-tight ${
-                      selected ? 'text-[#244E2C]' : 'text-[#45413B]'
+                      selected ? 'text-[#0D1C42]' : 'text-[#0D1C42]'
                     }`}
                   >
                     {o.label}
@@ -405,7 +405,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
         <section>
           <p className={sectionLabel}>2 · Problem</p>
           <label className={fieldLabel} htmlFor="mt-issue">
-            Issue / Problem <span className="text-[#B3372C]">*</span>
+            Issue / Problem <span className="text-[#A83434]">*</span>
           </label>
           <select
             id="mt-issue"
@@ -415,7 +415,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
               if (e.target.value !== OTHER_ISSUE) setIssue('');
             }}
             disabled={!maintenanceType}
-            className={`${inputCls} cursor-pointer disabled:bg-[#F7F5F0] disabled:text-[#A39D92] disabled:cursor-not-allowed`}
+            className={`${inputCls} cursor-pointer disabled:bg-[#FFFCFA] disabled:text-[#98A2B3] disabled:cursor-not-allowed`}
           >
             <option value="">
               {maintenanceType ? 'Select issue…' : 'Choose a category first'}
@@ -442,10 +442,10 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
             return (
               <div
                 key={i}
-                className="mt-3 p-3 rounded-[11px] border border-[#EBE6DC] bg-[#FAF8F4] space-y-2.5"
+                className="mt-3 p-3 rounded-[11px] border border-[#E7E5E4] bg-[#FFFCFA] space-y-2.5"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-[#8C867C] uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-[#667085] uppercase tracking-wider">
                     Complaint {i + 2}
                   </span>
                   <button
@@ -454,7 +454,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
                     onClick={() =>
                       setExtraComplaints((prev) => prev.filter((_, j) => j !== i))
                     }
-                    className="w-6 h-6 rounded-[7px] flex items-center justify-center text-[#8C867C] hover:text-[#B3372C] hover:bg-[#F7EDEB] transition-colors cursor-pointer"
+                    className="w-6 h-6 rounded-[7px] flex items-center justify-center text-[#667085] hover:text-[#A83434] hover:bg-[#FAEBEB] transition-colors cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -482,7 +482,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
                       })
                     }
                     disabled={!c.type}
-                    className={`${inputCls} cursor-pointer disabled:bg-[#F2EFE9] disabled:text-[#A39D92]`}
+                    className={`${inputCls} cursor-pointer disabled:bg-[#F6F4F2] disabled:text-[#98A2B3]`}
                     aria-label={`Complaint ${i + 2} issue`}
                   >
                     <option value="">{c.type ? 'Select issue…' : 'Pick a category first'}</option>
@@ -508,7 +508,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
           <button
             type="button"
             onClick={() => setExtraComplaints((prev) => [...prev, emptyComplaint()])}
-            className="mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#386641] hover:text-[#2F5637] transition-colors cursor-pointer"
+            className="mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#800020] hover:text-[#0D1C42] transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             Add another complaint
@@ -519,7 +519,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
         <section>
           <p className={sectionLabel}>3 · Details</p>
           <label className={fieldLabel} htmlFor="mt-desc">
-            Description <span className="text-[#A39D92] font-normal">(optional)</span>
+            Description <span className="text-[#98A2B3] font-normal">(optional)</span>
           </label>
           <textarea
             id="mt-desc"
@@ -527,7 +527,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Location in the room, symptoms, when it started, how often it occurs…"
-            className="w-full min-h-[96px] px-3.5 py-2.5 bg-white border border-[#E2DCD0] rounded-[10px] text-sm leading-relaxed text-[#24221F] placeholder:text-[13px] placeholder:text-[#A39D92] focus:outline-none focus:ring-[3px] focus:ring-[#386641]/15 focus:border-[#386641] resize-y transition-[border-color,box-shadow] duration-150"
+            className="w-full min-h-[96px] px-3.5 py-2.5 bg-white border border-[#E7E5E4] rounded-[10px] text-sm leading-relaxed text-[#0D1C42] placeholder:text-[13px] placeholder:text-[#98A2B3] focus:outline-none focus:ring-[3px] focus:ring-[#800020]/15 focus:border-[#800020] resize-y transition-[border-color,box-shadow] duration-150"
           />
         </section>
 
@@ -537,7 +537,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className={fieldLabel} htmlFor="mt-priority">
-                Priority <span className="text-[#B3372C]">*</span>
+                Priority <span className="text-[#A83434]">*</span>
               </label>
               <div className="relative">
                 <span
@@ -589,16 +589,16 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-[11px] border border-dashed border-[#CFC8BA] bg-[#FAF8F4] text-left hover:border-[#386641]/60 hover:bg-[#F4F1EA] transition-colors duration-150 cursor-pointer"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-[11px] border border-dashed border-[#CDC9C7] bg-[#FFFCFA] text-left hover:border-[#800020]/60 hover:bg-[#F6F4F2] transition-colors duration-150 cursor-pointer"
           >
-            <span className="w-9 h-9 rounded-[9px] bg-white border border-[#E8E3D9] flex items-center justify-center shrink-0 text-[#736E65]">
+            <span className="w-9 h-9 rounded-[9px] bg-white border border-[#E7E5E4] flex items-center justify-center shrink-0 text-[#667085]">
               <Camera className="w-4 h-4" />
             </span>
             <span>
-              <span className="block text-[13px] font-medium text-[#45413B]">
+              <span className="block text-[13px] font-medium text-[#0D1C42]">
                 {evidence.items.length > 0 ? 'Add another photo' : 'Upload photo'}
               </span>
-              <span className="block text-xs text-[#8C867C] mt-0.5">
+              <span className="block text-xs text-[#667085] mt-0.5">
                 Optional — helps the technician locate the issue
               </span>
             </span>
@@ -608,17 +608,17 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
               {evidence.items.map((p) => (
                 <div
                   key={p.id}
-                  className="flex items-center gap-3 px-3 py-2 rounded-[10px] border border-[#DDD7CB] bg-white"
+                  className="flex items-center gap-3 px-3 py-2 rounded-[10px] border border-[#D6D3D1] bg-white"
                 >
                   <img
                     src={p.previewUrl}
                     alt={p.file.name}
-                    className="w-10 h-10 rounded-[7px] object-cover border border-[#EDE8DE] shrink-0"
+                    className="w-10 h-10 rounded-[7px] object-cover border border-[#F6F4F2] shrink-0"
                   />
-                  <span className="flex-1 text-[13px] text-[#45413B] truncate">
+                  <span className="flex-1 text-[13px] text-[#0D1C42] truncate">
                     {p.file.name}
                   </span>
-                  <span className="text-[11px] text-[#8C867C] shrink-0">
+                  <span className="text-[11px] text-[#667085] shrink-0">
                     {p.status === 'ready'
                       ? '✓ uploaded'
                       : p.status === 'error'
@@ -631,7 +631,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
                     <button
                       type="button"
                       onClick={() => evidence.retry(p.id)}
-                      className="text-[11px] font-semibold text-[#A32A2A] shrink-0 cursor-pointer"
+                      className="text-[11px] font-semibold text-[#A83434] shrink-0 cursor-pointer"
                     >
                       retry
                     </button>
@@ -640,7 +640,7 @@ export const CreateMaintenanceModal: React.FC<CreateMaintenanceModalProps> = ({
                     type="button"
                     aria-label={`Remove ${p.file.name}`}
                     onClick={() => evidence.remove(p.id)}
-                    className="w-7 h-7 rounded-[7px] flex items-center justify-center text-[#8C867C] hover:text-[#A32A2A] hover:bg-[#FDE8E8] transition-colors cursor-pointer shrink-0"
+                    className="w-7 h-7 rounded-[7px] flex items-center justify-center text-[#667085] hover:text-[#A83434] hover:bg-[#FAEBEB] transition-colors cursor-pointer shrink-0"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>

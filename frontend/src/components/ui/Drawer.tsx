@@ -42,7 +42,7 @@ export const Drawer: React.FC<DrawerProps> = ({
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-[#24221F]/40 backdrop-blur-xs ea-fade"
+        className="fixed inset-0 bg-[#0D1C42]/40 backdrop-blur-xs ea-fade"
         onClick={onClose}
       />
 
@@ -50,22 +50,22 @@ export const Drawer: React.FC<DrawerProps> = ({
       <div
         className={cn(
           'absolute inset-y-0 right-0 w-full sm:w-[520px] lg:w-[560px]',
-          'bg-[#FAF8F5] border-l border-[#DDD7CB] shadow-[-16px_0_40px_rgba(0,0,0,0.10)]',
+          'bg-[#FFFFFF] border-l border-[#D6D3D1] shadow-[-16px_0_40px_rgba(0,0,0,0.10)]',
           'flex flex-col drawer-in'
         )}
       >
-        <div className="flex items-start justify-between gap-4 px-5 sm:px-6 py-5 border-b border-[#EAE5DC] bg-white">
+        <div className="flex items-start justify-between gap-4 px-5 sm:px-6 py-5 border-b border-[#E7E5E4] bg-white">
           <div className="min-w-0">
-            <h2 className="font-display font-bold text-lg text-[#24221F] tracking-tight leading-snug">
+            <h2 className="font-display font-bold text-lg text-[#0D1C42] tracking-tight leading-snug">
               {title}
             </h2>
             {description && (
-              <p className="text-xs text-[#6C675F] mt-1 font-body">{description}</p>
+              <p className="text-xs text-[#667085] mt-1 font-body">{description}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-[#736E65] hover:text-[#24221F] hover:bg-[#F3EFE9] rounded-lg transition-colors cursor-pointer shrink-0"
+            className="p-1.5 text-[#667085] hover:text-[#0D1C42] hover:bg-[#F6F4F2] rounded-lg transition-colors cursor-pointer shrink-0"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -75,7 +75,7 @@ export const Drawer: React.FC<DrawerProps> = ({
         <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5">{children}</div>
 
         {footer && (
-          <div className="px-5 sm:px-6 py-4 border-t border-[#EAE5DC] bg-white">{footer}</div>
+          <div className="px-5 sm:px-6 py-4 border-t border-[#E7E5E4] bg-white">{footer}</div>
         )}
       </div>
     </div>

@@ -101,7 +101,7 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[70] bg-[#171511]/80 backdrop-blur-sm p-4 sm:p-8 flex items-center justify-center"
+      className="fixed inset-0 z-[70] bg-[#0D1C42]/80 backdrop-blur-sm p-4 sm:p-8 flex items-center justify-center"
       ref={dialogRef}
       role="dialog"
       aria-modal="true"
@@ -109,19 +109,19 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-5xl max-h-[calc(100dvh-2rem)] bg-[#24221F] border border-white/10 rounded-[18px] shadow-2xl text-white overflow-y-auto"
+        className="w-full max-w-5xl max-h-[calc(100dvh-2rem)] bg-[#0D1C42] border border-white/10 rounded-[18px] shadow-2xl text-white overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-white/10">
           <div className="flex items-center gap-2 min-w-0">
-            <ImageIcon className="w-4 h-4 text-[#CFC8BB] shrink-0" />
+            <ImageIcon className="w-4 h-4 text-[#CDC9C7] shrink-0" />
             <h2 className="font-display font-semibold text-lg truncate">{title}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close image preview"
-            className="w-9 h-9 rounded-full flex items-center justify-center text-[#D8D1C4] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-[#D6D3D1] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -131,7 +131,7 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
           {failedUrls.has(current.url) ? (
             <div className="text-center px-12" role="alert">
               <p>Evidence image could not be loaded.</p>
-              <p className="text-sm text-[#DDD7CB] mt-2">The file may be unavailable or media storage may be temporarily unreachable.</p>
+              <p className="text-sm text-[#D6D3D1] mt-2">The file may be unavailable or media storage may be temporarily unreachable.</p>
               <Button variant="ghost" className="mt-4" onClick={() => {
                 setFailedUrls((previous) => {
                   const next = new Set(previous);
@@ -182,7 +182,7 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
                 aria-label={`View image ${i + 1}`}
                 aria-current={i === index ? 'true' : undefined}
                 className={`w-16 h-16 rounded-[10px] overflow-hidden border-2 shrink-0 cursor-pointer transition-colors ${
-                  i === index ? 'border-[#9FBF88]' : 'border-white/15 hover:border-white/35'
+                  i === index ? 'border-[#800020]' : 'border-white/15 hover:border-white/35'
                 }`}
               >
                 <EvidencePhoto
@@ -196,7 +196,7 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
         )}
 
         <div className="flex items-center justify-between gap-3 px-5 py-4">
-          <span className="text-sm text-[#D8D1C4]">
+          <span className="text-sm text-[#D6D3D1]">
             Image {index + 1} of {images.length}
           </span>
           {canDeleteCurrent && (
@@ -221,11 +221,11 @@ export const CompletionEvidenceLightbox: React.FC<Props> = ({
           }}
         >
           <div
-            className="w-full max-w-sm bg-white rounded-[16px] p-5 shadow-2xl text-[#24221F]"
+            className="w-full max-w-sm bg-white rounded-[16px] p-5 shadow-2xl text-[#0D1C42]"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="font-display font-semibold text-base">Delete this image?</h3>
-            <p className="text-sm text-[#6C675F] mt-2">
+            <p className="text-sm text-[#667085] mt-2">
               This completion image will be permanently removed from this task.
             </p>
             <div className="flex justify-end gap-2 mt-5">

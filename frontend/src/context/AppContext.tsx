@@ -23,6 +23,7 @@ import {
   Property,
   Room,
   RoomStatus,
+  Section,
   Task,
   TaskStatus,
   UserRole,
@@ -37,6 +38,7 @@ import { useRealtimeChannel, propChannel } from '../realtime/useRealtimeChannel'
 import { useSession } from './SessionContext';
 import * as propertiesApi from '../api/properties';
 import * as areasApi from '../api/areas';
+import * as sectionsApi from '../api/sections';
 import * as zonesApi from '../api/zones';
 import * as roomsApi from '../api/rooms';
 import * as dormsApi from '../api/dorms';
@@ -59,6 +61,8 @@ import {
   ZoneCreateRequest,
   AreaCreateRequest,
   AreaUpdateRequest,
+  SectionCreateRequest,
+  SectionUpdateRequest,
   ZoneUpdateRequest,
   RoomUpdateRequest,
   DormUpdateRequest,
@@ -142,6 +146,7 @@ interface AppContextType {
   ) => () => void;
 
   // Computed collections scoped to active property
+  currentPropertySections: Section[];
   currentPropertyAreas: Area[];
   currentPropertyZones: Zone[];
   currentPropertyRooms: Room[];
@@ -158,6 +163,11 @@ interface AppContextType {
   createProperty: (data: PropertyCreateRequest) => Promise<Property>;
   updateProperty: (property_uid: string, updates: PropertyUpdateRequest) => Promise<void>;
   deleteProperty: (property_uid: string) => Promise<void>;
+
+  // Section Operations
+  createSection: (data: Omit<SectionCreateRequest, 'property_uid'>) => Promise<Section>;
+  updateSection: (section_uid: string, updates: SectionUpdateRequest) => Promise<void>;
+  deleteSection: (section_uid: string) => Promise<void>;
 
   // Area Operations
   createArea: (data: Omit<AreaCreateRequest, 'property_uid'>) => Promise<Area>;
@@ -331,6 +341,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // -------------------------------------------------------------------
   const [properties, setProperties] = useState<Property[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [dorms, setDorms] = useState<Dorm[]>([]);
@@ -403,6 +414,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
       setProperties(wsRes.properties.items);
       setAreas(wsRes.areas.items);
+      setSections((await sectionsApi.listSections()).items);
       setZones(wsRes.zones.items);
       setRooms(wsRes.rooms.items);
       setDorms(wsRes.dorms.items);
@@ -684,6 +696,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const wipeCollections = useCallback(() => {
     setProperties([]);
     setAreas([]);
+    setSections([]);
     setZones([]);
     setRooms([]);
     setDorms([]);
@@ -735,6 +748,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         .filter((a) => a.property_uid === activePropertyUid)
         .sort((a, b) => a.level_number - b.level_number),
     [areas, activePropertyUid]
+  );
+
+  const currentPropertySections = useMemo(
+    () =>
+      sections
+        .filter((x) => x.property_uid === activePropertyUid)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [sections, activePropertyUid]
   );
 
   const currentPropertyZones = useMemo(
@@ -887,6 +908,59 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     },
     [properties, activePropertyUid, loadWorkspace, addToast]
+  );
+
+  // -------------------------------------------------------------------
+  // Section operations
+  // -------------------------------------------------------------------
+  const createSection = useCallback(
+    async (data: Omit<SectionCreateRequest, 'property_uid'>): Promise<Section> => {
+      const created = await sectionsApi
+        .createSection({ ...data, property_uid: activePropertyUid })
+        .catch((err: unknown) => createError(err, 'Create Failed', 'Could not create the section.'));
+      setSections((prev) => [...prev, created]);
+      addToast({ type: 'success', title: 'Section Created', description: `${created.name} added.` });
+      return created;
+    },
+    [activePropertyUid, addToast, createError]
+  );
+
+  const updateSection = useCallback(
+    async (section_uid: string, updates: SectionUpdateRequest) => {
+      try {
+        const updated = await sectionsApi.updateSection(section_uid, updates);
+        setSections((prev) => prev.map((x) => (x.section_uid === section_uid ? updated : x)));
+        addToast({ type: 'success', title: 'Section Updated', description: 'Changes saved.' });
+      } catch (err) {
+        addToast({
+          type: 'error',
+          title: 'Update Failed',
+          description: apiErrorMessage(err, 'Could not update the section.'),
+        });
+        throw err;
+      }
+    },
+    [addToast]
+  );
+
+  const deleteSection = useCallback(
+    async (section_uid: string) => {
+      try {
+        await sectionsApi.deleteSection(section_uid);
+        setSections((prev) => prev.filter((x) => x.section_uid !== section_uid));
+        setAreas((prev) =>
+          prev.map((a) => (a.section_uid === section_uid ? { ...a, section_uid: null } : a))
+        );
+        addToast({ type: 'warning', title: 'Section Deleted', description: 'Areas inside were ungrouped, not deleted.' });
+      } catch (err) {
+        addToast({
+          type: 'error',
+          title: 'Delete Failed',
+          description: apiErrorMessage(err, 'Could not delete the section.'),
+        });
+      }
+    },
+    [addToast]
   );
 
   // -------------------------------------------------------------------
@@ -2671,6 +2745,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     createProperty,
     updateProperty,
     deleteProperty,
+    currentPropertySections,
+    createSection,
+    updateSection,
+    deleteSection,
     createArea,
     updateArea,
     deleteArea,

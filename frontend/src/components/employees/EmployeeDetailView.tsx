@@ -21,7 +21,7 @@ import { DevicesTab } from './analysis/DevicesTab';
 import { AllocationTimeline } from './analytics/AllocationTimeline';
 import { BlockLoading, TabBtn, card } from './analysis/kit';
 
-const input = 'min-w-0 rounded-md border border-[#E9EDF2] bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#365D78]/25';
+const input = 'min-w-0 rounded-md border border-[#EAF1FB] bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#2457A8]/25';
 const filters: Record<EmployeeTaskFilter, string> = {
   all: 'All related tasks', allocated: 'Allocated to employee', completed: 'Approved completions',
   abandoned: 'Recorded abandonment while assigned', rejected: 'Submitted work rejected',
@@ -59,21 +59,21 @@ export function duration(seconds: number | null | undefined): string {
 
 function Failure({ retry }: { retry: () => void }) {
   return <div role="alert" className="p-8 text-center">
-    <h2 className="text-sm font-semibold text-[#17212B]">Unable to load employee</h2>
-    <p className="my-2 text-xs text-[#697586]">The employee may be unavailable, outside your property access, or the connection may be interrupted.</p>
+    <h2 className="text-sm font-semibold text-[#2457A8]">Unable to load employee</h2>
+    <p className="my-2 text-xs text-[#2457A8]">The employee may be unavailable, outside your property access, or the connection may be interrupted.</p>
     <Button size="sm" variant="outline" onClick={retry}>Retry</Button>
   </div>;
 }
 function Fields({ fields }: { fields: Record<string, React.ReactNode> }) {
   return <dl className="grid gap-x-6 gap-y-3 text-xs sm:grid-cols-2 lg:grid-cols-3">{Object.entries(fields).map(([label, value]) => (
     <div key={label} className="min-w-0">
-      <dt className="text-[#697586]">{label}</dt>
-      <dd className="mt-1 whitespace-pre-wrap break-words font-medium text-[#17212B]">{value ?? 'Not recorded'}</dd>
+      <dt className="text-[#2457A8]">{label}</dt>
+      <dd className="mt-1 whitespace-pre-wrap break-words font-medium text-[#2457A8]">{value ?? 'Not recorded'}</dd>
     </div>))}
   </dl>;
 }
 function Pager({ data, page, setPage }: { data: EmployeePage<unknown>; page: number; setPage: (page: number) => void }) {
-  return <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E9EDF2] p-4 text-xs text-[#697586]">
+  return <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[#EAF1FB] p-4 text-xs text-[#2457A8]">
     <span>{data.total.toLocaleString()} records · Page {page} of {Math.max(1, Math.ceil(data.total / data.limit))}</span>
     <div className="flex gap-2">
       <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</Button>
@@ -116,36 +116,36 @@ export const EmployeeDetailView: React.FC = () => {
     <header className={`${card} px-5 py-4`}>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <button onClick={() => navigate(`/property/${propertyUid}/workforce/employees`)}
-          className="flex items-center gap-1.5 self-start pt-1 text-xs font-medium text-[#697586] transition-colors hover:text-[#17212B]">
+          className="flex items-center gap-1.5 self-start pt-1 text-xs font-medium text-[#2457A8] transition-colors hover:text-[#2457A8]">
           <ArrowLeft size={14} /> Employees</button>
         <div className="flex items-center gap-3.5">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold text-white"
-            style={{ backgroundColor: employee.avatar_color || '#365D78' }}>{getInitials(employee.name)}</span>
+            style={{ backgroundColor: employee.avatar_color || '#2457A8' }}>{getInitials(employee.name)}</span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              <h1 className="break-words text-[22px] font-semibold leading-tight tracking-[-0.01em] text-[#17212B]">{employee.name}</h1>
-              <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: active ? '#169B72' : '#98A2B3' }}>
-                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: active ? '#169B72' : '#98A2B3' }} />{employee.status}</span>
-              {!!employee.leave_status && <span className="text-xs font-medium text-[#D99532]">· On leave</span>}
-              {tasks.current_open > 0 && <span className="text-xs text-[#697586]">· {tasks.current_open} open {tasks.current_open === 1 ? 'task' : 'tasks'}</span>}
+              <h1 className="break-words text-[22px] font-semibold leading-tight tracking-[-0.01em] text-[#2457A8]">{employee.name}</h1>
+              <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: active ? '#800020' : '#7FA8CE' }}>
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: active ? '#800020' : '#7FA8CE' }} />{employee.status}</span>
+              {!!employee.leave_status && <span className="text-xs font-medium text-[#A56514]">· On leave</span>}
+              {tasks.current_open > 0 && <span className="text-xs text-[#2457A8]">· {tasks.current_open} open {tasks.current_open === 1 ? 'task' : 'tasks'}</span>}
             </div>
-            <p className="mt-0.5 text-[13px] text-[#697586]">
+            <p className="mt-0.5 text-[13px] text-[#2457A8]">
               {employee.job_title || 'Employee'}{employee.department ? ` · ${employee.department}` : ''}
               {employee.shift ? ` · ${employee.shift}` : ''}
             </p>
-            <p className="text-xs text-[#8C867C]">
+            <p className="text-xs text-[#667085]">
               {context.property_name} · {coverage || 'Unallocated'}
-              <span className="mx-2 text-[#C8C1B4]">|</span>
+              <span className="mx-2 text-[#CDC9C7]">|</span>
               <span className="font-mono text-[11px]">ID {employee.employee_uid.slice(0, 8)}</span>
             </p>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-3">
-          <div className="hidden flex-col items-end gap-0.5 text-xs text-[#697586] lg:flex">
-            {employee.email && <span className="flex items-center gap-1.5"><Mail size={11} className="text-[#98A2B3]" />{employee.email}</span>}
-            {employee.phone && <span className="flex items-center gap-1.5"><Phone size={11} className="text-[#98A2B3]" />{employee.phone}</span>}
+          <div className="hidden flex-col items-end gap-0.5 text-xs text-[#2457A8] lg:flex">
+            {employee.email && <span className="flex items-center gap-1.5"><Mail size={11} className="text-[#7FA8CE]" />{employee.email}</span>}
+            {employee.phone && <span className="flex items-center gap-1.5"><Phone size={11} className="text-[#7FA8CE]" />{employee.phone}</span>}
           </div>
-          <span className="hidden h-8 w-px bg-[#E9EDF2] lg:block" />
+          <span className="hidden h-8 w-px bg-[#EAF1FB] lg:block" />
           <PeriodSelector period={period} onChange={setPeriod} />
           <Button size="sm" variant="ghost" aria-label="Refresh" onClick={() => setRefresh((v) => v + 1)}><RefreshCw size={14} /></Button>
         </div>
@@ -155,12 +155,12 @@ export const EmployeeDetailView: React.FC = () => {
     {/* Tab navigation + reporting-period metadata */}
     <div className="flex flex-wrap items-center justify-between gap-2">
       <nav aria-label="Employee analysis sections"
-        className="flex w-fit max-w-full gap-1 rounded-lg bg-[#F1F3F6] p-1">
+        className="flex w-fit max-w-full gap-1 rounded-lg bg-[#FFFCFA] p-1">
         {TABS.map(([key, label]) => (
           <TabBtn key={key} active={tab === key} onClick={() => setTab(key)}>{label}</TabBtn>))}
       </nav>
-      <p className="text-xs text-[#98A2B3]">
-        Reporting period: <span className="font-medium text-[#697586]">{period.label}</span> · IST
+      <p className="text-xs text-[#7FA8CE]">
+        Reporting period: <span className="font-medium text-[#2457A8]">{period.label}</span> · IST
       </p>
     </div>
 
@@ -203,12 +203,12 @@ function ProfileDisclosure({ employee, context, attendance, leave_requests }: {
   if (attendance.recorded_days) fields['Recorded work (closed days)'] = duration(attendance.recorded_work_seconds);
   if (!Object.keys(fields).length) return null;
   return <details open={open} onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
-    className="rounded-lg border border-[#E9EDF2] bg-white">
-    <summary className="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-xs font-medium text-[#697586] hover:text-[#17212B]">
+    className="rounded-lg border border-[#EAF1FB] bg-white">
+    <summary className="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-xs font-medium text-[#2457A8] hover:text-[#2457A8]">
       <UserRound size={13} /> Employee profile details
       <ChevronDown size={13} className={`ml-auto transition ${open ? 'rotate-180' : ''}`} />
     </summary>
-    <div className="border-t border-[#E9EDF2] px-4 py-3"><Fields fields={fields} /></div>
+    <div className="border-t border-[#EAF1FB] px-4 py-3"><Fields fields={fields} /></div>
   </details>;
 }
 
@@ -240,11 +240,11 @@ function EmployeeTasks({ employeeId, propertyId, bounds }: {
     }, delay);
     return () => { window.clearTimeout(timer); request.current += 1; };
   }, [employeeId, propertyId, filter, search, page, retry, bounds.date_from, bounds.date_to]);
-  return <section aria-label="Employee task history" className="overflow-hidden rounded-lg border border-[#E9EDF2] bg-white">
-    <div className="space-y-3 border-b border-[#E9EDF2] p-4">
+  return <section aria-label="Employee task history" className="overflow-hidden rounded-lg border border-[#EAF1FB] bg-white">
+    <div className="space-y-3 border-b border-[#EAF1FB] p-4">
       <div className="flex flex-wrap gap-3">
         <label className="relative min-w-48 flex-1">
-          <Search size={14} className="absolute left-3 top-2.5 text-[#697586]" />
+          <Search size={14} className="absolute left-3 top-2.5 text-[#2457A8]" />
           <input aria-label="Search employee tasks" placeholder="Search task name, ticket or task ID" maxLength={200}
             value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className={`${input} w-full pl-9`} />
         </label>
@@ -253,16 +253,16 @@ function EmployeeTasks({ employeeId, propertyId, bounds }: {
           {Object.entries(filters).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select>
       </div>
-      <p className="text-xs leading-relaxed text-[#697586]">Current task status is separate from this employee's submission/review. Elapsed start → submission is shown only with a recorded allocation to this employee and no intervening reassignment; it includes pauses and is not measured active working time. Task counts exclude maintenance tickets; allocation history includes both.</p>
+      <p className="text-xs leading-relaxed text-[#2457A8]">Current task status is separate from this employee's submission/review. Elapsed start → submission is shown only with a recorded allocation to this employee and no intervening reassignment; it includes pauses and is not measured active working time. Task counts exclude maintenance tickets; allocation history includes both.</p>
     </div>
     {loading ? <BlockLoading /> : error ? <Failure retry={() => setRetry((v) => v + 1)} />
-      : !data?.items.length ? <div className="p-8 text-center text-sm text-[#697586]">No matching task records.
+      : !data?.items.length ? <div className="p-8 text-center text-sm text-[#2457A8]">No matching task records.
         <Button size="sm" variant="ghost" onClick={() => { setSearch(''); setFilter('all'); }}>Clear filters</Button></div>
-      : <ul className="divide-y divide-[#E9EDF2]">{data.items.map((task) => <li key={task.task_uid} className="p-4">
+      : <ul className="divide-y divide-[#EAF1FB]">{data.items.map((task) => <li key={task.task_uid} className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <div><h3 className="text-sm font-semibold text-[#17212B]">{task.title}</h3>
-            <p className="mt-1 text-xs text-[#697586]">{task.ticket_number || 'No ticket number'} · {task.property_name}</p></div>
-          <span className="rounded border border-[#E9EDF2] bg-[#F7F8FA] px-2 py-1 text-xs">Current: {TASK_STATUS_LABELS[task.current_status] || readable(task.current_status)}</span>
+          <div><h3 className="text-sm font-semibold text-[#2457A8]">{task.title}</h3>
+            <p className="mt-1 text-xs text-[#2457A8]">{task.ticket_number || 'No ticket number'} · {task.property_name}</p></div>
+          <span className="rounded border border-[#EAF1FB] bg-[#FFFFFF] px-2 py-1 text-xs">Current: {TASK_STATUS_LABELS[task.current_status] || readable(task.current_status)}</span>
         </div>
         <div className="my-4"><Fields fields={{
           'Current assignee': task.current_assignee || 'Unassigned',
@@ -300,20 +300,20 @@ function TaskHistory({ taskId }: { taskId: string }) {
   }, [taskId, retry]);
   if (error) return <Failure retry={() => setRetry((v) => v + 1)} />;
   if (!data) return <BlockLoading />;
-  return <div className="mt-3 rounded-lg border border-[#E9EDF2] bg-[#F7F8FA] p-4">
-    <h4 className="text-xs font-semibold text-[#17212B]">Available task history · all actors · oldest first</h4>
-    <p className="mt-1 text-[11px] text-[#697586]">This is the task's full available history, not a claim that this employee performed every action.</p>
-    {!data.history?.length ? <p className="mt-4 text-xs text-[#697586]">No task-history events recorded.</p>
+  return <div className="mt-3 rounded-lg border border-[#EAF1FB] bg-[#FFFFFF] p-4">
+    <h4 className="text-xs font-semibold text-[#2457A8]">Available task history · all actors · oldest first</h4>
+    <p className="mt-1 text-[11px] text-[#2457A8]">This is the task's full available history, not a claim that this employee performed every action.</p>
+    {!data.history?.length ? <p className="mt-4 text-xs text-[#2457A8]">No task-history events recorded.</p>
       : <ol className="mt-4">{[...data.history].sort((a, b) => Date.parse(a.at) - Date.parse(b.at) || a.event_uid.localeCompare(b.event_uid)).map((event) => (
-        <li key={event.event_uid} className="relative ml-1 border-l border-[#E9EDF2] pb-4 pl-4">
-          <span className="absolute -left-1 top-1 h-2 w-2 rounded-full bg-[#365D78]" />
+        <li key={event.event_uid} className="relative ml-1 border-l border-[#EAF1FB] pb-4 pl-4">
+          <span className="absolute -left-1 top-1 h-2 w-2 rounded-full bg-[#2457A8]" />
           <div className="flex flex-wrap justify-between gap-2 text-xs">
-            <span className="font-medium text-[#17212B]">{readable(event.type)}</span>
-            <time dateTime={event.at} className="text-[#697586]">{dateTime(event.at)}</time>
+            <span className="font-medium text-[#2457A8]">{readable(event.type)}</span>
+            <time dateTime={event.at} className="text-[#2457A8]">{dateTime(event.at)}</time>
           </div>
-          <p className="mt-1 text-xs text-[#697586]">{event.actor_name || 'Actor not recorded'}</p>
-          {event.note && <p className="mt-1 whitespace-pre-wrap break-words text-xs text-[#697586]">{event.note}</p>}
-          {!!event.photos?.length && <p className="mt-1 text-[11px] text-[#697586]">{event.photos.length} evidence attachment reference(s) recorded</p>}
+          <p className="mt-1 text-xs text-[#2457A8]">{event.actor_name || 'Actor not recorded'}</p>
+          {event.note && <p className="mt-1 whitespace-pre-wrap break-words text-xs text-[#2457A8]">{event.note}</p>}
+          {!!event.photos?.length && <p className="mt-1 text-[11px] text-[#2457A8]">{event.photos.length} evidence attachment reference(s) recorded</p>}
         </li>))}
       </ol>}
   </div>;
@@ -346,7 +346,7 @@ function RecordsSection({ employeeId, propertyId, bounds }: {
 }) {
   const [kind, setKind] = useState<keyof typeof RECORD_TABS>('tasks');
   return <div className="space-y-3">
-    <nav aria-label="Record type" className="flex w-fit max-w-full flex-wrap gap-1 rounded-lg border border-[#E9EDF2] bg-[#F7F8FA] p-1">
+    <nav aria-label="Record type" className="flex w-fit max-w-full flex-wrap gap-1 rounded-lg border border-[#EAF1FB] bg-[#FFFFFF] p-1">
       {Object.entries(RECORD_TABS).map(([key, label]) => (
         <TabBtn key={key} active={kind === key} onClick={() => setKind(key as keyof typeof RECORD_TABS)}>{label}</TabBtn>))}
     </nav>
@@ -374,12 +374,12 @@ function EmployeeRecords({ employeeId, propertyId, kind, bounds }: {
     }).catch(() => { if (active) setError(true); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [employeeId, propertyId, kind, page, retry, bounds.date_from, bounds.date_to]);
-  return <section aria-label={RECORD_TABS[kind]} className="overflow-hidden rounded-lg border border-[#E9EDF2] bg-white">
-    <h2 className="border-b border-[#E9EDF2] p-4 text-sm font-semibold text-[#17212B]">{RECORD_TABS[kind]}
-      <span className="ml-2 text-xs font-normal text-[#697586]">Recorded history · newest first</span></h2>
+  return <section aria-label={RECORD_TABS[kind]} className="overflow-hidden rounded-lg border border-[#EAF1FB] bg-white">
+    <h2 className="border-b border-[#EAF1FB] p-4 text-sm font-semibold text-[#2457A8]">{RECORD_TABS[kind]}
+      <span className="ml-2 text-xs font-normal text-[#2457A8]">Recorded history · newest first</span></h2>
     {loading ? <BlockLoading /> : error ? <Failure retry={() => setRetry((v) => v + 1)} />
-      : !data?.items.length ? <p className="p-8 text-center text-sm text-[#697586]">No {RECORD_TABS[kind].toLowerCase()} records available.</p>
-      : <ul className="divide-y divide-[#E9EDF2]">{data.items.map((record) => (
+      : !data?.items.length ? <p className="p-8 text-center text-sm text-[#2457A8]">No {RECORD_TABS[kind].toLowerCase()} records available.</p>
+      : <ul className="divide-y divide-[#EAF1FB]">{data.items.map((record) => (
         <li key={record.record_uid} className="p-4">
           <Fields fields={Object.fromEntries(Object.entries(record)
             .filter(([key]) => !['record_uid', 'lifecycle', 'work_uid'].includes(key))

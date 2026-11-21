@@ -103,16 +103,16 @@ export function recordedOutcome(log: ActivityLog): string {
 }
 
 export function eventTone(log: ActivityLog): string {
-  if (metadata(log).outcome === 'failed') return 'bg-[#A85343]';
-  if (log.category === 'session' && recordedOutcome(log) === 'Successful') return 'bg-[#386641]';
+  if (metadata(log).outcome === 'failed') return 'bg-[#A83434]';
+  if (log.category === 'session' && recordedOutcome(log) === 'Successful') return 'bg-[#16865B]';
   if (log.category === 'task') {
-    if (['completed', 'approved', 'evidence_approved'].includes(log.action)) return 'bg-[#386641]';
-    if (['abandoned', 'cancelled', 'rejected', 'evidence_disapproved'].includes(log.action)) return 'bg-[#A85343]';
-    if (['submitted', 'completion_submitted', 'redo_requested'].includes(log.action)) return 'bg-[#AC7F28]';
-    if (['allocated', 'reassigned', 'auto_generated', 'started', 'reopened'].includes(log.action)) return 'bg-[#56758C]';
+    if (['completed', 'approved', 'evidence_approved'].includes(log.action)) return 'bg-[#16865B]';
+    if (['abandoned', 'cancelled', 'rejected', 'evidence_disapproved'].includes(log.action)) return 'bg-[#A83434]';
+    if (['submitted', 'completion_submitted', 'redo_requested'].includes(log.action)) return 'bg-[#A56514]';
+    if (['allocated', 'reassigned', 'auto_generated', 'started', 'reopened'].includes(log.action)) return 'bg-[#2457A8]';
   }
-  if (log.category === 'allocation') return 'bg-[#56758C]';
-  return 'bg-[#92968A]';
+  if (log.category === 'allocation') return 'bg-[#2457A8]';
+  return 'bg-[#800020]';
 }
 
 export interface ActivityGroup { id: string; events: ActivityLog[] }

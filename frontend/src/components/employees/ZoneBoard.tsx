@@ -48,11 +48,11 @@ interface ZoneBoardProps {
 const DutyContext = createContext<DutyContextValue>(EMPTY_DUTY);
 
 const DUTY_CHIP: Record<DutyState, string> = {
-  active: 'bg-[#E7F0E9] text-[#2F6B45]',
-  on_break: 'bg-[#FFF3E4] text-[#8A5A1E]',
-  ended: 'bg-[#EEF0F2] text-[#4B5563]',
-  absent: 'bg-[#F6EDEE] text-[#8C4A52]',
-  unknown: 'bg-[#F3F3F1] text-[#8C867C]',
+  active: 'bg-[#F7E9EE] text-[#800020]',
+  on_break: 'bg-[#FDF3E2] text-[#A56514]',
+  ended: 'bg-[#FFFCFA] text-[#2457A8]',
+  absent: 'bg-[#FAEBEB] text-[#A83434]',
+  unknown: 'bg-[#FFFCFA] text-[#667085]',
 };
 
 interface ColumnSummary {
@@ -150,24 +150,24 @@ const DraggableEmployeeCard: React.FC<{
       style={style}
       {...(isOverlay ? {} : listeners)}
       {...(isOverlay ? {} : attributes)}
-      className={`relative bg-white rounded-[10px] px-3 py-2.5 border border-[#DDD7CB] shadow-[0_1px_3px_rgba(20,30,24,0.06)] hover:shadow-[0_4px_12px_rgba(20,30,24,0.08)] hover:border-[#2F6B45]/40 transition-[box-shadow,border-color] duration-150 select-none touch-none ${
+      className={`relative bg-white rounded-[10px] px-3 py-2.5 border border-[#D6D3D1] shadow-[0_1px_3px_rgba(20,30,24,0.06)] hover:shadow-[0_4px_12px_rgba(20,30,24,0.08)] hover:border-[#800020]/40 transition-[box-shadow,border-color] duration-150 select-none touch-none ${
         isOverlay
-          ? 'shadow-[0_8px_24px_rgba(20,30,24,0.14)] rotate-1 scale-[1.03] cursor-grabbing ring-2 ring-[#2F6B45]'
+          ? 'shadow-[0_8px_24px_rgba(20,30,24,0.14)] rotate-1 scale-[1.03] cursor-grabbing ring-2 ring-[#800020]'
           : 'cursor-grab active:cursor-grabbing'
       }`}
     >
       <div className="flex items-center gap-2.5">
         <div
           className="w-8 h-8 rounded-full text-white flex items-center justify-center font-semibold text-[11px] shrink-0"
-          style={{ backgroundColor: employee.avatar_color || '#2F6B45' }}
+          style={{ backgroundColor: employee.avatar_color || '#800020' }}
         >
           {getInitials(employee.name)}
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="font-semibold text-[13px] text-[#17221B] leading-tight truncate">
-            <button type="button" disabled={isOverlay} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); navigate(`/property/${employee.property_uid}/workforce/employees/${employee.employee_uid}`); }} aria-label={`View employee profile for ${employee.name}`} className="max-w-full truncate text-left hover:underline focus-visible:outline-2 focus-visible:outline-[#386641]">{employee.name}</button>
+          <h4 className="font-semibold text-[13px] text-[#0D1C42] leading-tight truncate">
+            <button type="button" disabled={isOverlay} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); navigate(`/property/${employee.property_uid}/workforce/employees/${employee.employee_uid}`); }} aria-label={`View employee profile for ${employee.name}`} className="max-w-full truncate text-left hover:underline focus-visible:outline-2 focus-visible:outline-[#800020]">{employee.name}</button>
           </h4>
-          <p className="text-[11px] text-[#66706A] font-body truncate">
+          <p className="text-[11px] text-[#800020] font-body truncate">
             {employee.job_title}
             {employee.department ? ` · ${employee.department}` : ''}
           </p>
@@ -191,14 +191,14 @@ const DraggableEmployeeCard: React.FC<{
               }}
               className={`p-0.5 rounded transition-colors ${
                 menuOpen || employee.secondary_zone_uid || coveredAreaUids.length > 0
-                  ? 'text-[#2F6B45]'
-                  : 'text-[#8C867C] hover:text-[#2F6B45]'
+                  ? 'text-[#800020]'
+                  : 'text-[#667085] hover:text-[#800020]'
               }`}
             >
               <MapPinPlus className="w-3.5 h-3.5" />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-[calc(100%+4px)] z-40 w-52 rounded-[10px] border border-[#DDD7CB] bg-white shadow-[0_8px_24px_rgba(20,30,24,0.14)] p-1 max-h-72 overflow-y-auto">
+              <div className="absolute right-0 top-[calc(100%+4px)] z-40 w-52 rounded-[10px] border border-[#D6D3D1] bg-white shadow-[0_8px_24px_rgba(20,30,24,0.14)] p-1 max-h-72 overflow-y-auto">
                 {/* Whole property */}
                 <button
                   type="button"
@@ -213,14 +213,14 @@ const DraggableEmployeeCard: React.FC<{
                   }}
                   className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[7px] text-left text-[11px] transition-colors ${
                     employee.covers_property
-                      ? 'text-[#A32A2A] hover:bg-[#FDE8E8]'
-                      : 'text-[#24221F] hover:bg-[#E9EDF2]'
+                      ? 'text-[#A83434] hover:bg-[#FAEBEB]'
+                      : 'text-[#0D1C42] hover:bg-[#EAF1FB]'
                   }`}
                 >
                   {employee.covers_property ? (
                     <MapPinX className="w-3 h-3 shrink-0" />
                   ) : (
-                    <Building2 className="w-3 h-3 text-[#2F6B45] shrink-0" />
+                    <Building2 className="w-3 h-3 text-[#800020] shrink-0" />
                   )}
                   <span className="truncate">
                     {employee.covers_property
@@ -232,7 +232,7 @@ const DraggableEmployeeCard: React.FC<{
                 {/* Whole areas — additive multi-area coverage */}
                 {areaMenuAreas.length > 0 && (
                   <>
-                    <p className="px-2 py-1 mt-1 border-t border-[#EFEAE0] pt-2 text-[9px] font-semibold uppercase tracking-wider text-[#8C867C]">
+                    <p className="px-2 py-1 mt-1 border-t border-[#F6F4F2] pt-2 text-[9px] font-semibold uppercase tracking-wider text-[#667085]">
                       Whole-area coverage
                     </p>
                     {areaMenuAreas.map((a) => {
@@ -252,14 +252,14 @@ const DraggableEmployeeCard: React.FC<{
                           }}
                           className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[7px] text-left text-[11px] transition-colors ${
                             covered
-                              ? 'text-[#A32A2A] hover:bg-[#FDE8E8]'
-                              : 'text-[#24221F] hover:bg-[#E9EDF2]'
+                              ? 'text-[#A83434] hover:bg-[#FAEBEB]'
+                              : 'text-[#0D1C42] hover:bg-[#EAF1FB]'
                           }`}
                         >
                           {covered ? (
                             <MapPinX className="w-3 h-3 shrink-0" />
                           ) : (
-                            <MapPinPlus className="w-3 h-3 text-[#2F6B45] shrink-0" />
+                            <MapPinPlus className="w-3 h-3 text-[#800020] shrink-0" />
                           )}
                           <span className="truncate">
                             {covered ? `Remove ${a.name}` : `Entire ${a.name}`}
@@ -275,7 +275,7 @@ const DraggableEmployeeCard: React.FC<{
                     staff; a direct zone assign for everyone else */}
                 {currentPropertyZones.length > 0 && (
                   <>
-                    <p className="px-2 py-1 mt-1 border-t border-[#EFEAE0] pt-2 text-[9px] font-semibold uppercase tracking-wider text-[#8C867C]">
+                    <p className="px-2 py-1 mt-1 border-t border-[#F6F4F2] pt-2 text-[9px] font-semibold uppercase tracking-wider text-[#667085]">
                       Zone allocation
                     </p>
                     {employee.zone_uid && (
@@ -286,7 +286,7 @@ const DraggableEmployeeCard: React.FC<{
                           setMenuOpen(false);
                           assignEmployeeToZone(employee.employee_uid, null);
                         }}
-                        className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[7px] text-left text-[11px] text-[#A32A2A] hover:bg-[#FDE8E8] transition-colors"
+                        className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[7px] text-left text-[11px] text-[#A83434] hover:bg-[#FAEBEB] transition-colors"
                       >
                         <MapPinX className="w-3 h-3 shrink-0" />
                         <span className="truncate">
@@ -302,7 +302,7 @@ const DraggableEmployeeCard: React.FC<{
                           setMenuOpen(false);
                           assignEmployeeSecondaryZone(employee.employee_uid, null);
                         }}
-                        className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[7px] text-left text-[11px] text-[#A32A2A] hover:bg-[#FDE8E8] transition-colors"
+                        className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[7px] text-left text-[11px] text-[#A83434] hover:bg-[#FAEBEB] transition-colors"
                       >
                         <MapPinX className="w-3 h-3 shrink-0" />
                         <span className="truncate">
@@ -323,9 +323,9 @@ const DraggableEmployeeCard: React.FC<{
                             assignEmployeeToZone(employee.employee_uid, z.zone_uid);
                           }
                         }}
-                        className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[7px] text-left text-[11px] text-[#24221F] hover:bg-[#E9EDF2] transition-colors"
+                        className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[7px] text-left text-[11px] text-[#0D1C42] hover:bg-[#EAF1FB] transition-colors"
                       >
-                        <MapPinPlus className="w-3 h-3 text-[#2F6B45] shrink-0" />
+                        <MapPinPlus className="w-3 h-3 text-[#800020] shrink-0" />
                         <span className="truncate">
                           {z.name}
                           {z.code ? ` (${z.code})` : ''}
@@ -335,7 +335,7 @@ const DraggableEmployeeCard: React.FC<{
                     {employee.zone_uid &&
                       secondZoneCandidates.length === 0 &&
                       !employee.secondary_zone_uid && (
-                        <p className="px-2 py-1.5 text-[10px] text-[#8C867C]">
+                        <p className="px-2 py-1.5 text-[10px] text-[#667085]">
                           No other zones available
                         </p>
                       )}
@@ -346,7 +346,7 @@ const DraggableEmployeeCard: React.FC<{
           </div>
         )}
         <div
-          className="text-[#B8B2A4] p-0.5 shrink-0"
+          className="text-[#CDC9C7] p-0.5 shrink-0"
           title="Drag to another zone or area"
         >
           <GripVertical className="w-3.5 h-3.5" />
@@ -358,20 +358,20 @@ const DraggableEmployeeCard: React.FC<{
         employee.secondary_zone_uid ||
         coveredAreaUids.length > 0 ||
         employee.covers_property) && (
-        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#E9EDF2] text-[10px]">
+        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#EAF1FB] text-[10px]">
           {(employee.status === 'On Leave' || employee.leave_status) && (
-            <span className="px-1.5 py-0.5 rounded-[5px] bg-[#FFF3E4] text-[#C98232] font-semibold text-[9px] uppercase tracking-wide">
+            <span className="px-1.5 py-0.5 rounded-[5px] bg-[#FDF3E2] text-[#A56514] font-semibold text-[9px] uppercase tracking-wide">
               On Leave
             </span>
           )}
           {employee.covers_property && (
-            <span className="px-1.5 py-0.5 rounded-[5px] bg-[#EBF3EC] text-[#2F6B45] font-semibold text-[9px] uppercase tracking-wide">
+            <span className="px-1.5 py-0.5 rounded-[5px] bg-[#F7E9EE] text-[#800020] font-semibold text-[9px] uppercase tracking-wide">
               Whole property
             </span>
           )}
           {employee.secondary_zone_uid && (
             <span
-              className="px-1.5 py-0.5 rounded-[5px] bg-[#F3F6EF] text-[#2F6B45] font-semibold text-[9px] uppercase tracking-wide"
+              className="px-1.5 py-0.5 rounded-[5px] bg-[#F7E9EE] text-[#800020] font-semibold text-[9px] uppercase tracking-wide"
               title={`Also covers ${secondaryZone?.name || 'a second zone'}`}
             >
               {laneZoneId === employee.secondary_zone_uid ? '2nd zone' : '+1 zone'}
@@ -379,7 +379,7 @@ const DraggableEmployeeCard: React.FC<{
           )}
           {coveredAreaUids.length > 0 && (
             <span
-              className="px-1.5 py-0.5 rounded-[5px] bg-[#F3F6EF] text-[#2F6B45] font-semibold text-[9px] uppercase tracking-wide"
+              className="px-1.5 py-0.5 rounded-[5px] bg-[#F7E9EE] text-[#800020] font-semibold text-[9px] uppercase tracking-wide"
               title={`Covers ${coveredAreaUids.length} whole area${coveredAreaUids.length === 1 ? '' : 's'}`}
             >
               {coveredAreaUids.length === 1 ? 'area' : `${coveredAreaUids.length} areas`}
@@ -387,7 +387,7 @@ const DraggableEmployeeCard: React.FC<{
           )}
           {activeTasksCount > 0 && (
             <span
-              className="inline-flex items-center gap-1 text-[#2F6B45] font-semibold"
+              className="inline-flex items-center gap-1 text-[#800020] font-semibold"
               title={`${work.allocated} allocated · ${work.inProgress} in progress`}
             >
               <CheckSquare className="w-3 h-3" />
@@ -416,19 +416,19 @@ const DroppableColumn: React.FC<{
 
   const shell =
     kind === 'unallocated'
-      ? 'bg-[#FDF6EC] border-[#EFDDBE]'
+      ? 'bg-[#FFFCFA] border-[#F2D9AF]'
       : kind === 'property'
-      ? 'bg-[#EBF3EC] border-[#8EDCB9]'
+      ? 'bg-[#F7E9EE] border-[#EAD3DB]'
       : kind === 'area'
-      ? 'bg-[#EDF3ED] border-[#D5E2D7] border-dashed'
-      : 'bg-white border-[#E9E4DA]';
+      ? 'bg-[#FFFCFA] border-[#EAD3DB] border-dashed'
+      : 'bg-white border-[#E7E5E4]';
 
   return (
     <div
       ref={setNodeRef}
       className={`flex flex-col rounded-[12px] border p-2.5 w-[228px] shrink-0 transition-colors duration-150 ${shell} ${
         isOver
-          ? 'border-[#2F6B45] bg-[#E7F0E9] ring-1 ring-[#2F6B45]/30'
+          ? 'border-[#800020] bg-[#F7E9EE] ring-1 ring-[#800020]/30'
           : ''
       }`}
     >
@@ -436,20 +436,20 @@ const DroppableColumn: React.FC<{
       <div className="flex items-start justify-between gap-2 mb-2 px-0.5">
         <div className="flex items-center gap-1.5 min-w-0">
           {kind === 'unallocated' ? (
-            <UserX className="w-3.5 h-3.5 text-[#C98232] shrink-0" />
+            <UserX className="w-3.5 h-3.5 text-[#A56514] shrink-0" />
           ) : kind === 'property' ? (
-            <Building2 className="w-3.5 h-3.5 text-[#2F6B45] shrink-0" />
+            <Building2 className="w-3.5 h-3.5 text-[#800020] shrink-0" />
           ) : kind === 'area' ? (
-            <MapPin className="w-3.5 h-3.5 text-[#2F6B45] shrink-0" />
+            <MapPin className="w-3.5 h-3.5 text-[#800020] shrink-0" />
           ) : (
-            <Layers className="w-3.5 h-3.5 text-[#66706A] shrink-0" />
+            <Layers className="w-3.5 h-3.5 text-[#800020] shrink-0" />
           )}
           <div className="min-w-0">
-            <h3 className="font-semibold text-[13px] text-[#17221B] leading-tight truncate">
+            <h3 className="font-semibold text-[13px] text-[#0D1C42] leading-tight truncate">
               {title}
             </h3>
             {subtitle && (
-              <p className="text-[10px] text-[#8A918C] leading-tight mt-0.5">
+              <p className="text-[10px] text-[#800020] leading-tight mt-0.5">
                 {subtitle}
               </p>
             )}
@@ -459,18 +459,18 @@ const DroppableColumn: React.FC<{
           className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide shrink-0 mt-0.5 ${
             employees.length > 0
               ? kind === 'unallocated'
-                ? 'text-[#C98232]'
-                : 'text-[#2F6B45]'
-              : 'text-[#8A918C]'
+                ? 'text-[#A56514]'
+                : 'text-[#800020]'
+              : 'text-[#800020]'
           }`}
         >
           <span
             className={`w-1.5 h-1.5 rounded-full ${
               employees.length > 0
                 ? kind === 'unallocated'
-                  ? 'bg-[#C98232]'
-                  : 'bg-[#2F6B45]'
-                : 'bg-[#CFC9BB]'
+                  ? 'bg-[#A56514]'
+                  : 'bg-[#800020]'
+                : 'bg-[#CDC9C7]'
             }`}
           />
           {employees.length}
@@ -478,15 +478,15 @@ const DroppableColumn: React.FC<{
       </div>
 
       {summary && (
-        <div className="mb-2 px-0.5 text-[10px] leading-relaxed text-[#66706A]">
-          <span className="font-semibold text-[#2F6B45]">{summary.available}</span> available ·{' '}
+        <div className="mb-2 px-0.5 text-[10px] leading-relaxed text-[#800020]">
+          <span className="font-semibold text-[#16865B]">{summary.available}</span> available ·{' '}
           {summary.work.allocated} allocated · {summary.work.inProgress} in progress ·{' '}
           {summary.work.completed} done ·{' '}
-          <span className={summary.work.pendingUnallocated > 0 ? 'font-semibold text-[#C98232]' : ''}>
+          <span className={summary.work.pendingUnallocated > 0 ? 'font-semibold text-[#A56514]' : ''}>
             {summary.work.pendingUnallocated} pending
           </span>
           {summary.noCover && (
-            <span className="mt-0.5 block font-medium text-[#C98232]">
+            <span className="mt-0.5 block font-medium text-[#A56514]">
               No on-duty staff — pending work waits for cover
             </span>
           )}
@@ -499,10 +499,10 @@ const DroppableColumn: React.FC<{
           <div
             className={`flex items-center justify-center h-[52px] rounded-[8px] border border-dashed text-[11px] transition-colors duration-150 ${
               isOver
-                ? 'border-[#2F6B45] text-[#2F6B45] bg-white/60 font-medium'
+                ? 'border-[#800020] text-[#800020] bg-white/60 font-medium'
                 : kind === 'area' || kind === 'property'
-                ? 'border-[#CFE4D1] text-[#8C867C]'
-                : 'border-[#DDD7CB] text-[#8C867C]'
+                ? 'border-[#EAD3DB] text-[#667085]'
+                : 'border-[#D6D3D1] text-[#667085]'
             }`}
           >
             Drop staff here
@@ -519,7 +519,7 @@ const DroppableColumn: React.FC<{
             ))}
             <p
               className={`text-center text-[10px] pt-0.5 transition-colors ${
-                isOver ? 'text-[#2F6B45] font-medium' : 'text-[#A9A49A]'
+                isOver ? 'text-[#800020] font-medium' : 'text-[#98A2B3]'
               }`}
             >
               {isOver ? 'Drop staff here' : 'Drop to add staff'}
@@ -699,11 +699,11 @@ export const ZoneBoard: React.FC<ZoneBoardProps> = ({ onOpenCreateModal }) => {
     <DutyContext.Provider value={dutyValue}>
     <div className="space-y-4">
       {/* Compact operational info strip */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 px-3 py-2 rounded-[10px] bg-[#F1EEE7] text-[11px] text-[#66706A]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 px-3 py-2 rounded-[10px] bg-[#F6F4F2] text-[11px] text-[#800020]">
         <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#2F6B45] shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#800020] shrink-0" />
           <span>
-            <strong className="font-semibold text-[#17221B]">
+            <strong className="font-semibold text-[#0D1C42]">
               Spatial Staff Allocation
             </strong>
             <span className="hidden sm:inline">
@@ -712,8 +712,8 @@ export const ZoneBoard: React.FC<ZoneBoardProps> = ({ onOpenCreateModal }) => {
             </span>
           </span>
         </div>
-        <span className="text-[#8A918C]">
-          <strong className="font-semibold text-[#2F6B45]">{availableCount}</strong> available ·{' '}
+        <span className="text-[#800020]">
+          <strong className="font-semibold text-[#16865B]">{availableCount}</strong> available ·{' '}
           {offDutyEmployees.length} off duty · {pendingTotal} pending allocation ·{' '}
           Changes save automatically
         </span>
@@ -729,15 +729,15 @@ export const ZoneBoard: React.FC<ZoneBoardProps> = ({ onOpenCreateModal }) => {
           <div className="w-full lg:w-[248px] lg:shrink-0">
             <div className="flex items-center justify-between mb-2 px-0.5">
               <div>
-                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-[#8A918C]">
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-[#800020]">
                   Unallocated
                 </h2>
-                <p className="text-[10px] text-[#B0AA9C]">Floating property pool</p>
+                <p className="text-[10px] text-[#98A2B3]">Floating property pool</p>
               </div>
               <button
                 onClick={onOpenCreateModal}
                 title="Add staff member"
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#2F6B45] hover:text-[#245538] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#800020] hover:text-[#0D1C42] transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add staff</span>
@@ -758,19 +758,19 @@ export const ZoneBoard: React.FC<ZoneBoardProps> = ({ onOpenCreateModal }) => {
           {/* Floor / area containers — stack vertically, zones wrap inside */}
           <div className="flex-1 min-w-0 space-y-4">
             {/* Whole-property lane — staff eligible for work in every zone */}
-            <section className="rounded-[14px] border border-[#DDD7CB] bg-[#F7F8FA] p-4">
+            <section className="rounded-[14px] border border-[#D6D3D1] bg-[#FFFFFF] p-4">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Building2 className="w-4 h-4 text-[#2F6B45] shrink-0" />
-                  <h2 className="font-display font-semibold text-[15px] text-[#24221F] tracking-tight truncate">
+                  <Building2 className="w-4 h-4 text-[#800020] shrink-0" />
+                  <h2 className="font-display font-semibold text-[15px] text-[#0D1C42] tracking-tight truncate">
                     Whole Property
                   </h2>
                 </div>
                 <span
                   className={`text-[10px] font-semibold uppercase tracking-wider shrink-0 ${
                     propertyWideEmployees.length > 0
-                      ? 'text-[#2F6B45]'
-                      : 'text-[#8C867C]'
+                      ? 'text-[#800020]'
+                      : 'text-[#667085]'
                   }`}
                 >
                   {propertyWideEmployees.length} staff
@@ -804,24 +804,24 @@ export const ZoneBoard: React.FC<ZoneBoardProps> = ({ onOpenCreateModal }) => {
               return (
                 <section
                   key={area.area_uid}
-                  className="rounded-[14px] border border-[#E7E3D9] bg-[#F5F3EE] p-4"
+                  className="rounded-[14px] border border-[#E7E5E4] bg-[#FFFCFA] p-4"
                 >
                   {/* Floor header — visually dominates its zones */}
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <div className="flex items-center gap-2 min-w-0">
-                      <MapPin className="w-4 h-4 text-[#2F6B45] shrink-0" />
-                      <h2 className="font-display font-semibold text-[15px] text-[#17221B] tracking-tight truncate">
+                      <MapPin className="w-4 h-4 text-[#800020] shrink-0" />
+                      <h2 className="font-display font-semibold text-[15px] text-[#0D1C42] tracking-tight truncate">
                         {area.name}
                       </h2>
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wider text-[#8A918C] shrink-0">
+                    <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wider text-[#800020] shrink-0">
                       <span>{area.code}</span>
-                      <span className="text-[#D8D2C4]">·</span>
+                      <span className="text-[#D6D3D1]">·</span>
                       <span>
                         {areaZones.length} zone{areaZones.length === 1 ? '' : 's'}
                       </span>
-                      <span className="text-[#D8D2C4]">·</span>
-                      <span className={zoneStaff + areaEmployees.length > 0 ? 'text-[#2F6B45]' : ''}>
+                      <span className="text-[#D6D3D1]">·</span>
+                      <span className={zoneStaff + areaEmployees.length > 0 ? 'text-[#800020]' : ''}>
                         {zoneStaff + areaEmployees.length} staff
                       </span>
                     </div>
@@ -847,14 +847,14 @@ export const ZoneBoard: React.FC<ZoneBoardProps> = ({ onOpenCreateModal }) => {
               <section
                 className={
                   sortedAreas.length
-                    ? 'rounded-[14px] border border-[#E7E3D9] bg-[#F5F3EE] p-4'
+                    ? 'rounded-[14px] border border-[#E7E5E4] bg-[#FFFCFA] p-4'
                     : ''
                 }
               >
                 {sortedAreas.length > 0 && (
                   <div className="flex items-center gap-2 mb-3">
-                    <Layers className="w-4 h-4 text-[#66706A] shrink-0" />
-                    <h2 className="font-display font-semibold text-[15px] text-[#17221B] tracking-tight">
+                    <Layers className="w-4 h-4 text-[#800020] shrink-0" />
+                    <h2 className="font-display font-semibold text-[15px] text-[#0D1C42] tracking-tight">
                       Other Zones
                     </h2>
                   </div>
@@ -866,7 +866,7 @@ export const ZoneBoard: React.FC<ZoneBoardProps> = ({ onOpenCreateModal }) => {
             )}
 
             {currentPropertyZones.length === 0 && (
-              <div className="rounded-[14px] border border-dashed border-[#DDD6C7] p-8 text-center text-[12px] text-[#8A918C]">
+              <div className="rounded-[14px] border border-dashed border-[#D6D3D1] p-8 text-center text-[12px] text-[#800020]">
                 No zones configured for {activeProperty?.name || 'this property'} yet.
               </div>
             )}
@@ -882,17 +882,17 @@ export const ZoneBoard: React.FC<ZoneBoardProps> = ({ onOpenCreateModal }) => {
       </DndContext>
 
       {offDutyEmployees.length > 0 && (
-        <section className="rounded-[14px] border border-[#E9E4DA] bg-white p-4">
+        <section className="rounded-[14px] border border-[#E7E5E4] bg-white p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <h2 className="font-display text-[15px] font-semibold tracking-tight text-[#17221B]">
+              <h2 className="font-display text-[15px] font-semibold tracking-tight text-[#0D1C42]">
                 Off duty today
               </h2>
-              <p className="text-[10px] text-[#8A918C]">
+              <p className="text-[10px] text-[#800020]">
                 Not available for new allocation. Work already assigned to them stays on their record.
               </p>
             </div>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8C867C]">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#667085]">
               {offDutyEmployees.length} staff
             </span>
           </div>
@@ -903,17 +903,17 @@ export const ZoneBoard: React.FC<ZoneBoardProps> = ({ onOpenCreateModal }) => {
               return (
                 <li
                   key={employee.employee_uid}
-                  className="flex items-center gap-2.5 rounded-[10px] border border-[#EEEAE1] px-3 py-2"
+                  className="flex items-center gap-2.5 rounded-[10px] border border-[#F6F4F2] px-3 py-2"
                 >
                   <div
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white"
-                    style={{ backgroundColor: employee.avatar_color || '#8C867C' }}
+                    style={{ backgroundColor: employee.avatar_color || '#667085' }}
                   >
                     {getInitials(employee.name)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-semibold text-[#17221B]">{employee.name}</p>
-                    <p className="truncate text-[11px] text-[#66706A]">
+                    <p className="truncate text-[13px] font-semibold text-[#0D1C42]">{employee.name}</p>
+                    <p className="truncate text-[11px] text-[#800020]">
                       {employee.job_title}
                       {zone ? ` · ${zone.name}` : ''}
                     </p>

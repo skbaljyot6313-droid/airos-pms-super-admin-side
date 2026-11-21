@@ -20,9 +20,9 @@ interface CreateTaskModalProps {
 }
 
 const inputCls =
-  'w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]';
+  'w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]';
 const labelCls =
-  'block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body';
+  'block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body';
 
 // Domain work kind — drives which departments are eligible for assignment
 // and is stored on the task. Task Type below is the lifecycle shape.
@@ -242,8 +242,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
                 onClick={() => setWorkType(opt.value)}
                 className={`px-3.5 py-2 rounded-[10px] border text-[13px] font-medium cursor-pointer transition-all ${
                   workType === opt.value
-                    ? 'border-[#386641] bg-[#EBF3EC] text-[#244E2C] ring-1 ring-[#386641]/30'
-                    : 'border-[#DDD7CB] bg-[#FAF8F5] text-[#555047] hover:bg-[#F2ECE3]'
+                    ? 'border-[#800020] bg-[#F7E9EE] text-[#0D1C42] ring-1 ring-[#800020]/30'
+                    : 'border-[#D6D3D1] bg-[#FFFFFF] text-[#667085] hover:bg-[#F6F4F2]'
                 }`}
               >
                 {opt.label}
@@ -263,19 +263,19 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
                 onClick={() => setTaskType(opt.value)}
                 className={`p-3 rounded-[12px] border text-left transition-all cursor-pointer ${
                   taskType === opt.value
-                    ? 'border-[#386641] bg-[#EBF3EC] ring-1 ring-[#386641]/30'
-                    : 'border-[#DDD7CB] bg-[#FAF8F5] hover:bg-[#F2ECE3]'
+                    ? 'border-[#800020] bg-[#F7E9EE] ring-1 ring-[#800020]/30'
+                    : 'border-[#D6D3D1] bg-[#FFFFFF] hover:bg-[#F6F4F2]'
                 }`}
               >
                 <span
                   className={`flex items-center gap-1.5 text-xs font-semibold ${
-                    taskType === opt.value ? 'text-[#244E2C]' : 'text-[#555047]'
+                    taskType === opt.value ? 'text-[#0D1C42]' : 'text-[#667085]'
                   }`}
                 >
                   {opt.icon}
                   {opt.label}
                 </span>
-                <span className="block text-[10px] text-[#736E65] mt-1 leading-tight">
+                <span className="block text-[10px] text-[#667085] mt-1 leading-tight">
                   {opt.hint}
                 </span>
               </button>
@@ -408,8 +408,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
 
         {/* Repetitive schedule */}
         {taskType === 'repetitive' && (
-          <div className="p-3.5 rounded-[12px] bg-[#F2EFF9] border border-[#DDD5F0] space-y-3">
-            <span className="text-xs font-semibold text-[#554388] uppercase tracking-wider flex items-center gap-1.5">
+          <div className="p-3.5 rounded-[12px] bg-[#EAF1FB] border border-[#C3D6F0] space-y-3">
+            <span className="text-xs font-semibold text-[#2457A8] uppercase tracking-wider flex items-center gap-1.5">
               <RefreshCw className="w-3.5 h-3.5" /> Recurrence Schedule
             </span>
             <div className="grid grid-cols-2 gap-3">
@@ -436,14 +436,14 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
                     onChange={(e) => setIntervalDays(e.target.value)}
                     className={`${inputCls} bg-white`}
                   />
-                  <span className="text-xs text-[#554388] whitespace-nowrap">days</span>
+                  <span className="text-xs text-[#2457A8] whitespace-nowrap">days</span>
                 </div>
               )}
             </div>
             {/* Daily window — "every hour from 7 AM to 10 PM" */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-medium text-[#554388] mb-1">
+                <label className="block text-[11px] font-medium text-[#2457A8] mb-1">
                   From time
                 </label>
                 <input
@@ -455,7 +455,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-[#554388] mb-1">
+                <label className="block text-[11px] font-medium text-[#2457A8] mb-1">
                   Until time
                 </label>
                 <input
@@ -468,11 +468,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
               </div>
             </div>
             {['hourly', 'every_2_hours', 'every_6_hours', 'every_12_hours'].includes(recurrence) ? (
-              <p className="text-[10px] text-[#7C76A0]">
+              <p className="text-[10px] text-[#3478D4]">
                 Occurrences run between From and Until each day, then resume next morning.
               </p>
             ) : (
-              <p className="text-[10px] text-[#7C76A0]">
+              <p className="text-[10px] text-[#3478D4]">
                 Each generated occurrence starts at the From time.
               </p>
             )}
@@ -480,7 +480,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
             {/* Run window — from date to end date, or forever */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-medium text-[#554388] mb-1">
+                <label className="block text-[11px] font-medium text-[#2457A8] mb-1">
                   Runs from
                 </label>
                 <input
@@ -491,7 +491,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-[#554388] mb-1">
+                <label className="block text-[11px] font-medium text-[#2457A8] mb-1">
                   Until
                 </label>
                 <input
@@ -503,12 +503,12 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
                 />
               </div>
             </div>
-            <label className="flex items-center gap-2 text-xs text-[#554388] cursor-pointer">
+            <label className="flex items-center gap-2 text-xs text-[#2457A8] cursor-pointer">
               <input
                 type="checkbox"
                 checked={runsForever}
                 onChange={(e) => setRunsForever(e.target.checked)}
-                className="accent-[#554388]"
+                className="accent-[#2457A8]"
               />
               Runs forever (no end date)
             </label>
@@ -517,8 +517,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
 
         {/* Automation rule builder */}
         {taskType === 'automated' && (
-          <div className="p-3.5 rounded-[12px] bg-[#EFF0FA] border border-[#D5DAF0] space-y-3.5">
-            <span className="text-xs font-semibold text-[#3F4C8C] uppercase tracking-wider flex items-center gap-1.5">
+          <div className="p-3.5 rounded-[12px] bg-[#EAF1FB] border border-[#C3D6F0] space-y-3.5">
+            <span className="text-xs font-semibold text-[#2457A8] uppercase tracking-wider flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5" /> Automation Rule
             </span>
 
@@ -553,7 +553,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
               </select>
             </div>
 
-            <div className="pt-2 border-t border-[#D5DAF0]">
+            <div className="pt-2 border-t border-[#C3D6F0]">
               <label className={labelCls}>Generated Task Template *</label>
               <input
                 type="text"
@@ -623,7 +623,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClos
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F0ECE4]">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F6F4F2]">
           <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Cancel
           </Button>

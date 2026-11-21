@@ -91,7 +91,7 @@ export const BulkCreateRoomsModal: React.FC<BulkCreateRoomsModalProps> = ({
         {/* Range Inputs */}
         <div className="grid grid-cols-2 gap-3.5">
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
               Start Room Number *
             </label>
             <input
@@ -100,12 +100,12 @@ export const BulkCreateRoomsModal: React.FC<BulkCreateRoomsModalProps> = ({
               required
               value={startNum}
               onChange={(e) => setStartNum(parseInt(e.target.value) || 0)}
-              className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
               End Room Number *
             </label>
             <input
@@ -114,15 +114,15 @@ export const BulkCreateRoomsModal: React.FC<BulkCreateRoomsModalProps> = ({
               required
               value={endNum}
               onChange={(e) => setEndNum(parseInt(e.target.value) || 0)}
-              className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             />
           </div>
         </div>
 
         {/* Optional name prefix — e.g. "Special" → "Special 201", "Special 202"… */}
         <div>
-          <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
-            Prefix <span className="normal-case font-normal text-[#8A8478]">(optional)</span>
+          <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
+            Prefix <span className="normal-case font-normal text-[#667085]">(optional)</span>
           </label>
           <input
             type="text"
@@ -130,10 +130,10 @@ export const BulkCreateRoomsModal: React.FC<BulkCreateRoomsModalProps> = ({
             value={prefix}
             onChange={(e) => setPrefix(e.target.value)}
             placeholder="e.g. Special"
-            className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+            className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
           />
           {trimmedPrefix && (
-            <p className="text-[11px] text-[#6C675F] font-body mt-1">
+            <p className="text-[11px] text-[#667085] font-body mt-1">
               Rooms will be named "{trimmedPrefix} {Math.min(startNum, endNum)}", "{trimmedPrefix} {Math.min(startNum, endNum) + 1}", …
             </p>
           )}
@@ -141,13 +141,13 @@ export const BulkCreateRoomsModal: React.FC<BulkCreateRoomsModalProps> = ({
 
         <div className="grid grid-cols-2 gap-3.5">
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
               Room Type
             </label>
             <select
               value={roomType}
               onChange={(e) => setRoomType(e.target.value)}
-              className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             >
               {ROOM_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -158,13 +158,13 @@ export const BulkCreateRoomsModal: React.FC<BulkCreateRoomsModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
               Assign to Zone
             </label>
             <select
               value={zoneUid}
               onChange={(e) => setZoneUid(e.target.value)}
-              className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             >
               <option value="">(Unallocated)</option>
               {currentPropertyZones.map((z) => (
@@ -177,18 +177,18 @@ export const BulkCreateRoomsModal: React.FC<BulkCreateRoomsModalProps> = ({
         </div>
 
         {/* Live Preview & Duplicate Validation Box (per spec: previews resulting numbers and validates against duplicates) */}
-        <div className="p-4 rounded-[14px] bg-[#FAF8F5] border border-[#E4DFD5] space-y-2.5">
+        <div className="p-4 rounded-[14px] bg-[#FFFFFF] border border-[#E7E5E4] space-y-2.5">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-[#45413B] uppercase tracking-wider">
+            <span className="font-semibold text-[#0D1C42] uppercase tracking-wider">
               Range Preview ({previewRooms.length} Total)
             </span>
             {duplicateRooms.length > 0 ? (
-              <span className="text-[#C53B3B] font-medium flex items-center gap-1">
+              <span className="text-[#D64545] font-medium flex items-center gap-1">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 {duplicateRooms.length} Duplicates Detected
               </span>
             ) : (
-              <span className="text-[#386641] font-medium flex items-center gap-1">
+              <span className="text-[#800020] font-medium flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 All Numbers Available
               </span>
@@ -203,8 +203,8 @@ export const BulkCreateRoomsModal: React.FC<BulkCreateRoomsModalProps> = ({
                   key={name}
                   className={`text-xs px-2.5 py-1 rounded-[6px] font-mono font-medium border ${
                     isDupe
-                      ? 'bg-[#FDE8E8] text-[#A82828] border-[#F9C3C3] line-through'
-                      : 'bg-[#FFFFFF] text-[#24221F] border-[#DDD7CB]'
+                      ? 'bg-[#FAEBEB] text-[#A83434] border-[#F0C8C8] line-through'
+                      : 'bg-[#ffffff] text-[#0D1C42] border-[#D6D3D1]'
                   }`}
                   title={isDupe ? `Room ${name} already exists in property` : `Ready to create`}
                 >
@@ -215,13 +215,13 @@ export const BulkCreateRoomsModal: React.FC<BulkCreateRoomsModalProps> = ({
           </div>
 
           {duplicateRooms.length > 0 && (
-            <p className="text-[11px] text-[#A82828] font-body leading-tight">
+            <p className="text-[11px] text-[#A83434] font-body leading-tight">
               Existing rooms ({duplicateRooms.join(', ')}) will be automatically skipped to prevent collisions.
             </p>
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F0ECE4]">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F6F4F2]">
           <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>

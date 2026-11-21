@@ -73,30 +73,30 @@ const DraggableEmployeeCard: React.FC<{
       style={style}
       {...(isOverlay ? {} : listeners)}
       {...(isOverlay ? {} : attributes)}
-      className={`bg-white rounded-[10px] px-3 py-2.5 border border-[#E9E4DA] shadow-[0_1px_3px_rgba(20,30,24,0.06)] hover:shadow-[0_4px_12px_rgba(20,30,24,0.08)] hover:border-[#2F6B45]/40 transition-[box-shadow,border-color] duration-150 select-none touch-none ${
+      className={`bg-white rounded-[10px] px-3 py-2.5 border border-[#E7E5E4] shadow-[0_1px_3px_rgba(20,30,24,0.06)] hover:shadow-[0_4px_12px_rgba(20,30,24,0.08)] hover:border-[#800020]/40 transition-[box-shadow,border-color] duration-150 select-none touch-none ${
         isOverlay
-          ? 'shadow-[0_8px_24px_rgba(20,30,24,0.14)] rotate-1 scale-[1.03] cursor-grabbing ring-2 ring-[#2F6B45]'
+          ? 'shadow-[0_8px_24px_rgba(20,30,24,0.14)] rotate-1 scale-[1.03] cursor-grabbing ring-2 ring-[#800020]'
           : 'cursor-grab active:cursor-grabbing'
       }`}
     >
       <div className="flex items-center gap-2.5">
         <div
           className="w-8 h-8 rounded-full text-white flex items-center justify-center font-semibold text-[11px] shrink-0"
-          style={{ backgroundColor: employee.avatar_color || '#2F6B45' }}
+          style={{ backgroundColor: employee.avatar_color || '#800020' }}
         >
           {getInitials(employee.name)}
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="font-semibold text-[13px] text-[#17221B] leading-tight truncate">
+          <h4 className="font-semibold text-[13px] text-[#0D1C42] leading-tight truncate">
             {employee.name}
           </h4>
-          <p className="text-[11px] text-[#66706A] font-body truncate">
+          <p className="text-[11px] text-[#800020] font-body truncate">
             {employee.job_title}
             {employee.department ? ` · ${employee.department}` : ''}
           </p>
         </div>
         <div
-          className="text-[#B8B2A4] p-0.5 shrink-0"
+          className="text-[#CDC9C7] p-0.5 shrink-0"
           title="Drag to another shift"
         >
           <GripVertical className="w-3.5 h-3.5" />
@@ -104,8 +104,8 @@ const DraggableEmployeeCard: React.FC<{
       </div>
 
       {(employee.status === 'On Leave' || employee.leave_status) && (
-        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#F2EFE8] text-[10px]">
-          <span className="px-1.5 py-0.5 rounded-[5px] bg-[#FFF3E4] text-[#C98232] font-semibold text-[9px] uppercase tracking-wide">
+        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#F6F4F2] text-[10px]">
+          <span className="px-1.5 py-0.5 rounded-[5px] bg-[#FDF3E2] text-[#A56514] font-semibold text-[9px] uppercase tracking-wide">
             On Leave
           </span>
         </div>
@@ -141,29 +141,29 @@ const ShiftColumn: React.FC<{
       ref={setNodeRef}
       className={`flex flex-col rounded-[12px] border p-2.5 w-[228px] shrink-0 transition-colors duration-150 ${
         unassigned
-          ? 'bg-[#FDF8F0] border-[#EFE0C8]'
-          : 'bg-white border-[#E9E4DA]'
-      } ${isOver ? 'border-[#2F6B45] bg-[#E7F0E9] ring-1 ring-[#2F6B45]/30' : ''}`}
+          ? 'bg-[#FFFCFA] border-[#F2D9AF]'
+          : 'bg-white border-[#E7E5E4]'
+      } ${isOver ? 'border-[#800020] bg-[#F7E9EE] ring-1 ring-[#800020]/30' : ''}`}
     >
       {/* Column header */}
       <div className="flex items-start justify-between gap-2 mb-2 px-0.5">
         <div className="flex items-center gap-1.5 min-w-0">
           {unassigned ? (
-            <UserX className="w-3.5 h-3.5 text-[#C98232] shrink-0" />
+            <UserX className="w-3.5 h-3.5 text-[#A56514] shrink-0" />
           ) : (
-            <Clock className="w-3.5 h-3.5 text-[#66706A] shrink-0" />
+            <Clock className="w-3.5 h-3.5 text-[#800020] shrink-0" />
           )}
           <div className="min-w-0">
-            <h3 className="font-semibold text-[13px] text-[#17221B] leading-tight truncate">
+            <h3 className="font-semibold text-[13px] text-[#0D1C42] leading-tight truncate">
               {title}
               {inactive && (
-                <span className="ml-1 text-[9px] font-semibold uppercase tracking-wide text-[#8A918C]">
+                <span className="ml-1 text-[9px] font-semibold uppercase tracking-wide text-[#800020]">
                   inactive
                 </span>
               )}
             </h3>
             {subtitle && (
-              <p className="text-[10px] text-[#8A918C] leading-tight mt-0.5">
+              <p className="text-[10px] text-[#800020] leading-tight mt-0.5">
                 {subtitle}
               </p>
             )}
@@ -173,7 +173,7 @@ const ShiftColumn: React.FC<{
           {onEdit && (
             <button
               onClick={onEdit}
-              className="text-[10px] font-medium text-[#66706A] hover:text-[#2F6B45] transition-colors cursor-pointer"
+              className="text-[10px] font-medium text-[#800020] hover:text-[#800020] transition-colors cursor-pointer"
             >
               Edit
             </button>
@@ -182,18 +182,18 @@ const ShiftColumn: React.FC<{
             className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide ${
               employees.length > 0
                 ? unassigned
-                  ? 'text-[#C98232]'
-                  : 'text-[#2F6B45]'
-                : 'text-[#8A918C]'
+                  ? 'text-[#A56514]'
+                  : 'text-[#800020]'
+                : 'text-[#800020]'
             }`}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
                 employees.length > 0
                   ? unassigned
-                    ? 'bg-[#C98232]'
-                    : 'bg-[#2F6B45]'
-                  : 'bg-[#CFC9BB]'
+                    ? 'bg-[#A56514]'
+                    : 'bg-[#800020]'
+                  : 'bg-[#CDC9C7]'
               }`}
             />
             {employees.length}
@@ -207,8 +207,8 @@ const ShiftColumn: React.FC<{
           <div
             className={`flex items-center justify-center h-[52px] rounded-[8px] border border-dashed text-[11px] transition-colors duration-150 ${
               isOver
-                ? 'border-[#2F6B45] text-[#2F6B45] bg-white/60 font-medium'
-                : 'border-[#DDD6C7] text-[#8A918C]'
+                ? 'border-[#800020] text-[#800020] bg-white/60 font-medium'
+                : 'border-[#D6D3D1] text-[#800020]'
             }`}
           >
             Drop staff here
@@ -223,7 +223,7 @@ const ShiftColumn: React.FC<{
             ))}
             <p
               className={`text-center text-[10px] pt-0.5 transition-colors ${
-                isOver ? 'text-[#2F6B45] font-medium' : 'text-[#A9A49A]'
+                isOver ? 'text-[#800020] font-medium' : 'text-[#98A2B3]'
               }`}
             >
               {isOver ? 'Drop staff here' : 'Drop to assign'}
@@ -424,11 +424,11 @@ export const ShiftManager: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Info strip — mirrors the Zone Board header row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 px-3 py-2 rounded-[10px] bg-[#F1EEE7] text-[11px] text-[#66706A]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 px-3 py-2 rounded-[10px] bg-[#F6F4F2] text-[11px] text-[#800020]">
         <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#2F6B45] shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#800020] shrink-0" />
           <span>
-            <strong className="font-semibold text-[#17221B]">
+            <strong className="font-semibold text-[#0D1C42]">
               Shift Board
             </strong>
             <span className="hidden sm:inline">
@@ -444,20 +444,20 @@ export const ShiftManager: React.FC = () => {
               type="checkbox"
               checked={showInactive}
               onChange={(e) => setShowInactive(e.target.checked)}
-              className="accent-[#2F6B45]"
+              className="accent-[#800020]"
             />
             Show inactive
           </label>
           <button
             onClick={() => void load()}
-            className="inline-flex items-center gap-1 text-[#66706A] hover:text-[#17221B] transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 text-[#800020] hover:text-[#0D1C42] transition-colors cursor-pointer"
             title="Refresh"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={openCreate}
-            className="inline-flex items-center gap-1 font-medium text-[#2F6B45] hover:text-[#245538] transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 font-medium text-[#800020] hover:text-[#0D1C42] transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New shift</span>
@@ -473,8 +473,8 @@ export const ShiftManager: React.FC = () => {
           <Skeleton className="h-40 w-[228px]" />
         </div>
       ) : status === 'error' ? (
-        <div className="rounded-[12px] border border-[#E9E4DA] bg-white p-4">
-          <p className="text-xs text-[#A82828]">{error}</p>
+        <div className="rounded-[12px] border border-[#E7E5E4] bg-white p-4">
+          <p className="text-xs text-[#A83434]">{error}</p>
           <Button
             variant="ghost"
             size="sm"
@@ -515,7 +515,7 @@ export const ShiftManager: React.FC = () => {
                 />
               ))}
               {visibleShifts.length === 0 && (
-                <div className="rounded-[12px] border border-dashed border-[#DDD6C7] bg-white/60 px-5 py-4 text-[12px] text-[#66706A]">
+                <div className="rounded-[12px] border border-dashed border-[#D6D3D1] bg-white/60 px-5 py-4 text-[12px] text-[#800020]">
                   No shifts yet — create one to start assigning staff.
                 </div>
               )}
@@ -532,21 +532,21 @@ export const ShiftManager: React.FC = () => {
 
       {/* Management staff — 24×7 by default, never shift-bound */}
       {status === 'ready' && exemptEmployees.length > 0 && (
-        <div className="rounded-[12px] border border-[#E9E4DA] bg-white px-3.5 py-2.5">
+        <div className="rounded-[12px] border border-[#E7E5E4] bg-white px-3.5 py-2.5">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#8A918C]">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#800020]">
               <Clock className="w-3.5 h-3.5" />
               Always on duty — 24×7
             </span>
             {exemptEmployees.map((e) => (
               <span
                 key={e.employee_uid}
-                className="inline-flex items-center gap-1.5 text-[12px] text-[#17221B]"
+                className="inline-flex items-center gap-1.5 text-[12px] text-[#0D1C42]"
               >
                 <span
                   className="w-5 h-5 rounded-full text-white flex items-center justify-center font-semibold text-[8px]"
                   style={{
-                    backgroundColor: e.avatar_color || '#2F6B45',
+                    backgroundColor: e.avatar_color || '#800020',
                   }}
                 >
                   {getInitials(e.name)}
@@ -560,23 +560,23 @@ export const ShiftManager: React.FC = () => {
 
       {/* Create / edit form */}
       {formOpen && (
-        <div className="rounded-[12px] border border-[#2F6B45]/30 bg-white p-4">
-          <h3 className="font-display font-semibold text-[14px] text-[#17221B] mb-3">
+        <div className="rounded-[12px] border border-[#800020]/30 bg-white p-4">
+          <h3 className="font-display font-semibold text-[14px] text-[#0D1C42] mb-3">
             {editing ? `Edit — ${editing.name}` : 'New shift'}
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <label className="col-span-2 sm:col-span-1 text-[11px] text-[#66706A]">
+            <label className="col-span-2 sm:col-span-1 text-[11px] text-[#800020]">
               Name
               <input
                 value={form.name}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, name: e.target.value }))
                 }
-                className="mt-1 w-full px-2 py-1.5 rounded-[7px] border border-[#E9E4DA] text-[13px] text-[#17221B] focus:outline-none focus:border-[#2F6B45]"
+                className="mt-1 w-full px-2 py-1.5 rounded-[7px] border border-[#E7E5E4] text-[13px] text-[#0D1C42] focus:outline-none focus:border-[#800020]"
                 placeholder="Morning shift"
               />
             </label>
-            <label className="text-[11px] text-[#66706A]">
+            <label className="text-[11px] text-[#800020]">
               Start (IST)
               <input
                 type="time"
@@ -584,10 +584,10 @@ export const ShiftManager: React.FC = () => {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, start_time: e.target.value }))
                 }
-                className="mt-1 w-full px-2 py-1.5 rounded-[7px] border border-[#E9E4DA] text-[13px] text-[#17221B] focus:outline-none focus:border-[#2F6B45]"
+                className="mt-1 w-full px-2 py-1.5 rounded-[7px] border border-[#E7E5E4] text-[13px] text-[#0D1C42] focus:outline-none focus:border-[#800020]"
               />
             </label>
-            <label className="text-[11px] text-[#66706A]">
+            <label className="text-[11px] text-[#800020]">
               End (IST)
               <input
                 type="time"
@@ -595,10 +595,10 @@ export const ShiftManager: React.FC = () => {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, end_time: e.target.value }))
                 }
-                className="mt-1 w-full px-2 py-1.5 rounded-[7px] border border-[#E9E4DA] text-[13px] text-[#17221B] focus:outline-none focus:border-[#2F6B45]"
+                className="mt-1 w-full px-2 py-1.5 rounded-[7px] border border-[#E7E5E4] text-[13px] text-[#0D1C42] focus:outline-none focus:border-[#800020]"
               />
             </label>
-            <label className="text-[11px] text-[#66706A]">
+            <label className="text-[11px] text-[#800020]">
               Grace (min)
               <input
                 type="number"
@@ -611,10 +611,10 @@ export const ShiftManager: React.FC = () => {
                     grace_minutes: Number(e.target.value) || 0,
                   }))
                 }
-                className="mt-1 w-full px-2 py-1.5 rounded-[7px] border border-[#E9E4DA] text-[13px] text-[#17221B] focus:outline-none focus:border-[#2F6B45]"
+                className="mt-1 w-full px-2 py-1.5 rounded-[7px] border border-[#E7E5E4] text-[13px] text-[#0D1C42] focus:outline-none focus:border-[#800020]"
               />
             </label>
-            <label className="text-[11px] text-[#66706A]">
+            <label className="text-[11px] text-[#800020]">
               Early-exit (min)
               <input
                 type="number"
@@ -627,12 +627,12 @@ export const ShiftManager: React.FC = () => {
                     early_exit_minutes: Number(e.target.value) || 0,
                   }))
                 }
-                className="mt-1 w-full px-2 py-1.5 rounded-[7px] border border-[#E9E4DA] text-[13px] text-[#17221B] focus:outline-none focus:border-[#2F6B45]"
+                className="mt-1 w-full px-2 py-1.5 rounded-[7px] border border-[#E7E5E4] text-[13px] text-[#0D1C42] focus:outline-none focus:border-[#800020]"
               />
             </label>
           </div>
           <div className="mt-3">
-            <span className="text-[11px] text-[#66706A]">Working days</span>
+            <span className="text-[11px] text-[#800020]">Working days</span>
             <div className="flex gap-1 mt-1">
               {DAY_LABELS.map((d, i) => (
                 <button
@@ -646,8 +646,8 @@ export const ShiftManager: React.FC = () => {
                   }
                   className={`px-2.5 py-1 rounded-[7px] text-[11px] font-medium transition-colors cursor-pointer ${
                     form.working_days[i] === '1'
-                      ? 'bg-[#2F6B45] text-white'
-                      : 'bg-[#F1EEE7] text-[#66706A] hover:bg-[#E7E3D9]'
+                      ? 'bg-[#800020] text-white'
+                      : 'bg-[#F6F4F2] text-[#800020] hover:bg-[#E7E5E4]'
                   }`}
                 >
                   {d}
@@ -655,14 +655,14 @@ export const ShiftManager: React.FC = () => {
               ))}
             </div>
             {form.end_time <= form.start_time && (
-              <p className="text-[11px] text-[#C98232] mt-2">
+              <p className="text-[11px] text-[#A56514] mt-2">
                 End ≤ start — this will be treated as an overnight shift
                 (ends the following day).
               </p>
             )}
           </div>
           {formError && (
-            <p className="text-xs text-[#A82828] mt-2">{formError}</p>
+            <p className="text-xs text-[#A83434] mt-2">{formError}</p>
           )}
           <div className="flex gap-2 mt-4">
             <Button

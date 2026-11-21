@@ -22,6 +22,8 @@ from app.schemas.structure import (
     RoomBulkDeleteRequest,
     RoomCreateRequest,
     RoomUpdateRequest,
+    SectionCreateRequest,
+    SectionUpdateRequest,
     WashroomBulkCreateRequest,
     WashroomCreateRequest,
     WashroomFixtureUpdateRequest,
@@ -34,6 +36,38 @@ from app.services.structure import StructureService
 from ._common import Staff
 
 router = APIRouter()
+
+
+# ------------------------------ Sections ---------------------------------
+
+@router.post("/sections", status_code=status.HTTP_201_CREATED)
+async def create_section(
+    payload: SectionCreateRequest,
+    user: User = Staff,
+    session: AsyncSession = Depends(get_db),
+):
+    return ws.section_out(await StructureService(session).create_section(user, payload))
+
+
+@router.patch("/sections/{section_id}")
+async def update_section(
+    section_id: uuid.UUID,
+    payload: SectionUpdateRequest,
+    user: User = Staff,
+    session: AsyncSession = Depends(get_db),
+):
+    return ws.section_out(
+        await StructureService(session).update_section(user, section_id, payload)
+    )
+
+
+@router.delete("/sections/{section_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_section(
+    section_id: uuid.UUID,
+    user: User = Staff,
+    session: AsyncSession = Depends(get_db),
+):
+    await StructureService(session).delete_section(user, section_id)
 
 
 # ------------------------------- Areas -----------------------------------

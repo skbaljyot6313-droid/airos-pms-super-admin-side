@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { perfLog } from './dev/perf';
 import { AppProvider, useApp } from './context/AppContext';
 import { SessionProvider } from './context/SessionContext';
 import { Header } from './components/navigation/Header';
+import { Sidebar } from './components/navigation/Sidebar';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { Skeleton } from './components/ui/Skeleton';
 import { Card } from './components/ui/Card';
@@ -44,6 +45,9 @@ const DepartmentDetailView = React.lazy(() =>
 );
 const TasksView = React.lazy(() =>
   import('./components/tasks/TasksView').then((m) => ({ default: m.TasksView }))
+);
+const CalendarView = React.lazy(() =>
+  import('./components/calendar/CalendarView').then((m) => ({ default: m.CalendarView }))
 );
 const TaskDayAnalysisView = React.lazy(() =>
   import('./components/tasks/TaskDayAnalysisView').then((m) => ({ default: m.TaskDayAnalysisView }))
@@ -90,13 +94,13 @@ const WorkspaceGate: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   if (dataError) {
     return (
       <Card className="p-10 max-w-lg mx-auto text-center mt-10">
-        <div className="w-12 h-12 rounded-full bg-[#FDE8E8] text-[#A32A2A] flex items-center justify-center mx-auto mb-3">
+        <div className="w-12 h-12 rounded-full bg-[#FAEBEB] text-[#A83434] flex items-center justify-center mx-auto mb-3">
           <AlertTriangle className="w-6 h-6" />
         </div>
-        <h2 className="font-display font-semibold text-lg text-[#24221F]">
+        <h2 className="font-display font-semibold text-lg text-[#0D1C42]">
           Unable to load workspace data
         </h2>
-        <p className="font-body text-sm text-[#6C675F] mt-1.5 mb-5">{dataError}</p>
+        <p className="font-body text-sm text-[#667085] mt-1.5 mb-5">{dataError}</p>
         <Button variant="primary" onClick={retryLoad}>
           Retry
         </Button>
@@ -212,20 +216,28 @@ const RootRedirect: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const { currentPath, isAuthenticated } = useApp();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isPublicPage =
     currentPath === '/' || currentPath === '/login' || currentPath === '/signup';
+  const shell = isAuthenticated && !isPublicPage;
 
   return (
-    <div className="min-h-screen bg-[#F7F4EE] text-[#24221F] font-body flex flex-col selection:bg-[#386641] selection:text-white">
-      {/* Main Navigation Header (hidden on public landing/auth pages and when signed out) */}
-      {isAuthenticated && !isPublicPage && <Header />}
+    <div className="min-h-screen bg-canvas text-ink font-body flex selection:bg-brand selection:text-white">
+      {/* Left sidebar rail (hidden on public/auth pages and when signed out) */}
+      {shell && (
+        <Sidebar mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
+      )}
+
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        {/* Slim top bar */}
+        {shell && <Header onOpenMobileNav={() => setMobileNavOpen(true)} />}
 
       {/* Main Content Area — public pages manage their own full-width layout */}
       <main
         className={
           isPublicPage
             ? 'flex-1 w-full'
-            : 'flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6'
+            : 'flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-5'
         }
       >
         <React.Suspense
@@ -266,6 +278,7 @@ const AppContent: React.FC = () => {
 
           <Route path="/property/:propertyUid/operations" element={<RequireAuth><Navigate to="tasks" replace /></RequireAuth>} />
           <Route path="/property/:propertyUid/operations/tasks" element={<RequireAuth><PropertyScopedView><TasksView /></PropertyScopedView></RequireAuth>} />
+          <Route path="/property/:propertyUid/operations/calendar" element={<RequireAuth><PropertyScopedView><RequireRole roles={['super_admin', 'property_manager', 'department_manager']}><CalendarView /></RequireRole></PropertyScopedView></RequireAuth>} />
           <Route path="/property/:propertyUid/operations/history/tasks/:date" element={<RequireAuth><RequireRole roles={['super_admin', 'property_manager']}><PropertyScopedView><TaskDayAnalysisView /></PropertyScopedView></RequireRole></RequireAuth>} />
           <Route path="/property/:propertyUid/operations/history/maintenance/:date" element={<RequireAuth><RequireRole roles={['super_admin', 'property_manager']}><PropertyScopedView><MaintenanceDayAnalysisView /></PropertyScopedView></RequireRole></RequireAuth>} />
 
@@ -295,6 +308,7 @@ const AppContent: React.FC = () => {
         </Routes>
         </React.Suspense>
       </main>
+      </div>
 
       {/* Global Toast Notifications Container */}
       <ToastContainer />

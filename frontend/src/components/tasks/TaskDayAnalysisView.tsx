@@ -12,20 +12,20 @@ import { TASK_STATUS_LABELS } from '../../lib/taskUtils';
 import { TaskStatus } from '../../types';
 
 const inputCard =
-  'bg-[#FFFFFF] border border-[#EAE5DC] rounded-[14px] px-4 py-3 flex flex-col gap-1';
+  'bg-[#ffffff] border border-[#E7E5E4] rounded-[14px] px-4 py-3 flex flex-col gap-1';
 
 function Stat({
   label, value, hint,
 }: { label: string; value: React.ReactNode; hint?: string }) {
   return (
     <div className={inputCard}>
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-[#A39E93]">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </span>
-      <span className="font-display text-2xl font-bold text-[#24221F] leading-none">
+      <span className="font-display text-2xl font-bold text-[#0D1C42] leading-none">
         {value}
       </span>
-      {hint && <span className="text-[11px] text-[#8A857B]">{hint}</span>}
+      {hint && <span className="text-[11px] text-[#667085]">{hint}</span>}
     </div>
   );
 }
@@ -79,10 +79,10 @@ export const TaskDayAnalysisView: React.FC = () => {
               label="Back to Tasks"
             />
           </div>
-          <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#24221F] tracking-tight">
+          <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#0D1C42] tracking-tight">
             Task Analysis — {dayLabel}
           </h1>
-          <p className="font-body text-sm text-[#6C675F] mt-1">
+          <p className="font-body text-sm text-[#667085] mt-1">
             Operational day {date} · starts {data?.operational_day_start || '—'} IST
             {data?.is_today ? ' · in progress' : ''}
           </p>
@@ -90,7 +90,7 @@ export const TaskDayAnalysisView: React.FC = () => {
       </div>
 
       {error && (
-        <p className="text-sm text-[#A32A2A] bg-[#FDE8E8] rounded-[10px] px-4 py-3">
+        <p className="text-sm text-[#A83434] bg-[#FAEBEB] rounded-[10px] px-4 py-3">
           {error}
         </p>
       )}
@@ -116,7 +116,7 @@ export const TaskDayAnalysisView: React.FC = () => {
           </div>
 
           {s.generated === 0 && (
-            <Card className="py-10 text-center text-sm text-[#8A857B]">
+            <Card className="py-10 text-center text-sm text-[#667085]">
               No task activity on this operational day.
             </Card>
           )}
@@ -124,13 +124,13 @@ export const TaskDayAnalysisView: React.FC = () => {
           {/* Detailed task breakdown */}
           {data.tasks.length > 0 && (
             <Card>
-              <h3 className="font-display font-semibold text-[15px] text-[#24221F] mb-3 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#386641]" /> Task breakdown
+              <h3 className="font-display font-semibold text-[15px] text-[#0D1C42] mb-3 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-[#16865B]" /> Task breakdown
               </h3>
               <div className="overflow-x-auto -mx-2 px-2">
                 <table className="w-full text-[13px]">
                   <thead>
-                    <tr className="text-left text-[11px] uppercase tracking-wide text-[#A39E93] border-b border-[#F0EDE6]">
+                    <tr className="text-left text-[11px] uppercase tracking-wide text-[#98A2B3] border-b border-[#F6F4F2]">
                       <th className="py-2 pr-3 font-semibold">Task</th>
                       <th className="py-2 pr-3 font-semibold">Resource</th>
                       <th className="py-2 pr-3 font-semibold">Zone / Area</th>
@@ -142,28 +142,28 @@ export const TaskDayAnalysisView: React.FC = () => {
                   </thead>
                   <tbody>
                     {data.tasks.map((t) => (
-                      <tr key={t.task_uid} className="border-b border-[#F7F4EE] align-top">
+                      <tr key={t.task_uid} className="border-b border-[#FFFCFA] align-top">
                         <td className="py-2.5 pr-3">
-                          <div className="font-semibold text-[#24221F]">{t.title}</div>
-                          <div className="text-[11px] text-[#A39E93]">
+                          <div className="font-semibold text-[#0D1C42]">{t.title}</div>
+                          <div className="text-[11px] text-[#98A2B3]">
                             {t.ticket_number || '—'}
                             {t.template_name ? ` · ${t.template_name}` : ''}
                           </div>
                         </td>
-                        <td className="py-2.5 pr-3 text-[#575249]">{t.resource || '—'}</td>
-                        <td className="py-2.5 pr-3 text-[#575249]">
+                        <td className="py-2.5 pr-3 text-[#667085]">{t.resource || '—'}</td>
+                        <td className="py-2.5 pr-3 text-[#667085]">
                           {[t.zone_name, t.area_name].filter(Boolean).join(' / ') || '—'}
                         </td>
-                        <td className="py-2.5 pr-3 text-[#575249]">{t.category}</td>
-                        <td className="py-2.5 pr-3 text-[#575249]">
+                        <td className="py-2.5 pr-3 text-[#667085]">{t.category}</td>
+                        <td className="py-2.5 pr-3 text-[#667085]">
                           {t.assigned_employee || '—'}
                           {t.actual_worker && t.actual_worker !== t.assigned_employee && (
-                            <span className="text-[#8A857B]"> → {t.actual_worker}</span>
+                            <span className="text-[#667085]"> → {t.actual_worker}</span>
                           )}
                         </td>
-                        <td className="py-2.5 pr-3 text-[11px] leading-5 text-[#6C675F] whitespace-nowrap">
+                        <td className="py-2.5 pr-3 text-[11px] leading-5 text-[#667085] whitespace-nowrap">
                           {t.scheduled_for && (
-                            <div className="text-[#386641]">
+                            <div className="text-[#800020]">
                               Occ {fmtTimeIST(t.scheduled_for)}
                               {t.expires_at ? ` → ${fmtTimeIST(t.expires_at)}` : ''}
                             </div>
@@ -173,7 +173,7 @@ export const TaskDayAnalysisView: React.FC = () => {
                           {t.started_at && <div>Start {fmtTimeIST(t.started_at)}</div>}
                           {t.completed_at && <div>Done {fmtTimeIST(t.completed_at)}</div>}
                           {t.abandoned_at && (
-                            <div className="text-[#A32A2A]">
+                            <div className="text-[#A83434]">
                               Abandoned {fmtTimeIST(t.abandoned_at)}
                               {t.abandoned_from_status ? ` (was ${t.abandoned_from_status})` : ''}
                             </div>
@@ -184,7 +184,7 @@ export const TaskDayAnalysisView: React.FC = () => {
                             {TASK_STATUS_LABELS[t.status as TaskStatus] || t.status}
                           </Badge>
                           {t.auto_abandoned && (
-                            <div className="text-[10px] text-[#8A857B] mt-1">
+                            <div className="text-[10px] text-[#667085] mt-1">
                               {t.abandoned_reason === 'NEXT_SCHEDULED_OCCURRENCE'
                                 ? 'occurrence expired' : 'daily rollover'}
                             </div>
@@ -201,38 +201,38 @@ export const TaskDayAnalysisView: React.FC = () => {
           {/* Employee performance */}
           {data.employees.length > 0 && (
             <Card>
-              <h3 className="font-display font-semibold text-[15px] text-[#24221F] mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#386641]" /> Employees
+              <h3 className="font-display font-semibold text-[15px] text-[#0D1C42] mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#800020]" /> Employees
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {data.employees.map((e) => (
                   <div
                     key={e.employee_uid}
-                    className="border border-[#EDE8DF] rounded-[12px] p-3.5"
+                    className="border border-[#F6F4F2] rounded-[12px] p-3.5"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-[13px] text-[#24221F]">
+                      <span className="font-semibold text-[13px] text-[#0D1C42]">
                         {e.employee || 'Former employee'}
                       </span>
-                      <span className="text-[11px] font-semibold text-[#386641]">
+                      <span className="text-[11px] font-semibold text-[#800020]">
                         {e.completion_rate}%
                       </span>
                     </div>
-                    <div className="text-[11px] text-[#8A857B] mt-0.5">
+                    <div className="text-[11px] text-[#667085] mt-0.5">
                       {[...e.zones, ...e.areas].join(' · ') || '—'}
                     </div>
-                    <div className="flex gap-3 mt-2 text-[12px] text-[#575249]">
+                    <div className="flex gap-3 mt-2 text-[12px] text-[#667085]">
                       <span><b>{e.allocated}</b> allocated</span>
                       <span><b>{e.completed}</b> done</span>
                       {e.abandoned > 0 && (
-                        <span className="text-[#A32A2A]"><b>{e.abandoned}</b> abandoned</span>
+                        <span className="text-[#A83434]"><b>{e.abandoned}</b> abandoned</span>
                       )}
                       {e.active > 0 && (
-                        <span className="text-[#9A6A07]"><b>{e.active}</b> active</span>
+                        <span className="text-[#A56514]"><b>{e.active}</b> active</span>
                       )}
                     </div>
                     {e.work.length > 0 && (
-                      <ul className="mt-2 space-y-0.5 text-[11px] text-[#8A857B] leading-4 max-h-20 overflow-y-auto">
+                      <ul className="mt-2 space-y-0.5 text-[11px] text-[#667085] leading-4 max-h-20 overflow-y-auto">
                         {e.work.map((w, i) => <li key={i}>· {w}</li>)}
                       </ul>
                     )}
@@ -253,23 +253,23 @@ export const TaskDayAnalysisView: React.FC = () => {
             ).map(({ title, rows, icon: Icon }) =>
               rows.length > 0 && (
                 <Card key={title}>
-                  <h3 className="font-display font-semibold text-[15px] text-[#24221F] mb-3 flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-[#386641]" /> {title}
+                  <h3 className="font-display font-semibold text-[15px] text-[#0D1C42] mb-3 flex items-center gap-2">
+                    <Icon className="w-4 h-4 text-[#800020]" /> {title}
                   </h3>
                   <div className="space-y-2">
                     {rows.map((r) => (
                       <div
                         key={r.name}
-                        className="flex items-center justify-between gap-3 border-b border-[#F4EFEB] last:border-0 pb-2 last:pb-0"
+                        className="flex items-center justify-between gap-3 border-b border-[#F6F4F2] last:border-0 pb-2 last:pb-0"
                       >
                         <div>
-                          <div className="text-[13px] font-semibold text-[#24221F]">{r.name}</div>
-                          <div className="text-[11px] text-[#8A857B]">
+                          <div className="text-[13px] font-semibold text-[#0D1C42]">{r.name}</div>
+                          <div className="text-[11px] text-[#667085]">
                             {r.generated} gen · {r.allocated} alloc · {r.completed} done
                             {r.abandoned > 0 ? ` · ${r.abandoned} abandoned` : ''}
                           </div>
                         </div>
-                        <span className="text-[12px] font-semibold text-[#386641]">
+                        <span className="text-[12px] font-semibold text-[#800020]">
                           {r.completion_rate}%
                         </span>
                       </div>

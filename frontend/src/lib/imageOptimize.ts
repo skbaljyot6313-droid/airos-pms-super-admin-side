@@ -122,7 +122,7 @@ export async function optimizeImage(
   }
   // PNG transparency flattens onto white — JPEG/WebP encode can't carry alpha
   // in this path, and evidence photos should not render with black boxes.
-  ctx.fillStyle = '#F7F8FA';
+  ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, dw, dh);
   ctx.drawImage(bmp, 0, 0, dw, dh);
   (bmp as ImageBitmap).close?.();

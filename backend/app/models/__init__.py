@@ -50,6 +50,7 @@ from app.models.structure import (  # noqa: E402, F401
     Bed,
     Dorm,
     Room,
+    Section,
     Washroom,
     Zone,
 )

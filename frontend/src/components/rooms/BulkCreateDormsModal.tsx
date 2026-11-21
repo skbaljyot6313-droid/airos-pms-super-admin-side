@@ -31,9 +31,9 @@ type RowField = 'name' | 'bedCount' | 'areaSqft';
 type RowErrors = Partial<Record<RowField, string>>;
 
 const inputCls =
-  'w-full px-2.5 py-1.5 bg-[#FAF8F5] border rounded-[8px] text-sm text-[#24221F] focus:outline-none focus:ring-2';
-const okBorder = 'border-[#DDD7CB] focus:ring-[#386641]';
-const badBorder = 'border-[#E5A3A3] focus:ring-[#C53B3B]';
+  'w-full px-2.5 py-1.5 bg-[#FFFFFF] border rounded-[8px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2';
+const okBorder = 'border-[#D6D3D1] focus:ring-[#800020]';
+const badBorder = 'border-[#B34A68] focus:ring-[#D64545]';
 
 export const BulkCreateDormsModal: React.FC<BulkCreateDormsModalProps> = ({
   isOpen,
@@ -171,7 +171,7 @@ export const BulkCreateDormsModal: React.FC<BulkCreateDormsModalProps> = ({
       maxWidth="xl"
       footer={
         <div className="flex items-center justify-between gap-3">
-          <span className="text-[11px] text-[#8C867C] font-body">
+          <span className="text-[11px] text-[#667085] font-body">
             {rows.length} dorm{rows.length === 1 ? '' : 's'} · up to {MAX_ROWS} per batch
           </span>
           <div className="flex items-center gap-3">
@@ -192,38 +192,38 @@ export const BulkCreateDormsModal: React.FC<BulkCreateDormsModalProps> = ({
     >
       <div className="space-y-3">
         {submitError && (
-          <div className="flex items-start gap-2 p-3 rounded-[10px] bg-[#FDE8E8] border border-[#F9C3C3] text-xs text-[#A82828] font-body">
+          <div className="flex items-start gap-2 p-3 rounded-[10px] bg-[#FAEBEB] border border-[#F0C8C8] text-xs text-[#A83434] font-body">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span>{submitError}</span>
           </div>
         )}
 
         {/* Line-item table — sticky header, horizontal scroll on narrow screens */}
-        <div className="rounded-[12px] border border-[#E4DFD5] overflow-hidden">
+        <div className="rounded-[12px] border border-[#E7E5E4] overflow-hidden">
           <div className="overflow-x-auto">
             <div className="max-h-[48vh] overflow-y-auto">
               <table className="min-w-[1000px] w-full text-left border-collapse">
                 <thead className="sticky top-0 z-10">
-                  <tr className="bg-[#F4F0E8] text-[10px] font-semibold uppercase tracking-wider text-[#736E65]">
-                    <th className="px-2.5 py-2.5 w-8 bg-[#F4F0E8]">#</th>
-                    <th className="px-2.5 py-2.5 min-w-[170px] bg-[#F4F0E8]">Dorm Name *</th>
-                    <th className="px-2.5 py-2.5 w-[86px] bg-[#F4F0E8]">Beds *</th>
-                    <th className="px-2.5 py-2.5 min-w-[130px] bg-[#F4F0E8]">Dorm Type</th>
-                    <th className="px-2.5 py-2.5 min-w-[150px] bg-[#F4F0E8]">Washroom</th>
-                    <th className="px-2.5 py-2.5 min-w-[130px] bg-[#F4F0E8]">Zone</th>
-                    <th className="px-2.5 py-2.5 w-[96px] bg-[#F4F0E8]">Area (Sq Ft)</th>
-                    <th className="px-2.5 py-2.5 min-w-[170px] bg-[#F4F0E8]">Description</th>
-                    <th className="px-2 py-2.5 w-9 bg-[#F4F0E8]" />
+                  <tr className="bg-[#F6F4F2] text-[10px] font-semibold uppercase tracking-wider text-[#667085]">
+                    <th className="px-2.5 py-2.5 w-8 bg-[#F6F4F2]">#</th>
+                    <th className="px-2.5 py-2.5 min-w-[170px] bg-[#F6F4F2]">Dorm Name *</th>
+                    <th className="px-2.5 py-2.5 w-[86px] bg-[#F6F4F2]">Beds *</th>
+                    <th className="px-2.5 py-2.5 min-w-[130px] bg-[#F6F4F2]">Dorm Type</th>
+                    <th className="px-2.5 py-2.5 min-w-[150px] bg-[#F6F4F2]">Washroom</th>
+                    <th className="px-2.5 py-2.5 min-w-[130px] bg-[#F6F4F2]">Zone</th>
+                    <th className="px-2.5 py-2.5 w-[96px] bg-[#F6F4F2]">Area (Sq Ft)</th>
+                    <th className="px-2.5 py-2.5 min-w-[170px] bg-[#F6F4F2]">Description</th>
+                    <th className="px-2 py-2.5 w-9 bg-[#F6F4F2]" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F0ECE4]">
+                <tbody className="divide-y divide-[#F6F4F2]">
                   {rows.map((row, i) => {
                     const nameErr = visibleError(row, 'name');
                     const bedErr = visibleError(row, 'bedCount');
                     const areaErr = visibleError(row, 'areaSqft');
                     return (
                       <tr key={row.key} className="align-top">
-                        <td className="px-2.5 py-2.5 text-xs text-[#8C867C] font-mono pt-3.5">
+                        <td className="px-2.5 py-2.5 text-xs text-[#667085] font-mono pt-3.5">
                           {i + 1}
                         </td>
                         <td className="px-2.5 py-2">
@@ -235,7 +235,7 @@ export const BulkCreateDormsModal: React.FC<BulkCreateDormsModalProps> = ({
                             className={`${inputCls} ${nameErr ? badBorder : okBorder}`}
                           />
                           {nameErr && (
-                            <p className="text-[10px] text-[#A82828] font-body mt-1">{nameErr}</p>
+                            <p className="text-[10px] text-[#A83434] font-body mt-1">{nameErr}</p>
                           )}
                         </td>
                         <td className="px-2.5 py-2">
@@ -249,7 +249,7 @@ export const BulkCreateDormsModal: React.FC<BulkCreateDormsModalProps> = ({
                             className={`${inputCls} ${bedErr ? badBorder : okBorder}`}
                           />
                           {bedErr && (
-                            <p className="text-[10px] text-[#A82828] font-body mt-1">{bedErr}</p>
+                            <p className="text-[10px] text-[#A83434] font-body mt-1">{bedErr}</p>
                           )}
                         </td>
                         <td className="px-2.5 py-2">
@@ -302,7 +302,7 @@ export const BulkCreateDormsModal: React.FC<BulkCreateDormsModalProps> = ({
                             className={`${inputCls} ${areaErr ? badBorder : okBorder}`}
                           />
                           {areaErr && (
-                            <p className="text-[10px] text-[#A82828] font-body mt-1">{areaErr}</p>
+                            <p className="text-[10px] text-[#A83434] font-body mt-1">{areaErr}</p>
                           )}
                         </td>
                         <td className="px-2.5 py-2">
@@ -320,7 +320,7 @@ export const BulkCreateDormsModal: React.FC<BulkCreateDormsModalProps> = ({
                             onClick={() => removeRow(row.key)}
                             disabled={rows.length <= 1}
                             title={rows.length <= 1 ? 'At least one dorm is required' : 'Remove this dorm'}
-                            className="text-[#999388] hover:text-[#C53B3B] p-1 rounded-[6px] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="text-[#667085] hover:text-[#D64545] p-1 rounded-[6px] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -346,7 +346,7 @@ export const BulkCreateDormsModal: React.FC<BulkCreateDormsModalProps> = ({
             <span>Add Another Dorm</span>
           </Button>
           {attempted && !allValid && (
-            <p className="text-[11px] text-[#A82828] font-body mt-2 flex items-center gap-1">
+            <p className="text-[11px] text-[#A83434] font-body mt-2 flex items-center gap-1">
               <AlertTriangle className="w-3 h-3 shrink-0" />
               Fix the highlighted fields before creating.
             </p>

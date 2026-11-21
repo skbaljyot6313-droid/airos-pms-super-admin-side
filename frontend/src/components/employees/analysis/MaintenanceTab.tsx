@@ -28,23 +28,23 @@ function MaintenanceHistory({ employeeId, propertyId, bounds }: { employeeId: st
   if (!data?.items.length) return <Empty msg="No maintenance tickets allocated in this period." />;
   return <>
     <ul className="mt-3 space-y-1.5">{data.items.map((r) => (
-      <li key={String(r.record_uid)} className="rounded-md border border-[#E9EDF2] p-3 text-[11px]">
+      <li key={String(r.record_uid)} className="rounded-md border border-[#EAF1FB] p-3 text-[11px]">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="font-semibold text-[#17212B]">{String(r.issue || r.maintenance_type || 'Ticket')}</span>
-          <span className="rounded bg-[#F1F3F6] px-1.5 py-0.5 text-[10px] font-medium text-[#697586]">{MAINTENANCE_STATUS_LABELS[String(r.status) as keyof typeof MAINTENANCE_STATUS_LABELS] || String(r.status)}</span>
+          <span className="font-semibold text-[#2457A8]">{String(r.issue || r.maintenance_type || 'Ticket')}</span>
+          <span className="rounded bg-[#FFFCFA] px-1.5 py-0.5 text-[10px] font-medium text-[#2457A8]">{MAINTENANCE_STATUS_LABELS[String(r.status) as keyof typeof MAINTENANCE_STATUS_LABELS] || String(r.status)}</span>
         </div>
-        <p className="mt-0.5 text-[#697586]">
+        <p className="mt-0.5 text-[#2457A8]">
           {r.ticket_number ? `#${r.ticket_number}` : ''}{r.maintenance_type ? ` · ${r.maintenance_type}` : ''}
           {r.property_name ? ` · ${r.property_name}` : ''}{r.assigned_to_name ? ` · assigned to ${r.assigned_to_name}` : ''}
         </p>
-        <p className="mt-0.5 text-[10px] text-[#697586]">
+        <p className="mt-0.5 text-[10px] text-[#2457A8]">
           Created {r.created_at ? fmtDateTimeIST(String(r.created_at)) : '—'}
           {r.resolved_at ? ` · resolved ${fmtDateTimeIST(String(r.resolved_at))}` : ''}
           {r.closed_at ? ` · closed ${fmtDateTimeIST(String(r.closed_at))}` : ''}
         </p>
       </li>))}
     </ul>
-    {data.total > data.limit && <div className="flex items-center justify-between border-t border-[#E9EDF2] px-1 pt-2 text-xs text-[#697586]">
+    {data.total > data.limit && <div className="flex items-center justify-between border-t border-[#EAF1FB] px-1 pt-2 text-xs text-[#2457A8]">
       <span>{data.total} tickets</span>
       <span className="flex gap-1">
         <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</Button>
@@ -82,15 +82,15 @@ export function MaintenanceTab({ employeeId, propertyId, period }: {
         {[['Allocated', m.allocated], ['Resolved/closed', m.resolved], ['Still open', m.open],
           ['Reassigned away', m.reassigned_away], ['Currently assigned', m.currently_assigned],
           ['Resolution rate', pct(m.resolution_rate)]].map(([l, v]) => (
-          <li key={l as string} className="rounded-md border border-[#E9EDF2] py-2 text-center">
-            <p className="text-base font-semibold tabular-nums text-[#17212B]">{v}</p>
-            <p className="text-[10px] text-[#697586]">{l}</p></li>))}
+          <li key={l as string} className="rounded-md border border-[#EAF1FB] py-2 text-center">
+            <p className="text-base font-semibold tabular-nums text-[#2457A8]">{v}</p>
+            <p className="text-[10px] text-[#2457A8]">{l}</p></li>))}
       </ul>
-      <p className="mt-3 text-[11px] text-[#697586]">
+      <p className="mt-3 text-[11px] text-[#2457A8]">
         Median resolution time (ticket created → resolved): {m.median_resolution_seconds != null ? duration(m.median_resolution_seconds) : '—'}
       </p>
-      {zones.length > 0 && <div className="mt-3 border-t border-[#E9EDF2] pt-3">
-        <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-[#697586]">Allocated tickets by zone</p>
+      {zones.length > 0 && <div className="mt-3 border-t border-[#EAF1FB] pt-3">
+        <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-[#2457A8]">Allocated tickets by zone</p>
         <ul className="space-y-2">{zones.map(([z, n]) => <HBar key={z} label={z} value={n} max={zones[0][1]} color={C.warning} />)}</ul>
       </div>}
     </Panel>

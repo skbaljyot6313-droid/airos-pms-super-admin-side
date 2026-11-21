@@ -62,7 +62,7 @@ const STATUS_TEXT: Record<string, string> = {
 };
 
 const sectionLabel =
-  'text-[10px] font-semibold text-[#8C867C] uppercase tracking-wider font-body';
+  'text-[10px] font-semibold text-[#667085] uppercase tracking-wider font-body';
 
 // ---------------------------------------------------------------------------
 // Fixture `···` menu — real status mutations + workflow shortcuts
@@ -101,13 +101,13 @@ const FixtureMenu: React.FC<FixtureMenuProps> = ({ fixture, disabled, onAction }
         type="button"
         onClick={() => setOpen(!open)}
         disabled={disabled}
-        className="w-5 h-5 flex items-center justify-center rounded-[5px] text-[#8C867C] opacity-0 group-hover:opacity-100 hover:bg-[#F2ECE3] hover:text-[#24221F] transition-all cursor-pointer disabled:hidden"
+        className="w-5 h-5 flex items-center justify-center rounded-[5px] text-[#667085] opacity-0 group-hover:opacity-100 hover:bg-[#F6F4F2] hover:text-[#0D1C42] transition-all cursor-pointer disabled:hidden"
         title="Fixture actions"
       >
         <MoreVertical className="w-3.5 h-3.5" />
       </button>
       {open && (
-        <div className="absolute right-0 top-6 z-30 w-52 rounded-[10px] border border-[#E4DFD5] bg-white shadow-lg py-1">
+        <div className="absolute right-0 top-6 z-30 w-52 rounded-[10px] border border-[#E7E5E4] bg-white shadow-lg py-1">
           {items.map((it) => (
             <button
               key={it.key}
@@ -116,9 +116,9 @@ const FixtureMenu: React.FC<FixtureMenuProps> = ({ fixture, disabled, onAction }
                 setOpen(false);
                 onAction(it.key, fixture);
               }}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs font-medium text-[#45413B] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs font-medium text-[#0D1C42] hover:bg-[#FFFFFF] transition-colors cursor-pointer"
             >
-              <it.icon className="w-3.5 h-3.5 text-[#8C867C]" />
+              <it.icon className="w-3.5 h-3.5 text-[#667085]" />
               {it.label}
             </button>
           ))}
@@ -396,24 +396,24 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#386641] text-white hover:bg-[#2C5134] transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#800020] text-white hover:bg-[#0D1C42] transition-colors cursor-pointer"
           >
             Close
           </button>
         }
       >
-        <div className="flex items-center gap-2 flex-wrap text-xs text-[#6C675F] mb-4">
-          <span className="font-semibold text-[#24221F]">{dorm?.name || 'Zone Facility'}</span>
+        <div className="flex items-center gap-2 flex-wrap text-xs text-[#667085] mb-4">
+          <span className="font-semibold text-[#0D1C42]">{dorm?.name || 'Zone Facility'}</span>
           <span>·</span>
           <span>{zone?.name || 'Unallocated'}</span>
           <span>·</span>
           <span>{facilityLabel}</span>
         </div>
-        <div className="rounded-[12px] border border-dashed border-[#DDD7CB] bg-[#FAF8F5] px-4 py-6 text-center">
-          <p className="text-sm font-medium text-[#45413B]">
+        <div className="rounded-[12px] border border-dashed border-[#D6D3D1] bg-[#FFFFFF] px-4 py-6 text-center">
+          <p className="text-sm font-medium text-[#0D1C42]">
             No washroom resource configured
           </p>
-          <p className="text-xs text-[#8C867C] mt-1 max-w-sm mx-auto">
+          <p className="text-xs text-[#667085] mt-1 max-w-sm mx-auto">
             This dorm declares an {declaredName?.toLowerCase() || 'attached'} facility,
             but no washroom record exists in {zone?.name || 'this zone'} yet.
             Create a washroom to manage its fixtures, tasks and maintenance.
@@ -422,7 +422,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
             <button
               type="button"
               onClick={onConfigure}
-              className="mt-3 px-3.5 py-2 rounded-[9px] text-xs font-semibold bg-[#386641] text-white hover:bg-[#2C5134] transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              className="mt-3 px-3.5 py-2 rounded-[9px] text-xs font-semibold bg-[#800020] text-white hover:bg-[#0D1C42] transition-colors cursor-pointer inline-flex items-center gap-1.5"
             >
               <Pencil className="w-3.5 h-3.5" />
               Configure Washroom
@@ -446,7 +446,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
               <button
                 type="button"
                 onClick={() => onEdit(washroom)}
-                className="px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#F2ECE3] text-[#555047] hover:bg-[#E5DFD4] transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#F6F4F2] text-[#667085] hover:bg-[#E7E5E4] transition-colors cursor-pointer inline-flex items-center gap-1.5"
               >
                 <Pencil className="w-3.5 h-3.5" />
                 Edit Washroom
@@ -455,7 +455,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#386641] text-white hover:bg-[#2C5134] transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#800020] text-white hover:bg-[#0D1C42] transition-colors cursor-pointer"
             >
               Close
             </button>
@@ -464,8 +464,8 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
       >
         {/* Facility header — context + status + visible edit */}
         <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-          <div className="flex items-center gap-2 flex-wrap text-xs text-[#6C675F]">
-            <span className="font-semibold text-[#24221F]">{dorm?.name || 'Zone Facility'}</span>
+          <div className="flex items-center gap-2 flex-wrap text-xs text-[#667085]">
+            <span className="font-semibold text-[#0D1C42]">{dorm?.name || 'Zone Facility'}</span>
             <span>·</span>
             <span>{zone?.name || 'Unallocated'}</span>
             <span>·</span>
@@ -474,14 +474,14 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
               {STATUS_TEXT[status] || status}
             </Badge>
             {refreshing && (
-              <Loader2 className="w-3 h-3 animate-spin text-[#8C867C]" />
+              <Loader2 className="w-3 h-3 animate-spin text-[#667085]" />
             )}
           </div>
           {onEdit && (
             <button
               type="button"
               onClick={() => onEdit(washroom)}
-              className="px-3 py-1.5 rounded-[8px] text-xs font-semibold border border-[#DDD7CB] bg-white text-[#24221F] hover:border-[#386641] hover:text-[#386641] transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-[8px] text-xs font-semibold border border-[#D6D3D1] bg-white text-[#0D1C42] hover:border-[#800020] hover:text-[#800020] transition-colors cursor-pointer inline-flex items-center gap-1.5"
             >
               <Pencil className="w-3.5 h-3.5" />
               Edit Washroom
@@ -490,15 +490,15 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
         </div>
 
         {refreshFailed && (
-          <div className="mb-4 rounded-[10px] border border-[#F0DFA8] bg-[#FDF6E3] px-3 py-2 flex items-center justify-between">
-            <span className="text-xs text-[#8A6D1D]">
+          <div className="mb-4 rounded-[10px] border border-[#E99A23] bg-[#FDF3E2] px-3 py-2 flex items-center justify-between">
+            <span className="text-xs text-[#A56514]">
               Unable to load the latest washroom details — showing the last
               known record.
             </span>
             <button
               type="button"
               onClick={retryRefresh}
-              className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-white border border-[#E0CD8C] text-[#8A6D1D] hover:bg-[#FDF3D0] transition-colors cursor-pointer"
+              className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-white border border-[#E99A23] text-[#A56514] hover:bg-[#F2D9AF] transition-colors cursor-pointer"
             >
               Retry
             </button>
@@ -507,13 +507,13 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
 
         {/* Washroom-level maintenance banner — real tickets only */}
         {activeWashroomTicket && (
-          <div className="mb-4 rounded-[10px] border border-[#F2D6D6] bg-[#FDF1F1] px-3 py-2 flex items-center gap-2.5">
-            <Wrench className="w-4 h-4 text-[#A32A2A]" />
+          <div className="mb-4 rounded-[10px] border border-[#F0C8C8] bg-[#FAEBEB] px-3 py-2 flex items-center gap-2.5">
+            <Wrench className="w-4 h-4 text-[#A83434]" />
             <div className="text-xs">
-              <span className="font-semibold text-[#A32A2A]">
+              <span className="font-semibold text-[#A83434]">
                 Maintenance {activeWashroomTicket.status}
               </span>
-              <span className="text-[#6C675F]">
+              <span className="text-[#667085]">
                 {' '}· {activeWashroomTicket.ticket_number} — {activeWashroomTicket.issue}
                 {activeWashroomTicket.assigned_to_name &&
                   ` · Assigned to ${activeWashroomTicket.assigned_to_name}`}
@@ -529,7 +529,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
           <button
             type="button"
             onClick={() => openTask(null)}
-            className="px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#386641] text-white hover:bg-[#2C5134] transition-colors cursor-pointer inline-flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#800020] text-white hover:bg-[#0D1C42] transition-colors cursor-pointer inline-flex items-center gap-1.5"
           >
             <ClipboardCheck className="w-3.5 h-3.5" />
             Assign Task
@@ -537,7 +537,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
           <button
             type="button"
             onClick={() => openMaint(null)}
-            className="px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#FDE8E8] text-[#A32A2A] hover:bg-[#FBDCDC] transition-colors cursor-pointer inline-flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#FAEBEB] text-[#A83434] hover:bg-[#F0C8C8] transition-colors cursor-pointer inline-flex items-center gap-1.5"
           >
             <Wrench className="w-3.5 h-3.5" />
             Allocate Maintenance
@@ -554,8 +554,8 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
             }
             className={`px-3 py-1.5 rounded-[8px] text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
               washroom && washroom.status !== 'available'
-                ? 'bg-[#EBF3EC] text-[#244E2C] hover:bg-[#DCEBDE] cursor-pointer'
-                : 'bg-[#F4F1EA] text-[#C4BDB1] cursor-not-allowed'
+                ? 'bg-[#F7E9EE] text-[#0D1C42] hover:bg-[#EAD3DB] cursor-pointer'
+                : 'bg-[#F6F4F2] text-[#CDC9C7] cursor-not-allowed'
             }`}
             title={
               washroom?.status === 'available'
@@ -572,31 +572,31 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
         <div className="mb-5">
           <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
             <span className={sectionLabel}>Facility Overview</span>
-            <span className="text-[11px] text-[#8C867C]">
+            <span className="text-[11px] text-[#667085]">
               Overall:{' '}
-              <span className="font-semibold text-[#24221F]">{overallCondition}</span>
+              <span className="font-semibold text-[#0D1C42]">{overallCondition}</span>
             </span>
           </div>
-          <div className="rounded-[12px] border border-[#EAE5DC] bg-white p-3">
-            <div className="flex items-center gap-4 flex-wrap text-xs pb-3 mb-3 border-b border-[#F2ECE3]">
-              <span className="font-bold text-sm text-[#24221F]">
+          <div className="rounded-[12px] border border-[#E7E5E4] bg-white p-3">
+            <div className="flex items-center gap-4 flex-wrap text-xs pb-3 mb-3 border-b border-[#F6F4F2]">
+              <span className="font-bold text-sm text-[#0D1C42]">
                 {summary.total} Fixtures
               </span>
-              <span className="inline-flex items-center gap-1.5 font-medium text-[#2E6038]">
-                <span className="w-2 h-2 rounded-full bg-[#386641]" />
+              <span className="inline-flex items-center gap-1.5 font-medium text-[#0D1C42]">
+                <span className="w-2 h-2 rounded-full bg-[#800020]" />
                 {summary.operational} Operational
               </span>
-              <span className="inline-flex items-center gap-1.5 font-medium text-[#A32A2A]">
-                <span className="w-2 h-2 rounded-full bg-[#C53B3B]" />
+              <span className="inline-flex items-center gap-1.5 font-medium text-[#A83434]">
+                <span className="w-2 h-2 rounded-full bg-[#D64545]" />
                 {summary.maintenance} Maintenance
               </span>
-              <span className="inline-flex items-center gap-1.5 font-medium text-[#736E65]">
-                <span className="w-2 h-2 rounded-full bg-[#A59F95]" />
+              <span className="inline-flex items-center gap-1.5 font-medium text-[#667085]">
+                <span className="w-2 h-2 rounded-full bg-[#98A2B3]" />
                 {summary.inactive} Inactive
               </span>
             </div>
             {groups.length === 0 ? (
-              <p className="text-xs text-[#8C867C] py-2">
+              <p className="text-xs text-[#667085] py-2">
                 No fixtures have been configured for this washroom.
               </p>
             ) : (
@@ -614,24 +614,24 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                   return (
                     <div
                       key={g.kind}
-                      className="rounded-[10px] border border-[#EAE5DC] bg-[#FAF8F5] px-3 py-2.5"
+                      className="rounded-[10px] border border-[#E7E5E4] bg-[#FFFFFF] px-3 py-2.5"
                     >
-                      <div className="flex items-center gap-2 text-[#555047]">
+                      <div className="flex items-center gap-2 text-[#667085]">
                         <Icon className="w-4 h-4" />
                         <span className="text-xs font-semibold truncate">
                           {meta.plural}
                         </span>
                       </div>
                       <div className="mt-1.5 flex items-baseline gap-1.5">
-                        <span className="text-xl font-bold text-[#24221F]">
+                        <span className="text-xl font-bold text-[#0D1C42]">
                           {g.fixtures.length}
                         </span>
-                        <span className="text-[10px] text-[#8C867C]">total</span>
+                        <span className="text-[10px] text-[#667085]">total</span>
                       </div>
                       <div className="text-[10px] mt-0.5">
-                        <span className="font-medium text-[#2E6038]">{ok} operational</span>
+                        <span className="font-medium text-[#0D1C42]">{ok} operational</span>
                         {attn > 0 && (
-                          <span className="font-medium text-[#9A4C07]"> · {attn} attention</span>
+                          <span className="font-medium text-[#A56514]"> · {attn} attention</span>
                         )}
                       </div>
                     </div>
@@ -646,16 +646,16 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
         <div className="mb-5">
           <span className={`${sectionLabel} block mb-2`}>Needs Attention</span>
           {attention.length === 0 ? (
-            <div className="rounded-[10px] border border-[#EAE5DC] bg-[#EBF3EC]/60 px-3 py-2.5 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#386641]" />
-              <span className="text-xs font-medium text-[#244E2C]">
+            <div className="rounded-[10px] border border-[#E7E5E4] bg-[#F7E9EE]/60 px-3 py-2.5 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#800020]" />
+              <span className="text-xs font-medium text-[#0D1C42]">
                 {fixtures.length === 0
                   ? 'No fixtures configured — nothing to monitor.'
                   : 'All fixtures operational — no outstanding cleaning or maintenance issues.'}
               </span>
             </div>
           ) : (
-            <div className="rounded-[10px] border border-[#EAE5DC] divide-y divide-[#F2ECE3] overflow-hidden">
+            <div className="rounded-[10px] border border-[#E7E5E4] divide-y divide-[#F6F4F2] overflow-hidden">
               {attention.map((f) => {
                 const Ic = fixtureMeta(f.fixture_type, isCustomKind(f.fixture_type)).icon;
                 return (
@@ -664,8 +664,8 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                     className="flex items-center justify-between gap-2 px-3 py-2 bg-white"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <Ic className="w-4 h-4 text-[#555047] shrink-0" />
-                      <span className="text-xs font-semibold text-[#24221F] truncate">
+                      <Ic className="w-4 h-4 text-[#667085] shrink-0" />
+                      <span className="text-xs font-semibold text-[#0D1C42] truncate">
                         {f.label}
                       </span>
                       <span className={`text-[11px] font-medium ${FIXTURE_STATUS_TEXT[f.status]}`}>
@@ -676,14 +676,14 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                       <button
                         type="button"
                         onClick={() => openTask(f)}
-                        className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#F2ECE3] text-[#555047] hover:bg-[#E5DFD4] transition-colors cursor-pointer"
+                        className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#F6F4F2] text-[#667085] hover:bg-[#E7E5E4] transition-colors cursor-pointer"
                       >
                         Assign Task
                       </button>
                       <button
                         type="button"
                         onClick={() => openMaint(f)}
-                        className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FDE8E8] text-[#A32A2A] hover:bg-[#FBDCDC] transition-colors cursor-pointer"
+                        className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FAEBEB] text-[#A83434] hover:bg-[#F0C8C8] transition-colors cursor-pointer"
                       >
                         Allocate Maintenance
                       </button>
@@ -699,23 +699,23 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
         <div className="mb-5">
           <span className={`${sectionLabel} block mb-2`}>Washroom Layout</span>
           {groups.length === 0 ? (
-            <div className="rounded-[14px] border border-dashed border-[#DDD7CB] bg-[#FAF8F5] px-4 py-8 text-center">
-              <p className="text-sm font-medium text-[#45413B]">
+            <div className="rounded-[14px] border border-dashed border-[#D6D3D1] bg-[#FFFFFF] px-4 py-8 text-center">
+              <p className="text-sm font-medium text-[#0D1C42]">
                 No fixtures configured for this washroom
               </p>
-              <p className="text-xs text-[#8C867C] mt-1">
+              <p className="text-xs text-[#667085] mt-1">
                 Use Edit Washroom to define the fixture inventory — the layout
                 renders exactly what the database contains.
               </p>
             </div>
           ) : (
-            <div className="rounded-[14px] border-2 border-[#E0D9CE] bg-[#FAF8F5]">
-              <div className="px-4 py-2 border-b border-[#E0D9CE] flex items-center justify-between">
-                <span className="text-[10px] tracking-[0.25em] text-[#8C867C] font-bold">
+            <div className="rounded-[14px] border-2 border-[#D6D3D1] bg-[#FFFFFF]">
+              <div className="px-4 py-2 border-b border-[#D6D3D1] flex items-center justify-between">
+                <span className="text-[10px] tracking-[0.25em] text-[#667085] font-bold">
                   WASHROOM — {name.toUpperCase()}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-[#8C867C]">
+                  <span className="text-[10px] text-[#667085]">
                     Click fixtures to select · ··· for details
                   </span>
                   <button
@@ -723,7 +723,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                     onClick={() =>
                       setSelectedIds(new Set(fixtures.map((f) => f.fixture_uid)))
                     }
-                    className="text-[10px] font-semibold text-[#386641] hover:text-[#2C5134] px-2 py-0.5 rounded-[6px] hover:bg-[#EBF3EC] transition-colors cursor-pointer"
+                    className="text-[10px] font-semibold text-[#800020] hover:text-[#0D1C42] px-2 py-0.5 rounded-[6px] hover:bg-[#F7E9EE] transition-colors cursor-pointer"
                   >
                     Select all
                   </button>
@@ -731,7 +731,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                     <button
                       type="button"
                       onClick={clearSelection}
-                      className="text-[10px] font-semibold text-[#555047] hover:text-[#24221F] px-2 py-0.5 rounded-[6px] hover:bg-[#F2ECE3] transition-colors cursor-pointer"
+                      className="text-[10px] font-semibold text-[#667085] hover:text-[#0D1C42] px-2 py-0.5 rounded-[6px] hover:bg-[#F6F4F2] transition-colors cursor-pointer"
                     >
                       Clear
                     </button>
@@ -745,10 +745,10 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                   return (
                     <div key={g.kind} className="flex items-start gap-3">
                       <div className="w-20 shrink-0 pt-1 text-right">
-                        <span className="block text-[10px] font-semibold text-[#8C867C] uppercase tracking-wider">
+                        <span className="block text-[10px] font-semibold text-[#667085] uppercase tracking-wider">
                           {meta.plural}
                         </span>
-                        <span className="block text-[9px] text-[#B4AEA3]">
+                        <span className="block text-[9px] text-[#98A2B3]">
                           {g.fixtures.length}
                         </span>
                       </div>
@@ -774,18 +774,18 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                             }}
                             className={`group relative flex flex-col items-center gap-1 py-2.5 px-1 rounded-[10px] border transition-all cursor-pointer ${
                               isPicked
-                                ? 'border-[#386641] bg-[#EBF3EC]/60 ring-2 ring-[#386641] ring-offset-1 ring-offset-[#FAF8F5]'
+                                ? 'border-[#800020] bg-[#F7E9EE]/60 ring-2 ring-[#800020] ring-offset-1 ring-offset-[#FFFFFF]'
                                 : f.status === 'inactive'
-                                ? 'border-[#EBB3B3] bg-[#FDE8E8]/70 hover:border-[#C53B3B] hover:shadow-sm'
-                                : 'border-[#E0D9CE] bg-white hover:border-[#386641] hover:shadow-sm'
+                                ? 'border-[#B34A68] bg-[#FAEBEB]/70 hover:border-[#D64545] hover:shadow-sm'
+                                : 'border-[#D6D3D1] bg-white hover:border-[#800020] hover:shadow-sm'
                             }`}
                             title={`${f.label} — ${FIXTURE_STATUS_LABEL[f.status]} · click to ${isPicked ? 'deselect' : 'select'}`}
                           >
                             <span
                               className={`absolute top-1 left-1 w-3.5 h-3.5 rounded-[4px] border flex items-center justify-center transition-colors ${
                                 isPicked
-                                  ? 'bg-[#386641] border-[#386641] text-white'
-                                  : 'bg-white border-[#C9C2B4] group-hover:border-[#386641]'
+                                  ? 'bg-[#800020] border-[#800020] text-white'
+                                  : 'bg-white border-[#CDC9C7] group-hover:border-[#800020]'
                               }`}
                             >
                               {isPicked && (
@@ -801,8 +801,8 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                                 onAction={fixtureAction}
                               />
                             </div>
-                            <Icon className="w-4 h-4 text-[#555047]" />
-                            <span className="text-[10px] font-semibold text-[#24221F]">
+                            <Icon className="w-4 h-4 text-[#667085]" />
+                            <span className="text-[10px] font-semibold text-[#0D1C42]">
                               {f.label}
                             </span>
                             <span
@@ -821,14 +821,14 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                   );
                 })}
               </div>
-              <div className="border-t border-dashed border-[#D8D2C7] px-4 py-2 text-center">
-                <span className="text-[10px] font-semibold tracking-[0.2em] text-[#8C867C]">
+              <div className="border-t border-dashed border-[#D6D3D1] px-4 py-2 text-center">
+                <span className="text-[10px] font-semibold tracking-[0.2em] text-[#667085]">
                   ENTRY
                 </span>
               </div>
               {selectedIds.size > 0 && (
-                <div className="border-t border-[#E0D9CE] bg-[#EBF3EC]/70 px-4 py-2.5 flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-semibold text-[#244E2C]">
+                <div className="border-t border-[#D6D3D1] bg-[#F7E9EE]/70 px-4 py-2.5 flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-semibold text-[#0D1C42]">
                     {`${selectedIds.size} fixture${selectedIds.size === 1 ? '' : 's'} selected`}
                   </span>
                   <div className="flex items-center gap-1.5 ml-auto flex-wrap">
@@ -836,7 +836,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                       type="button"
                       disabled={selectedIds.size === 0}
                       onClick={bulkTask}
-                      className="px-2.5 py-1 rounded-[7px] text-[11px] font-semibold bg-[#386641] text-white hover:bg-[#2C5134] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="px-2.5 py-1 rounded-[7px] text-[11px] font-semibold bg-[#800020] text-white hover:bg-[#0D1C42] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Assign Task
                     </button>
@@ -844,7 +844,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                       type="button"
                       disabled={selectedIds.size === 0}
                       onClick={bulkMaint}
-                      className="px-2.5 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FDE8E8] text-[#A32A2A] hover:bg-[#FBDCDC] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="px-2.5 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FAEBEB] text-[#A83434] hover:bg-[#F0C8C8] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Allocate Maintenance
                     </button>
@@ -852,7 +852,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                       type="button"
                       disabled={selectedIds.size === 0}
                       onClick={bulkTask}
-                      className="px-2.5 py-1 rounded-[7px] text-[11px] font-semibold bg-white border border-[#DDD7CB] text-[#555047] hover:bg-[#F2ECE3] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="px-2.5 py-1 rounded-[7px] text-[11px] font-semibold bg-white border border-[#D6D3D1] text-[#667085] hover:bg-[#F6F4F2] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Needs Cleaning
                     </button>
@@ -860,7 +860,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                       type="button"
                       disabled={selectedIds.size === 0}
                       onClick={() => void bulkStatus('operational')}
-                      className="px-2.5 py-1 rounded-[7px] text-[11px] font-semibold bg-white border border-[#DDD7CB] text-[#555047] hover:bg-[#F2ECE3] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="px-2.5 py-1 rounded-[7px] text-[11px] font-semibold bg-white border border-[#D6D3D1] text-[#667085] hover:bg-[#F6F4F2] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Mark Operational
                     </button>
@@ -868,7 +868,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                       type="button"
                       disabled={selectedIds.size === 0}
                       onClick={() => void bulkStatus('inactive')}
-                      className="px-2.5 py-1 rounded-[7px] text-[11px] font-semibold bg-white border border-[#DDD7CB] text-[#555047] hover:bg-[#F2ECE3] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="px-2.5 py-1 rounded-[7px] text-[11px] font-semibold bg-white border border-[#D6D3D1] text-[#667085] hover:bg-[#F6F4F2] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Inactive
                     </button>
@@ -876,7 +876,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setSelectedIds(new Set())}
-                        className="px-2 py-1 rounded-[7px] text-[11px] font-medium text-[#8C867C] hover:text-[#24221F] transition-colors cursor-pointer"
+                        className="px-2 py-1 rounded-[7px] text-[11px] font-medium text-[#667085] hover:text-[#0D1C42] transition-colors cursor-pointer"
                       >
                         Clear
                       </button>
@@ -889,17 +889,17 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
 
           {/* Fixture detail panel — real record fields only */}
           {liveSelected && (
-            <div className="mt-3 rounded-[12px] border border-[#DDD7CB] bg-white shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#F2ECE3]">
+            <div className="mt-3 rounded-[12px] border border-[#D6D3D1] bg-white shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#F6F4F2]">
                 <div className="flex items-center gap-2.5">
                   {(() => {
                     const Icon = fixtureMeta(
                       liveSelected.fixture_type,
                       isCustomKind(liveSelected.fixture_type)
                     ).icon;
-                    return <Icon className="w-4 h-4 text-[#555047]" />;
+                    return <Icon className="w-4 h-4 text-[#667085]" />;
                   })()}
-                  <span className="text-sm font-bold text-[#24221F]">
+                  <span className="text-sm font-bold text-[#0D1C42]">
                     {liveSelected.label}
                   </span>
                   <Badge
@@ -918,35 +918,35 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedFixture(null)}
-                  className="w-6 h-6 flex items-center justify-center text-[#8C867C] hover:text-[#24221F] hover:bg-[#F3EFE9] rounded-md transition-colors cursor-pointer"
+                  className="w-6 h-6 flex items-center justify-center text-[#667085] hover:text-[#0D1C42] hover:bg-[#F6F4F2] rounded-md transition-colors cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 text-[11px]">
                 <div>
-                  <span className="block text-[#8C867C] mb-0.5">Type</span>
-                  <span className="font-medium text-[#24221F]">
+                  <span className="block text-[#667085] mb-0.5">Type</span>
+                  <span className="font-medium text-[#0D1C42]">
                     {fixtureTypeLabel(liveSelected)}
                   </span>
                 </div>
                 <div>
-                  <span className="block text-[#8C867C] mb-0.5">Cleaning</span>
-                  <span className="font-medium text-[#24221F]">
+                  <span className="block text-[#667085] mb-0.5">Cleaning</span>
+                  <span className="font-medium text-[#0D1C42]">
                     {liveSelected.status === 'operational' ? 'Clean' : 'Attention'}
                   </span>
                 </div>
                 <div>
-                  <span className="block text-[#8C867C] mb-0.5">Last Cleaned</span>
-                  <span className="font-medium text-[#24221F]">
+                  <span className="block text-[#667085] mb-0.5">Last Cleaned</span>
+                  <span className="font-medium text-[#0D1C42]">
                     {liveSelected.last_cleaned_at
                       ? fmtTimestamp(liveSelected.last_cleaned_at)
                       : 'Never recorded'}
                   </span>
                 </div>
                 <div>
-                  <span className="block text-[#8C867C] mb-0.5">Last Maintenance</span>
-                  <span className="font-medium text-[#24221F]">
+                  <span className="block text-[#667085] mb-0.5">Last Maintenance</span>
+                  <span className="font-medium text-[#0D1C42]">
                     {liveSelected.last_maintenance_at
                       ? fmtTimestamp(liveSelected.last_maintenance_at)
                       : 'No maintenance recorded'}
@@ -954,17 +954,17 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                 </div>
               </div>
               {fixtureTickets.get(liveSelected.fixture_uid) && (
-                <div className="px-4 py-2 border-t border-[#F2ECE3] text-[11px] text-[#A32A2A]">
+                <div className="px-4 py-2 border-t border-[#F6F4F2] text-[11px] text-[#A83434]">
                   Maintenance {fixtureTickets.get(liveSelected.fixture_uid)!.issue}
                   {fixtureTickets.get(liveSelected.fixture_uid)!.assigned_to_name &&
                     ` · Assigned to ${fixtureTickets.get(liveSelected.fixture_uid)!.assigned_to_name}`}
                 </div>
               )}
-              <div className="flex items-center gap-2 px-4 py-2.5 border-t border-[#F2ECE3] bg-[#FAF8F5]">
+              <div className="flex items-center gap-2 px-4 py-2.5 border-t border-[#F6F4F2] bg-[#FFFFFF]">
                 <button
                   type="button"
                   onClick={() => openTask(liveSelected)}
-                  className="px-2.5 py-1.5 rounded-[8px] text-[11px] font-semibold bg-[#386641] text-white hover:bg-[#2C5134] transition-colors cursor-pointer inline-flex items-center gap-1"
+                  className="px-2.5 py-1.5 rounded-[8px] text-[11px] font-semibold bg-[#800020] text-white hover:bg-[#0D1C42] transition-colors cursor-pointer inline-flex items-center gap-1"
                 >
                   <ClipboardCheck className="w-3 h-3" />
                   Assign Task
@@ -972,7 +972,7 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => openMaint(liveSelected)}
-                  className="px-2.5 py-1.5 rounded-[8px] text-[11px] font-semibold bg-[#FDE8E8] text-[#A32A2A] hover:bg-[#FBDCDC] transition-colors cursor-pointer inline-flex items-center gap-1"
+                  className="px-2.5 py-1.5 rounded-[8px] text-[11px] font-semibold bg-[#FAEBEB] text-[#A83434] hover:bg-[#F0C8C8] transition-colors cursor-pointer inline-flex items-center gap-1"
                 >
                   <Wrench className="w-3 h-3" />
                   Allocate Maintenance
@@ -981,13 +981,13 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
                   <button
                     type="button"
                     onClick={() => onEdit(washroom)}
-                    className="px-2.5 py-1.5 rounded-[8px] text-[11px] font-semibold bg-[#F2ECE3] text-[#555047] hover:bg-[#E5DFD4] transition-colors cursor-pointer inline-flex items-center gap-1"
+                    className="px-2.5 py-1.5 rounded-[8px] text-[11px] font-semibold bg-[#F6F4F2] text-[#667085] hover:bg-[#E7E5E4] transition-colors cursor-pointer inline-flex items-center gap-1"
                   >
                     <Pencil className="w-3 h-3" />
                     Edit Fixture Inventory
                   </button>
                 )}
-                <span className="ml-auto text-[10px] text-[#8C867C]">
+                <span className="ml-auto text-[10px] text-[#667085]">
                   Condition: {FIXTURE_CONDITION[liveSelected.status]}
                 </span>
               </div>
@@ -998,32 +998,32 @@ export const WashroomDetailModal: React.FC<WashroomDetailModalProps> = ({
         {/* Recent Activity — real records only */}
         <div>
           <div className="flex items-center gap-1.5 mb-2">
-            <History className="w-3.5 h-3.5 text-[#8C867C]" />
+            <History className="w-3.5 h-3.5 text-[#667085]" />
             <span className={sectionLabel}>Recent Activity</span>
           </div>
           {activity.length === 0 ? (
-            <div className="rounded-[10px] border border-dashed border-[#DDD7CB] bg-[#FAF8F5] px-4 py-4 text-center">
-              <p className="text-xs text-[#8C867C]">
+            <div className="rounded-[10px] border border-dashed border-[#D6D3D1] bg-[#FFFFFF] px-4 py-4 text-center">
+              <p className="text-xs text-[#667085]">
                 No activity recorded yet — tasks and maintenance for this
                 washroom will appear here.
               </p>
             </div>
           ) : (
-            <div className="rounded-[10px] border border-[#EAE5DC] divide-y divide-[#F2ECE3] overflow-hidden">
+            <div className="rounded-[10px] border border-[#E7E5E4] divide-y divide-[#F6F4F2] overflow-hidden">
               {activity.map((a, i) => (
                 <div key={i} className="flex items-center gap-3 px-3 py-2 bg-white">
                   {a.icon === 'maintenance' ? (
-                    <Wrench className="w-3.5 h-3.5 text-[#8C867C] shrink-0" />
+                    <Wrench className="w-3.5 h-3.5 text-[#667085] shrink-0" />
                   ) : (
-                    <ClipboardCheck className="w-3.5 h-3.5 text-[#8C867C] shrink-0" />
+                    <ClipboardCheck className="w-3.5 h-3.5 text-[#667085] shrink-0" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-[#24221F] truncate">{a.text}</p>
+                    <p className="text-xs text-[#0D1C42] truncate">{a.text}</p>
                     {a.actor && (
-                      <p className="text-[10px] text-[#8C867C]">{a.actor}</p>
+                      <p className="text-[10px] text-[#667085]">{a.actor}</p>
                     )}
                   </div>
-                  <span className="text-[10px] text-[#8C867C] shrink-0">{a.time}</span>
+                  <span className="text-[10px] text-[#667085] shrink-0">{a.time}</span>
                 </div>
               ))}
             </div>

@@ -44,18 +44,18 @@ export const OccupancyToggle: React.FC<OccupancyToggleProps> = ({
     compact
       ? `px-1.5 py-0.5 text-[9px] font-semibold transition-colors ${
           active
-            ? 'bg-[#2563EB] text-white'
-            : 'bg-white text-[#555047]'
-        } ${enabled ? 'cursor-pointer hover:bg-[#EBF3EC]' : 'cursor-not-allowed opacity-60'}`
+            ? 'bg-[#3478D4] text-white'
+            : 'bg-white text-[#667085]'
+        } ${enabled ? 'cursor-pointer hover:bg-[#F7E9EE]' : 'cursor-not-allowed opacity-60'}`
       : `px-2.5 py-1 text-[11px] font-semibold transition-colors ${
           active
-            ? 'bg-[#2563EB] text-white'
-            : 'bg-white text-[#555047]'
-        } ${enabled ? 'cursor-pointer hover:bg-[#EBF3EC]' : 'cursor-not-allowed opacity-60'}`;
+            ? 'bg-[#3478D4] text-white'
+            : 'bg-white text-[#667085]'
+        } ${enabled ? 'cursor-pointer hover:bg-[#F7E9EE]' : 'cursor-not-allowed opacity-60'}`;
 
   return (
     <span
-      className="inline-flex rounded-[7px] border border-[#DDD7CB] overflow-hidden divide-x divide-[#DDD7CB] bg-white"
+      className="inline-flex rounded-[7px] border border-[#D6D3D1] overflow-hidden divide-x divide-[#D6D3D1] bg-white"
       role="group"
       aria-label="Occupancy"
       title={

@@ -6,13 +6,13 @@ management-side decision surface on the shared database.
 
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.dependencies.auth import require_property_manager
-from app.models.user import User
+from app.dependencies.auth import require_property_manager, require_role
+from app.models.user import User, UserRole
 from app.services.attendance import (
     AttendanceService,
     day_status_board,
@@ -38,6 +38,25 @@ async def status_board(
 
 class AttendanceReviewBody(BaseModel):
     review_comment: str | None = Field(default=None, max_length=2000)
+
+
+@router.get("/employees/{employee_uid}/history")
+async def employee_history_endpoint(
+    employee_uid: uuid.UUID,
+    from_date: str = Query(..., alias="from"),
+    to_date: str = Query(..., alias="to"),
+    user: User = Depends(require_role(
+        UserRole.SUPER_ADMIN, UserRole.PROPERTY_MANAGER,
+        UserRole.HUMAN_RESOURCE, UserRole.DEPARTMENT_MANAGER)),
+    session: AsyncSession = Depends(get_db),
+):
+    """Per-workday attendance record — shift, punches, every break, and the
+    late/early/incomplete evaluation — for the employee detail drawer and
+    attendance intelligence views. Department managers are scoped to
+    their departments."""
+    from app.services.attendance import employee_history
+    return await employee_history(
+        session, user, employee_uid, from_date, to_date)
 
 
 @router.get("/requests")

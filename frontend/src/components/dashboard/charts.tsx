@@ -1,170 +1,262 @@
 import React from 'react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 /*
- * Dependency-free SVG charts for the Dashboard. Colours are the approved warm
- * palette (brand green, existing danger/amber and neutral line tones). Every
- * chart has a text equivalent (legend or labels) so colour is never the only
- * carrier of meaning.
+ * Shared AiROS chart kit (Recharts). Palette = design tokens; every chart has
+ * a text equivalent (legend, labels or accessible name) so colour is never
+ * the only carrier of meaning. Nulls break lines — missing history is never
+ * drawn as a value.
  */
 
 export const CHART = {
-  brand: '#386641',
-  vacant: '#DDD7CB',
-  maintenance: '#A32A2A',
-  unavailable: '#C98232',
-  track: '#F2ECE3',
-  axis: '#8C867C',
-  grid: '#EAE5DC',
-  ink: '#24221F',
-  ink2: '#6C675F',
+  brand: '#800020',
+  brandDark: '#66001A',
+  success: '#16865B',
+  available: '#1E3B2F',
+  occupied: '#1B365D',
+  cleaning: '#F4BE38',
+  mxState: '#790D16',
+  progress: '#7554C8',
+  scheduled: '#14616B',
+  vacant: '#D6D3D1',
+  maintenance: '#790D16',
+  unavailable: '#E99A23',
+  inactive: '#7A8495',
+  info: '#3478D4',
+  pending: '#7554C8',
+  navy: '#0D1C42',
+  orange: '#FF9137',
+  danger: '#D64545',
+  track: '#F6F4F2',
+  axis: '#98A2B3',
+  grid: '#E7E5E4',
+  ink: '#0D1C42',
+  ink2: '#667085',
+  /** Coordinated multi-series accents — use the minimum needed per chart. */
+  accents: ['#800020', '#0D1C42', '#FF9137', '#7554C8', '#3478D4', '#16865B', '#B34A68'],
 } as const;
 
-export interface DonutSegment {
-  key: string;
-  label: string;
-  count: number;
-  pct: number | null;
-  color: string;
-  onSelect?: () => void;
+/* ------------------------------------------------------------------ tips */
+
+interface TipRow {
+  x?: string;
+  tip?: React.ReactNode;
 }
 
-export const DonutChart: React.FC<{ segments: DonutSegment[]; total: number; centerLabel: string }> = ({
-  segments,
-  total,
-  centerLabel,
+const TipShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="min-w-[170px] rounded-[10px] border border-line bg-surface px-3 py-2 text-body text-ink shadow-sm">
+    {children}
+  </div>
+);
+
+const TrendTip: React.FC<{ active?: boolean; payload?: { payload?: TipRow }[] }> = ({
+  active,
+  payload,
 }) => {
-  const r = 52;
-  const c = 2 * Math.PI * r;
-  let offset = 0;
+  if (!active || !payload?.length) return null;
+  const tip = payload[0]?.payload?.tip;
+  return tip ? <TipShell>{tip}</TipShell> : null;
+};
+
+const CountTip: React.FC<{
+  active?: boolean;
+  payload?: { payload?: { label: string; value: number } }[];
+  label?: string;
+}> = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  const p = payload[0]?.payload;
+  if (!p) return null;
   return (
-    <svg viewBox="0 0 140 140" className="w-36 h-36 shrink-0" role="img" aria-label={`${total} ${centerLabel}`}>
-      <circle cx="70" cy="70" r={r} fill="none" stroke={CHART.track} strokeWidth="16" />
-      {total > 0 &&
-        segments.map((s) => {
-          const len = (s.count / total) * c;
-          const el = (
-            <circle
-              key={s.key}
-              cx="70"
-              cy="70"
-              r={r}
-              fill="none"
-              stroke={s.color}
-              strokeWidth="16"
-              strokeDasharray={`${Math.max(len - 0.5, 0)} ${c}`}
-              strokeDashoffset={-offset}
-              transform="rotate(-90 70 70)"
-              className={s.onSelect ? 'cursor-pointer' : undefined}
-              onClick={s.onSelect}
-            >
-              <title>{`${s.label}: ${s.count}${s.pct != null ? ` (${s.pct}%)` : ''}`}</title>
-            </circle>
-          );
-          offset += len;
-          return el;
-        })}
-      <text x="70" y="68" textAnchor="middle" fontSize="22" fontWeight="700" fill={CHART.ink} className="font-display">
-        {total}
-      </text>
-      <text x="70" y="86" textAnchor="middle" fontSize="11" fill={CHART.ink2}>
-        {centerLabel}
-      </text>
-    </svg>
+    <TipShell>
+      <p className="font-semibold text-ink">{p.label ?? label}</p>
+      <p className="font-num tabular-nums text-ink-2">{p.value}</p>
+    </TipShell>
   );
 };
 
-/** Area/line trend with a y-axis from zero to `yMax`. */
+/* ------------------------------------------------------------- primitives */
+
+export interface TrendPoint {
+  x: string;
+  y: number | null;
+  tip?: React.ReactNode;
+}
+
+/**
+ * Area/line trend. Gaps (null values) break the line so missing history is
+ * never drawn as a value. `tip` on a point renders the tooltip body.
+ */
+export const InteractiveLine: React.FC<{
+  points: TrendPoint[];
+  yMax: number;
+  yFormat: (v: number) => string;
+  ariaLabel: string;
+  height?: number;
+  series?: { key: string; color: string }[];
+}> = ({ points, yMax, yFormat, ariaLabel, height = 300 }) => {
+  return (
+    <div role="img" aria-label={ariaLabel} style={{ width: '100%', height }}>
+      <ResponsiveContainer>
+        <AreaChart data={points} margin={{ top: 10, right: 8, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={CHART.brand} stopOpacity={0.16} />
+              <stop offset="100%" stopColor={CHART.brand} stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} stroke={CHART.grid} />
+          <XAxis
+            dataKey="x"
+            tickLine={false}
+            axisLine={false}
+            interval="preserveStartEnd"
+            minTickGap={40}
+            tick={{ fontSize: 11, fill: CHART.axis }}
+            tickMargin={8}
+          />
+          <YAxis
+            domain={[0, yMax]}
+            tickLine={false}
+            axisLine={false}
+            width={42}
+            tick={{ fontSize: 11, fill: CHART.axis }}
+            tickFormatter={(v: number) => yFormat(v)}
+          />
+          <Tooltip content={<TrendTip />} cursor={{ stroke: CHART.ink2, strokeDasharray: '3 3' }} />
+          <Area
+            type="monotone"
+            dataKey="y"
+            stroke={CHART.brand}
+            strokeWidth={2.25}
+            fill="url(#trendFill)"
+            connectNulls={false}
+            dot={false}
+            activeDot={{ r: 4, fill: CHART.brand, stroke: '#fff', strokeWidth: 1.5 }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+/** Simple single-series trend (same visual language as InteractiveLine). */
 export const LineTrend: React.FC<{
   points: { label: string; value: number }[];
   yMax: number;
   height?: number;
   format?: (v: number) => string;
   ariaLabel: string;
-}> = ({ points, yMax, height = 170, format = (v) => String(Math.round(v)), ariaLabel }) => {
-  const W = 640;
-  const H = height;
-  const padL = 36;
-  const padB = 22;
-  const padT = 10;
-  const innerW = W - padL - 8;
-  const innerH = H - padB - padT;
-  const max = Math.max(yMax, 1);
-  const x = (i: number) => padL + (points.length <= 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
-  const y = (v: number) => padT + innerH - (Math.min(v, max) / max) * innerH;
-  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ');
-  const area = points.length
-    ? `${path} L${x(points.length - 1).toFixed(1)},${padT + innerH} L${x(0).toFixed(1)},${padT + innerH} Z`
-    : '';
-  const ticks = [0, 0.5, 1].map((f) => Math.round(max * f * 10) / 10);
-  const labelEvery = Math.max(1, Math.ceil(points.length / 7));
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label={ariaLabel}>
-      {ticks.map((t) => (
-        <g key={t}>
-          <line x1={padL} x2={W - 8} y1={y(t)} y2={y(t)} stroke={CHART.grid} />
-          <text x={padL - 6} y={y(t) + 4} textAnchor="end" fontSize="11" fill={CHART.axis}>
-            {format(t)}
-          </text>
-        </g>
-      ))}
-      {area && <path d={area} fill={CHART.brand} opacity="0.12" />}
-      {path && <path d={path} fill="none" stroke={CHART.brand} strokeWidth="2" strokeLinejoin="round" />}
-      {points.map((p, i) => (
-        <g key={p.label + i}>
-          <circle cx={x(i)} cy={y(p.value)} r="3" fill={CHART.brand}>
-            <title>{`${p.label}: ${format(p.value)}`}</title>
-          </circle>
-          {i % labelEvery === 0 && (
-            <text x={x(i)} y={H - 6} textAnchor="middle" fontSize="11" fill={CHART.axis}>
-              {p.label}
-            </text>
-          )}
-        </g>
-      ))}
-    </svg>
-  );
-};
+}> = ({ points, yMax, height = 170, format = (v) => String(Math.round(v)), ariaLabel }) => (
+  <InteractiveLine
+    points={points.map((p) => ({ x: p.label, y: p.value }))}
+    yMax={yMax}
+    yFormat={format}
+    ariaLabel={ariaLabel}
+    height={height}
+  />
+);
 
-/** Vertical columns for counts per bucket, with value labels. */
+/** Vertical columns for counts per bucket. */
 export const ColumnChart: React.FC<{
   bars: { label: string; value: number; color?: string }[];
   height?: number;
   ariaLabel: string;
 }> = ({ bars, height = 160, ariaLabel }) => {
-  const W = 640;
-  const H = height;
-  const padB = 22;
-  const padT = 14;
-  const innerH = H - padB - padT;
-  const max = Math.max(1, ...bars.map((b) => b.value));
-  const slot = bars.length ? (W - 8) / bars.length : 0;
-  const labelEvery = Math.max(1, Math.ceil(bars.length / 8));
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label={ariaLabel}>
-      {bars.map((b, i) => {
-        const h = (b.value / max) * innerH;
-        const bx = 4 + i * slot + slot * 0.18;
-        const bw = slot * 0.64;
-        return (
-          <g key={b.label + i}>
-            <rect x={bx} y={padT + innerH - h} width={bw} height={Math.max(h, b.value > 0 ? 2 : 0)}
-              rx="3" fill={b.color ?? CHART.brand}>
-              <title>{`${b.label}: ${b.value}`}</title>
-            </rect>
-            {b.value > 0 && bars.length <= 31 && (
-              <text x={bx + bw / 2} y={padT + innerH - h - 4} textAnchor="middle" fontSize="11" fill={CHART.ink2}>
-                {b.value}
-              </text>
-            )}
-            {i % labelEvery === 0 && (
-              <text x={bx + bw / 2} y={H - 6} textAnchor="middle" fontSize="11" fill={CHART.axis}>
-                {b.label}
-              </text>
-            )}
-          </g>
-        );
-      })}
-    </svg>
+    <div role="img" aria-label={ariaLabel} style={{ width: '100%', height }}>
+      <ResponsiveContainer>
+        <BarChart data={bars} margin={{ top: 14, right: 4, bottom: 0, left: 4 }} barCategoryGap="30%">
+          <CartesianGrid vertical={false} stroke={CHART.grid} />
+          <XAxis
+            dataKey="label"
+            tickLine={false}
+            axisLine={false}
+            interval="preserveStartEnd"
+            minTickGap={30}
+            tick={{ fontSize: 11, fill: CHART.axis }}
+            tickMargin={8}
+          />
+          <YAxis hide domain={[0, 'auto']} />
+          <Tooltip content={<CountTip />} cursor={{ fill: CHART.track }} />
+          <Bar dataKey="value" radius={[3, 3, 0, 0]} maxBarSize={36}>
+            {bars.map((b, i) => (
+              <Cell key={i} fill={b.color ?? CHART.brand} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const GroupTip: React.FC<{
+  active?: boolean;
+  payload?: { payload?: { label: string; a: number; b: number } }[];
+  label?: string;
+  series: { label: string; color: string }[];
+}> = ({ active, payload, series }) => {
+  if (!active || !payload?.length) return null;
+  const p = payload[0]?.payload;
+  if (!p) return null;
+  return (
+    <TipShell>
+      <p className="font-semibold text-ink">{p.label}</p>
+      <p className="font-num tabular-nums text-ink-2">
+        <span className="mr-3"><span style={{ color: series[0].color }}>●</span> {series[0].label} {p.a}</span>
+        <span><span style={{ color: series[1].color }}>●</span> {series[1].label} {p.b}</span>
+      </p>
+    </TipShell>
+  );
+};
+
+/** Grouped two-series columns — e.g. generated vs completed per bucket. */
+export const GroupBar: React.FC<{
+  rows: { label: string; a: number; b: number }[];
+  series: [{ label: string; color: string }, { label: string; color: string }];
+  height?: number;
+  ariaLabel: string;
+}> = ({ rows, series, height = 200, ariaLabel }) => {
+  return (
+    <div role="img" aria-label={ariaLabel} style={{ width: '100%', height }}>
+      <ResponsiveContainer>
+        <BarChart data={rows} margin={{ top: 14, right: 4, bottom: 0, left: 4 }} barCategoryGap="30%" barGap={3}>
+          <CartesianGrid vertical={false} stroke={CHART.grid} />
+          <XAxis
+            dataKey="label"
+            tickLine={false}
+            axisLine={false}
+            interval="preserveStartEnd"
+            minTickGap={30}
+            tick={{ fontSize: 11, fill: CHART.axis }}
+            tickMargin={8}
+          />
+          <YAxis hide domain={[0, 'auto']} />
+          <Tooltip
+            content={<GroupTip series={[{ label: series[0].label, color: series[0].color }, { label: series[1].label, color: series[1].color }]} />}
+            cursor={{ fill: CHART.track }}
+          />
+          <Bar dataKey="a" name={series[0].label} fill={series[0].color} radius={[3, 3, 0, 0]} maxBarSize={22} />
+          <Bar dataKey="b" name={series[1].label} fill={series[1].color} radius={[3, 3, 0, 0]} maxBarSize={22} />
+        </BarChart>
+      </ResponsiveContainer>
+      <div className="mt-1 flex items-center gap-4 text-meta text-ink-2">
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 rounded-full" style={{ background: series[0].color }} />{series[0].label}</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 rounded-full" style={{ background: series[1].color }} />{series[1].label}</span>
+      </div>
+    </div>
   );
 };
 
@@ -188,13 +280,13 @@ export const HBarList: React.FC<{
             className={`w-full text-left group ${r.onSelect ? 'cursor-pointer' : 'cursor-default'}`}
           >
             <div className="flex items-baseline justify-between gap-3">
-              <span className="text-body text-ink truncate group-hover:text-brand">{r.label}</span>
-              <span className="text-meta text-ink-2 tabular-nums shrink-0">
+              <span className="text-body text-ink truncate group-hover:text-brand-ink">{r.label}</span>
+              <span className="font-num text-meta text-ink-2 tabular-nums shrink-0">
                 {r.value}
                 {r.secondary ? <span className="text-ink-3"> · {r.secondary}</span> : null}
               </span>
             </div>
-            <div className="mt-1 h-2 rounded-full bg-[#F2ECE3] overflow-hidden">
+            <div className="mt-1 h-2 overflow-hidden rounded-full bg-shell">
               <div className="h-full rounded-full" style={{ width: `${(r.value / top) * 100}%`, background: color }} />
             </div>
           </button>
@@ -211,7 +303,7 @@ export const StackBar: React.FC<{
   const total = parts.reduce((s, p) => s + p.value, 0);
   return (
     <div>
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-[#F2ECE3]" role="img"
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-shell" role="img"
         aria-label={parts.map((p) => `${p.label} ${p.value}`).join(', ')}>
         {total > 0 &&
           parts.map((p) => (
@@ -223,7 +315,7 @@ export const StackBar: React.FC<{
           <li key={p.key} className="flex items-center gap-1.5 text-meta text-ink-2">
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.color }} />
             <span>{p.label}</span>
-            <span className="tabular-nums text-ink">{p.value}</span>
+            <span className="font-num tabular-nums text-ink">{p.value}</span>
           </li>
         ))}
       </ul>
@@ -231,104 +323,44 @@ export const StackBar: React.FC<{
   );
 };
 
-/**
- * Line chart with hover/touch tooltips. Gaps (null values) break the line so
- * missing history is never drawn as a value. `tip` renders the tooltip body.
- */
-export const InteractiveLine: React.FC<{
-  points: { x: string; y: number | null; tip: React.ReactNode }[];
-  yMax: number;
-  yFormat: (v: number) => string;
-  ariaLabel: string;
-  height?: number;
-}> = ({ points, yMax, yFormat, ariaLabel, height = 300 }) => {
-  const [hover, setHover] = React.useState<number | null>(null);
-  const ref = React.useRef<HTMLDivElement>(null);
-  const W = 800;
-  const H = height;
-  const padL = 46;
-  const padB = 28;
-  const padT = 12;
-  const innerW = W - padL - 12;
-  const innerH = H - padB - padT;
-  const max = Math.max(yMax, 1);
-  const n = points.length;
-  const x = (i: number) => padL + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
-  const y = (v: number) => padT + innerH - (Math.min(v, max) / max) * innerH;
-  // break the path at null values
-  const segments: string[] = [];
-  let cur = '';
-  points.forEach((p, i) => {
-    if (p.y == null) {
-      if (cur) segments.push(cur);
-      cur = '';
-      return;
-    }
-    cur += `${cur ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.y).toFixed(1)} `;
-  });
-  if (cur) segments.push(cur);
-  const labelEvery = Math.max(1, Math.ceil(n / 8));
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => max * f);
+export interface DonutSegment {
+  key: string;
+  label: string;
+  count: number;
+  pct: number | null;
+  color: string;
+  onSelect?: () => void;
+}
 
-  const onMove = (clientX: number) => {
-    const el = ref.current;
-    if (!el || n === 0) return;
-    const rect = el.getBoundingClientRect();
-    const rel = (clientX - rect.left) / rect.width; // 0..1 across the svg
-    const svgX = rel * W;
-    let best = 0;
-    let bestD = Infinity;
-    for (let i = 0; i < n; i++) {
-      const d = Math.abs(x(i) - svgX);
-      if (d < bestD) {
-        bestD = d;
-        best = i;
-      }
-    }
-    setHover(best);
-  };
-  const hp = hover != null ? points[hover] : null;
-  return (
-    <div ref={ref} className="relative w-full select-none"
-      onPointerMove={(e) => onMove(e.clientX)}
-      onPointerDown={(e) => onMove(e.clientX)}
-      onPointerLeave={() => setHover(null)}>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label={ariaLabel}>
-        {ticks.map((t) => (
-          <g key={t}>
-            <line x1={padL} x2={W - 12} y1={y(t)} y2={y(t)} stroke={CHART.grid} />
-            <text x={padL - 8} y={y(t) + 4} textAnchor="end" fontSize="12" fill={CHART.axis}>
-              {yFormat(t)}
-            </text>
-          </g>
-        ))}
-        {segments.map((d, i) => (
-          <path key={i} d={d} fill="none" stroke={CHART.brand} strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" />
-        ))}
-        {points.map((p, i) =>
-          p.y == null ? null : (
-            <circle key={p.x + i} cx={x(i)} cy={y(p.y)} r={hover === i ? 5 : 2.5} fill={CHART.brand} />
-          ),
-        )}
-        {points.map((p, i) =>
-          i % labelEvery === 0 ? (
-            <text key={'l' + p.x + i} x={x(i)} y={H - 8} textAnchor="middle" fontSize="12" fill={CHART.axis}>
-              {p.x}
-            </text>
-          ) : null,
-        )}
-        {hover != null && (
-          <line x1={x(hover)} x2={x(hover)} y1={padT} y2={padT + innerH} stroke={CHART.ink2} strokeDasharray="3 3" />
-        )}
-      </svg>
-      {hp && hover != null && (
-        <div
-          className="pointer-events-none absolute top-2 z-10 min-w-[180px] rounded-[10px] border border-line bg-surface px-3 py-2 text-body text-ink shadow-sm"
-          style={{ left: `clamp(0px, calc(${(x(hover) / W) * 100}% - 90px), calc(100% - 190px))` }}
+/** Donut for simple proportions — centre shows the total. */
+export const DonutChart: React.FC<{ segments: DonutSegment[]; total: number; centerLabel: string }> = ({
+  segments,
+  total,
+  centerLabel,
+}) => (
+  <div className="relative h-36 w-36 shrink-0" role="img" aria-label={`${total} ${centerLabel}`}>
+    <ResponsiveContainer>
+      <PieChart>
+        <Pie
+          data={segments.filter((s) => s.count > 0)}
+          dataKey="count"
+          nameKey="label"
+          innerRadius={52}
+          outerRadius={68}
+          strokeWidth={0}
+          isAnimationActive={false}
         >
-          {hp.tip}
-        </div>
-      )}
+          {segments
+            .filter((s) => s.count > 0)
+            .map((s) => (
+              <Cell key={s.key} fill={s.color} onClick={s.onSelect} style={s.onSelect ? { cursor: 'pointer' } : undefined} />
+            ))}
+        </Pie>
+      </PieChart>
+    </ResponsiveContainer>
+    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+      <span className="font-display text-[22px] font-bold text-ink">{total}</span>
+      <span className="text-[11px] text-ink-2">{centerLabel}</span>
     </div>
-  );
-};
+  </div>
+);

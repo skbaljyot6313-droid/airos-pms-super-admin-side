@@ -65,10 +65,10 @@ export const AdminSettingsView: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Top Header */}
       <div>
-        <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#24221F] tracking-tight">
+        <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#0D1C42] tracking-tight">
           Organization Settings
         </h1>
-        <p className="font-body text-sm text-[#6C675F] mt-0.5">
+        <p className="font-body text-sm text-[#667085] mt-0.5">
           Legal corporate identity and administrative system configuration
         </p>
       </div>
@@ -76,8 +76,8 @@ export const AdminSettingsView: React.FC = () => {
       {/* Organization Info Form */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Building2 className="w-4 h-4 text-[#386641]" />
-          <h3 className="font-display font-bold text-base text-[#24221F]">
+          <Building2 className="w-4 h-4 text-[#800020]" />
+          <h3 className="font-display font-bold text-base text-[#0D1C42]">
             Organization & Brand Identity
           </h3>
         </div>
@@ -85,7 +85,7 @@ export const AdminSettingsView: React.FC = () => {
         {saveError && (
           <div
             role="alert"
-            className="mb-4 p-3 rounded-[10px] bg-[#FDE8E8] border border-[#F9C3C3] text-[#A32A2A] text-xs font-medium"
+            className="mb-4 p-3 rounded-[10px] bg-[#FAEBEB] border border-[#F0C8C8] text-[#A83434] text-xs font-medium"
           >
             {saveError}
           </div>
@@ -94,7 +94,7 @@ export const AdminSettingsView: React.FC = () => {
         <form onSubmit={handleSaveCompany} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
                 Legal Entity Name
               </label>
               <input
@@ -102,12 +102,12 @@ export const AdminSettingsView: React.FC = () => {
                 required
                 value={legalName}
                 onChange={(e) => setLegalName(e.target.value)}
-                className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+                className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
                 Hospitality Brand Name
               </label>
               <input
@@ -115,12 +115,12 @@ export const AdminSettingsView: React.FC = () => {
                 required
                 value={brandName}
                 onChange={(e) => setBrandName(e.target.value)}
-                className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+                className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
                 Operations Email
               </label>
               <input
@@ -128,12 +128,12 @@ export const AdminSettingsView: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+                className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
                 Corporate Phone
               </label>
               <input
@@ -141,7 +141,7 @@ export const AdminSettingsView: React.FC = () => {
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+                className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
               />
             </div>
           </div>
@@ -157,12 +157,12 @@ export const AdminSettingsView: React.FC = () => {
       {/* Operational Day — drives the daily rollover + task analysis */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-2">
-          <Clock3 className="w-4 h-4 text-[#386641]" />
-          <h3 className="font-display font-bold text-base text-[#24221F]">
+          <Clock3 className="w-4 h-4 text-[#800020]" />
+          <h3 className="font-display font-bold text-base text-[#0D1C42]">
             Operational Day
           </h3>
         </div>
-        <p className="text-xs text-[#6C675F] font-body mb-4">
+        <p className="text-xs text-[#667085] font-body mb-4">
           The time each operational day begins (IST). At this moment every
           unfinished task from the previous day is automatically marked
           Abandoned, and the task calendar/analysis group work by this window.
@@ -171,7 +171,7 @@ export const AdminSettingsView: React.FC = () => {
         {dayError && (
           <div
             role="alert"
-            className="mb-4 p-3 rounded-[10px] bg-[#FDE8E8] border border-[#F9C3C3] text-[#A32A2A] text-xs font-medium"
+            className="mb-4 p-3 rounded-[10px] bg-[#FAEBEB] border border-[#F0C8C8] text-[#A83434] text-xs font-medium"
           >
             {dayError}
           </div>
@@ -203,7 +203,7 @@ export const AdminSettingsView: React.FC = () => {
           className="flex items-end gap-4"
         >
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
               Operational Day Starts At (IST)
             </label>
             <input
@@ -211,7 +211,7 @@ export const AdminSettingsView: React.FC = () => {
               required
               value={dayStart}
               onChange={(e) => setDayStart(e.target.value)}
-              className="px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             />
           </div>
           <Button type="submit" variant="primary" isLoading={isSavingDay}>
@@ -223,45 +223,45 @@ export const AdminSettingsView: React.FC = () => {
       {/* Data Overview & Sync */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-2">
-          <Database className="w-4 h-4 text-[#C8681A]" />
-          <h3 className="font-display font-bold text-base text-[#24221F]">
+          <Database className="w-4 h-4 text-[#A56514]" />
+          <h3 className="font-display font-bold text-base text-[#0D1C42]">
             Workspace Data
           </h3>
         </div>
-        <p className="text-xs text-[#6C675F] font-body mb-4">
+        <p className="text-xs text-[#667085] font-body mb-4">
           Live operational data synced from the operations API across all company properties.
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-5">
-          <div className="p-3 bg-[#FAF8F5] rounded-[10px] border border-[#EAE5DC]">
-            <span className="text-[#8C867C] block font-semibold">Properties</span>
-            <span className="font-display font-bold text-lg text-[#24221F]">{companyProperties.length}</span>
+          <div className="p-3 bg-[#FFFFFF] rounded-[10px] border border-[#E7E5E4]">
+            <span className="text-[#667085] block font-semibold">Properties</span>
+            <span className="font-display font-bold text-lg text-[#0D1C42]">{companyProperties.length}</span>
           </div>
-          <div className="p-3 bg-[#FAF8F5] rounded-[10px] border border-[#EAE5DC]">
-            <span className="text-[#8C867C] block font-semibold">Zones</span>
-            <span className="font-display font-bold text-lg text-[#24221F]">{companyZones.length}</span>
+          <div className="p-3 bg-[#FFFFFF] rounded-[10px] border border-[#E7E5E4]">
+            <span className="text-[#667085] block font-semibold">Zones</span>
+            <span className="font-display font-bold text-lg text-[#0D1C42]">{companyZones.length}</span>
           </div>
-          <div className="p-3 bg-[#FAF8F5] rounded-[10px] border border-[#EAE5DC]">
-            <span className="text-[#8C867C] block font-semibold">Rooms & Dorms</span>
-            <span className="font-display font-bold text-lg text-[#24221F]">
+          <div className="p-3 bg-[#FFFFFF] rounded-[10px] border border-[#E7E5E4]">
+            <span className="text-[#667085] block font-semibold">Rooms & Dorms</span>
+            <span className="font-display font-bold text-lg text-[#0D1C42]">
               {companyRooms.length + companyDorms.length}
             </span>
           </div>
-          <div className="p-3 bg-[#FAF8F5] rounded-[10px] border border-[#EAE5DC]">
-            <span className="text-[#8C867C] block font-semibold">Staff Count</span>
-            <span className="font-display font-bold text-lg text-[#24221F]">{companyEmployees.length}</span>
+          <div className="p-3 bg-[#FFFFFF] rounded-[10px] border border-[#E7E5E4]">
+            <span className="text-[#667085] block font-semibold">Staff Count</span>
+            <span className="font-display font-bold text-lg text-[#0D1C42]">{companyEmployees.length}</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-[#F2ECE3]">
+        <div className="flex items-center justify-between pt-4 border-t border-[#F6F4F2]">
           <div>
-            <h4 className="font-semibold text-xs text-[#24221F]">Reload Workspace Data</h4>
-            <p className="text-[11px] text-[#736E65]">
+            <h4 className="font-semibold text-xs text-[#0D1C42]">Reload Workspace Data</h4>
+            <p className="text-[11px] text-[#667085]">
               Re-fetch all properties, zones, rooms, and staff from the server.
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={retryLoad}>
-            <RefreshCw className="w-3.5 h-3.5 mr-1 text-[#386641]" />
+            <RefreshCw className="w-3.5 h-3.5 mr-1 text-[#800020]" />
             <span>Refresh Data</span>
           </Button>
         </div>

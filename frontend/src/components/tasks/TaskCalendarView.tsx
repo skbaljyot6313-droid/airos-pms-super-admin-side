@@ -59,27 +59,27 @@ export const TaskCalendarView: React.FC = () => {
         const day = raw as TaskCalendarDay;
         return (
           <div className="mt-1.5 space-y-1">
-            <span className="block text-[11px] font-semibold text-[#48443D]">
+            <span className="block text-[11px] font-semibold text-[#0D1C42]">
               {day.generated} task{day.generated === 1 ? '' : 's'}
             </span>
             <span className="flex items-center gap-1">
               {day.completed > 0 && (
                 <span
-                  className="h-1.5 rounded-full bg-[#386641]"
+                  className="h-1.5 rounded-full bg-[#800020]"
                   style={{ width: `${Math.max(6, day.completed * 6)}px` }}
                   title={`${day.completed} completed`}
                 />
               )}
               {day.active > 0 && (
                 <span
-                  className="h-1.5 rounded-full bg-[#D6A017]"
+                  className="h-1.5 rounded-full bg-[#A56514]"
                   style={{ width: `${Math.max(6, day.active * 6)}px` }}
                   title={`${day.active} active`}
                 />
               )}
               {day.abandoned > 0 && (
                 <span
-                  className="h-1.5 rounded-full bg-[#C53B3B]"
+                  className="h-1.5 rounded-full bg-[#D64545]"
                   style={{ width: `${Math.max(6, day.abandoned * 6)}px` }}
                   title={`${day.abandoned} abandoned`}
                 />
@@ -91,13 +91,13 @@ export const TaskCalendarView: React.FC = () => {
       legend={
         <>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1.5 rounded-full bg-[#386641]" /> Completed
+            <span className="w-2.5 h-1.5 rounded-full bg-[#16865B]" /> Completed
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1.5 rounded-full bg-[#D6A017]" /> Still active
+            <span className="w-2.5 h-1.5 rounded-full bg-[#A56514]" /> Still active
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1.5 rounded-full bg-[#C53B3B]" /> Abandoned
+            <span className="w-2.5 h-1.5 rounded-full bg-[#D64545]" /> Abandoned
           </span>
         </>
       }

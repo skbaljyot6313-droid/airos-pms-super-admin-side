@@ -9,11 +9,27 @@ import {
   listDepartments,
   Department,
 } from '../../../api/departments';
+import { departmentWorkApi, type DeptRoster } from '../../../api/departmentWork';
 import { useApp } from '../../../context/AppContext';
 import { BackButton } from '../../ui/BackButton';
 import { Button } from '../../ui/Button';
 import { DepartmentFormModal } from './DepartmentFormModal';
 import { TransferModal } from './TransferModal';
+import {
+  DeptEmployeesTab,
+  DeptWorkTab,
+  DeptCalendarTab,
+  DeptPerformanceTab,
+} from './DepartmentWorkTabs';
+
+type DeptTab = 'overview' | 'employees' | 'work' | 'calendar' | 'performance';
+const DEPT_TABS: { id: DeptTab; label: string }[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'employees', label: 'Employees' },
+  { id: 'work', label: 'Work Allocation' },
+  { id: 'calendar', label: 'Calendar' },
+  { id: 'performance', label: 'Performance' },
+];
 
 export const DepartmentDetailView: React.FC = () => {
   const { propertyUid, departmentUid } = useParams<{
@@ -28,6 +44,17 @@ export const DepartmentDetailView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
+  const [tab, setTab] = useState<DeptTab>('overview');
+  const [roster, setRoster] = useState<DeptRoster | null>(null);
+
+  const loadRoster = () => {
+    if (!departmentUid) return;
+    departmentWorkApi
+      .roster(departmentUid)
+      .then(setRoster)
+      .catch(() => setRoster(null));
+  };
+  useEffect(loadRoster, [departmentUid]);
 
   const load = async () => {
     if (!propertyUid || !departmentUid) return;
@@ -73,7 +100,7 @@ export const DepartmentDetailView: React.FC = () => {
     .map((e) => ({ employee_uid: e.employee_uid, name: e.name }));
 
   if (loading)
-    return <div className="font-body text-sm text-[#66706A]">Loading…</div>;
+    return <div className="font-body text-sm text-[#800020]">Loading…</div>;
   if (error || !dept)
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-body">
@@ -88,15 +115,15 @@ export const DepartmentDetailView: React.FC = () => {
           <div className="mb-2">
             <BackButton to={`/property/${propertyUid}/workforce/departments`} />
           </div>
-          <h1 className="font-display font-semibold text-[28px] text-[#17221B] tracking-tight leading-tight">
+          <h1 className="font-display font-semibold text-[28px] text-[#0D1C42] tracking-tight leading-tight">
             {dept.name}
             {dept.code && (
-              <span className="ml-2 font-body text-sm text-[#9A9484] font-normal">
+              <span className="ml-2 font-body text-sm text-[#667085] font-normal">
                 {dept.code}
               </span>
             )}
           </h1>
-          <p className="font-body text-sm text-[#66706A] mt-1">
+          <p className="font-body text-sm text-[#800020] mt-1">
             {dept.description || 'Department roster, head and activity'}
           </p>
         </div>
@@ -110,37 +137,67 @@ export const DepartmentDetailView: React.FC = () => {
         </div>
       </div>
 
+      {/* Work Management tabs */}
+      <div className="flex items-center gap-1 border-b border-[#E7E5E4] -mb-1 overflow-x-auto">
+        {DEPT_TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-3.5 py-2 text-[13px] font-body font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
+              tab === t.id
+                ? 'border-[#800020] text-[#800020]'
+                : 'border-transparent text-[#667085] hover:text-[#0D1C42]'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
+      {tab === 'employees' && <DeptEmployeesTab roster={roster} />}
+      {tab === 'work' && (
+        <DeptWorkTab
+          departmentUid={departmentUid!}
+          roster={roster}
+          onChanged={loadRoster}
+        />
+      )}
+      {tab === 'calendar' && <DeptCalendarTab departmentUid={departmentUid!} />}
+      {tab === 'performance' && (
+        <DeptPerformanceTab departmentUid={departmentUid!} />
+      )}
+
+      {tab === 'overview' && (<>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-[#E4DED1] bg-white/60 px-4 py-3">
-          <div className="font-display text-xl font-bold text-[#17221B] tabular-nums">
+        <div className="rounded-xl border border-[#E7E5E4] bg-white/60 px-4 py-3">
+          <div className="font-display text-xl font-bold text-[#0D1C42] tabular-nums">
             {dept.employee_count}
           </div>
-          <div className="font-body text-xs text-[#66706A] mt-1.5">Total staff</div>
+          <div className="font-body text-xs text-[#800020] mt-1.5">Total staff</div>
         </div>
-        <div className="rounded-xl border border-[#E4DED1] bg-white/60 px-4 py-3">
-          <div className="font-display text-xl font-bold text-[#17221B] tabular-nums">
+        <div className="rounded-xl border border-[#E7E5E4] bg-white/60 px-4 py-3">
+          <div className="font-display text-xl font-bold text-[#0D1C42] tabular-nums">
             {dept.active_employee_count}
           </div>
-          <div className="font-body text-xs text-[#66706A] mt-1.5">Active</div>
+          <div className="font-body text-xs text-[#800020] mt-1.5">Active</div>
         </div>
-        <div className="rounded-xl border border-[#E4DED1] bg-white/60 px-4 py-3">
-          <div className="font-display text-xl font-bold text-[#17221B] tabular-nums">
+        <div className="rounded-xl border border-[#E7E5E4] bg-white/60 px-4 py-3">
+          <div className="font-display text-xl font-bold text-[#0D1C42] tabular-nums">
             {dept.employee_count - dept.active_employee_count}
           </div>
-          <div className="font-body text-xs text-[#66706A] mt-1.5">Inactive</div>
+          <div className="font-body text-xs text-[#800020] mt-1.5">Inactive</div>
         </div>
-        <div className="rounded-xl border border-[#E4DED1] bg-white/60 px-4 py-3">
-          <div className="font-body text-sm text-[#17221B] flex items-center gap-1.5 mt-0.5">
+        <div className="rounded-xl border border-[#E7E5E4] bg-white/60 px-4 py-3">
+          <div className="font-body text-sm text-[#0D1C42] flex items-center gap-1.5 mt-0.5">
             {dept.head ? (
               <>
-                <Crown className="w-4 h-4 text-[#B08D3E]" /> {dept.head.name}
+                <Crown className="w-4 h-4 text-[#A56514]" /> {dept.head.name}
               </>
             ) : (
-              <span className="text-[#9A9484]">No head</span>
+              <span className="text-[#667085]">No head</span>
             )}
           </div>
-          <div className="font-body text-xs text-[#66706A] mt-1.5">
+          <div className="font-body text-xs text-[#800020] mt-1.5">
             Department head
           </div>
         </div>
@@ -148,18 +205,18 @@ export const DepartmentDetailView: React.FC = () => {
 
       {/* Roster */}
       <div className="space-y-2">
-        <h2 className="font-display font-semibold text-lg text-[#17221B] flex items-center gap-2">
+        <h2 className="font-display font-semibold text-lg text-[#0D1C42] flex items-center gap-2">
           <Users className="w-4 h-4" /> Roster
         </h2>
         {dept.employees.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-[#D8D0BF] bg-white/40 px-6 py-8 text-center font-body text-sm text-[#66706A]">
+          <div className="rounded-xl border border-dashed border-[#D6D3D1] bg-white/40 px-6 py-8 text-center font-body text-sm text-[#800020]">
             No employees in this department. Use “Manage employees” to add staff.
           </div>
         ) : (
-          <div className="rounded-xl border border-[#E4DED1] bg-white/60 overflow-hidden">
+          <div className="rounded-xl border border-[#E7E5E4] bg-white/60 overflow-hidden">
             <table className="w-full text-sm font-body">
               <thead>
-                <tr className="text-left text-[11px] uppercase tracking-wide text-[#9A9484] border-b border-[#EAE4D6]">
+                <tr className="text-left text-[11px] uppercase tracking-wide text-[#667085] border-b border-[#E7E5E4]">
                   <th className="px-4 py-2.5 font-medium">Name</th>
                   <th className="px-4 py-2.5 font-medium">Job title</th>
                   <th className="px-4 py-2.5 font-medium">Status</th>
@@ -170,24 +227,24 @@ export const DepartmentDetailView: React.FC = () => {
                 {dept.employees.map((e) => (
                   <tr
                     key={e.employee_uid}
-                    className="border-b border-[#F0EBE0] last:border-0 hover:bg-[#FAF8F2]"
+                    className="border-b border-[#F6F4F2] last:border-0 hover:bg-[#FFFCFA]"
                   >
                     <td className="px-4 py-2.5">
                       <Link
                         to={`/property/${propertyUid}/workforce/employees/${e.employee_uid}`}
-                        className="font-medium text-[#17221B] hover:underline"
+                        className="font-medium text-[#0D1C42] hover:underline"
                       >
                         {e.name}
                       </Link>
-                      <div className="text-[11px] text-[#9A9484]">{e.email}</div>
+                      <div className="text-[11px] text-[#667085]">{e.email}</div>
                     </td>
-                    <td className="px-4 py-2.5 text-[#66706A]">
+                    <td className="px-4 py-2.5 text-[#800020]">
                       {e.job_title || '—'}
                     </td>
-                    <td className="px-4 py-2.5 text-[#66706A]">{e.status}</td>
+                    <td className="px-4 py-2.5 text-[#800020]">{e.status}</td>
                     <td className="px-4 py-2.5 text-right">
                       {e.is_head && (
-                        <span className="inline-flex items-center gap-1 text-xs text-[#B08D3E]">
+                        <span className="inline-flex items-center gap-1 text-xs text-[#A56514]">
                           <Crown className="w-3.5 h-3.5" /> Head
                         </span>
                       )}
@@ -202,31 +259,31 @@ export const DepartmentDetailView: React.FC = () => {
 
       {/* Transfer history */}
       <div className="space-y-2">
-        <h2 className="font-display font-semibold text-lg text-[#17221B]">
+        <h2 className="font-display font-semibold text-lg text-[#0D1C42]">
           Recent transfers
         </h2>
         {history.length === 0 ? (
-          <div className="font-body text-sm text-[#9A9484]">
+          <div className="font-body text-sm text-[#667085]">
             No transfers recorded for this department yet.
           </div>
         ) : (
-          <div className="rounded-xl border border-[#E4DED1] bg-white/60 divide-y divide-[#F0EBE0]">
+          <div className="rounded-xl border border-[#E7E5E4] bg-white/60 divide-y divide-[#F6F4F2]">
             {history.map((t) => (
               <div
                 key={t.transfer_uid}
                 className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-body"
               >
-                <span className="font-medium text-[#17221B]">
+                <span className="font-medium text-[#0D1C42]">
                   {t.employee_name || 'Employee'}
                 </span>
-                <span className="text-[#66706A]">
+                <span className="text-[#800020]">
                   {t.from_department_name || 'Unassigned'} →{' '}
                   {t.to_department_name || 'Unassigned'}
                 </span>
                 {t.reason && (
-                  <span className="text-[#9A9484] text-xs">“{t.reason}”</span>
+                  <span className="text-[#667085] text-xs">“{t.reason}”</span>
                 )}
-                <span className="ml-auto text-[11px] text-[#9A9484]">
+                <span className="ml-auto text-[11px] text-[#667085]">
                   {t.changed_by_name || 'System'} ·{' '}
                   {t.created_at
                     ? new Date(t.created_at).toLocaleString()
@@ -237,6 +294,7 @@ export const DepartmentDetailView: React.FC = () => {
           </div>
         )}
       </div>
+      </>)}
 
       <DepartmentFormModal
         open={editOpen}

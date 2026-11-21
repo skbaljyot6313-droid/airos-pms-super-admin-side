@@ -12,9 +12,36 @@ from sqlalchemy import (
     Uuid,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
+
+
+class Section(Base):
+    """A functional grouping of areas within a property (e.g. Stay, Kitchen, Pool)."""
+
+    __tablename__ = "sections"
+    __table_args__ = (
+        UniqueConstraint("property_id", "name", name="uq_sections_property_name"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("properties.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    code: Mapped[str] = mapped_column(String(32), nullable=False)  # e.g. SECTION-001
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    areas: Mapped[list["Area"]] = relationship(back_populates="section")
 
 
 class Area(Base):
@@ -29,6 +56,9 @@ class Area(Base):
     property_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("properties.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    section_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("sections.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     code: Mapped[str] = mapped_column(String(32), nullable=False)  # e.g. AREA-001
     level_number: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -41,6 +71,7 @@ class Area(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
+    section: Mapped[Section | None] = relationship(back_populates="areas")
     zones: Mapped[list["Zone"]] = relationship(
         back_populates="area", cascade="all, delete-orphan"
     )
@@ -66,6 +97,11 @@ class Zone(Base):
     zone_type: Mapped[str] = mapped_column(String(32), nullable=False, default="stay")
     floor: Mapped[str | None] = mapped_column(String(100), nullable=True)
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Free-text unit list for non-stay zones (e.g. "Walk-in freezer",
+    # "Fryer 2") — stay zones keep rooms/dorms/beds instead.
+    custom_units: Mapped[list] = mapped_column(
+        JSON, nullable=False, default=list, server_default="[]"
+    )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(

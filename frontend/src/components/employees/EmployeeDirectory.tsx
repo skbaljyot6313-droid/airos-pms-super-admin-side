@@ -133,27 +133,27 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
   return (
     <div className="space-y-5">
       {/* Search and Filter Controls */}
-      <div className="p-4 rounded-[14px] bg-[#FAF8F5] border border-[#EAE5DC] space-y-3">
+      <div className="p-4 rounded-[14px] bg-[#FFFFFF] border border-[#E7E5E4] space-y-3">
         {/* Search Input */}
         <div className="relative">
-          <Search className="w-4 h-4 text-[#8C867C] absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#667085] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, employee ID (e.g. EMP-001), job title, or email..."
-            className="w-full pl-10 pr-4 py-2 bg-white border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] placeholder:text-[#9F998F] focus:outline-none focus:ring-2 focus:ring-[#386641]/25 focus:border-[#386641]"
+            className="w-full pl-10 pr-4 py-2 bg-white border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] placeholder:text-[#98A2B3] focus:outline-none focus:ring-2 focus:ring-[#800020]/25 focus:border-[#800020]"
           />
         </div>
 
         {/* Filter Selectors */}
         <div className={`grid grid-cols-1 ${deactivated ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3 text-xs`}>
           <div className="flex items-center gap-1.5">
-            <span className="text-[#736E65] font-medium shrink-0">Zone:</span>
+            <span className="text-[#667085] font-medium shrink-0">Zone:</span>
             <select
               value={selectedZone}
               onChange={(e) => setSelectedZone(e.target.value)}
-              className="w-full bg-white border border-[#DDD7CB] rounded-[8px] px-2.5 py-1.5 text-xs text-[#24221F] focus:outline-none"
+              className="w-full bg-white border border-[#D6D3D1] rounded-[8px] px-2.5 py-1.5 text-xs text-[#0D1C42] focus:outline-none"
             >
               <option value="all">All Zones</option>
               <option value="unallocated">Unallocated Pool</option>
@@ -166,11 +166,11 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="text-[#736E65] font-medium shrink-0">Dept:</span>
+            <span className="text-[#667085] font-medium shrink-0">Dept:</span>
             <select
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
-              className="w-full bg-white border border-[#DDD7CB] rounded-[8px] px-2.5 py-1.5 text-xs text-[#24221F] focus:outline-none"
+              className="w-full bg-white border border-[#D6D3D1] rounded-[8px] px-2.5 py-1.5 text-xs text-[#0D1C42] focus:outline-none"
             >
               <option value="all">All Departments</option>
               {deptOptions.map((d) => (
@@ -183,11 +183,11 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
 
           {!deactivated && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[#736E65] font-medium shrink-0">Status:</span>
+              <span className="text-[#667085] font-medium shrink-0">Status:</span>
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full bg-white border border-[#DDD7CB] rounded-[8px] px-2.5 py-1.5 text-xs text-[#24221F] focus:outline-none"
+                className="w-full bg-white border border-[#D6D3D1] rounded-[8px] px-2.5 py-1.5 text-xs text-[#0D1C42] focus:outline-none"
               >
                 <option value="all">All Statuses</option>
                 <option value="Active">Active</option>
@@ -203,10 +203,10 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
       {/* Employees Grid */}
       {filteredEmployees.length === 0 ? (
         <Card className="p-10 text-center border-dashed">
-          <p className="font-semibold text-sm text-[#24221F]">
+          <p className="font-semibold text-sm text-[#0D1C42]">
             {deactivated ? 'No deactivated staff' : 'No employees found'}
           </p>
-          <p className="text-xs text-[#6C675F] mt-1">
+          <p className="text-xs text-[#667085] mt-1">
             {deactivated
               ? 'Staff moved here retain their history but cannot receive new work.'
               : 'Try adjusting your search query or clear active filters.'}
@@ -221,7 +221,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
             return (
               <Card
                 key={emp.employee_uid}
-                className="p-4 flex flex-col justify-between hover:border-[#8CA88C] relative cursor-pointer"
+                className="p-4 flex flex-col justify-between hover:border-[#800020] relative cursor-pointer"
                 onClick={(e) => {
                   if (!(e.target as HTMLElement).closest('button, a, input, select, textarea, label, [role="menu"]'))
                     navigate(`/property/${emp.property_uid}/workforce/employees/${emp.employee_uid}`);
@@ -233,22 +233,22 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                     <div className="flex items-center gap-3">
                       <div
                         className="w-10 h-10 rounded-full text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs"
-                        style={{ backgroundColor: emp.avatar_color || '#386641' }}
+                        style={{ backgroundColor: emp.avatar_color || '#800020' }}
                       >
                         {getInitials(emp.name)}
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <h4 className="font-semibold text-sm text-[#24221F] leading-tight">
-                            <button type="button" onClick={() => navigate(`/property/${emp.property_uid}/workforce/employees/${emp.employee_uid}`)} aria-label={`View employee profile for ${emp.name}`} className="text-left hover:text-[#386641] hover:underline focus-visible:outline-2 focus-visible:outline-[#386641]">{emp.name}</button>
+                          <h4 className="font-semibold text-sm text-[#0D1C42] leading-tight">
+                            <button type="button" onClick={() => navigate(`/property/${emp.property_uid}/workforce/employees/${emp.employee_uid}`)} aria-label={`View employee profile for ${emp.name}`} className="text-left hover:text-[#800020] hover:underline focus-visible:outline-2 focus-visible:outline-[#800020]">{emp.name}</button>
                           </h4>
                           {isDeactivated && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#FDE8E8] text-[#A82828] font-medium">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#FAEBEB] text-[#A83434] font-medium">
                               Deactivated
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-[#6C675F] font-body mt-0.5">
+                        <p className="text-xs text-[#667085] font-body mt-0.5">
                           {emp.job_title}
                         </p>
                       </div>
@@ -261,7 +261,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                           e.stopPropagation();
                           setActiveMenuEmpUid(isMenuOpen ? null : emp.employee_uid);
                         }}
-                        className="p-1 text-[#8C867C] hover:text-[#24221F] hover:bg-[#F2ECE3] rounded-[6px] transition-colors cursor-pointer"
+                        className="p-1 text-[#667085] hover:text-[#0D1C42] hover:bg-[#F6F4F2] rounded-[6px] transition-colors cursor-pointer"
                         aria-label="Actions"
                       >
                         <MoreVertical className="w-4 h-4" />
@@ -269,24 +269,24 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
 
                       {isMenuOpen && (
                         <div
-                          className="absolute right-0 top-7 z-30 w-40 bg-white border border-[#DDD7CB] rounded-[10px] shadow-lg py-1 pop-in"
+                          className="absolute right-0 top-7 z-30 w-40 bg-white border border-[#D6D3D1] rounded-[10px] shadow-lg py-1 pop-in"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
                             onClick={() => handleStartEdit(emp)}
-                            className="w-full px-3 py-1.5 text-xs text-[#24221F] hover:bg-[#F6F3EE] flex items-center gap-2 text-left cursor-pointer"
+                            className="w-full px-3 py-1.5 text-xs text-[#0D1C42] hover:bg-[#FFFCFA] flex items-center gap-2 text-left cursor-pointer"
                           >
-                            <Edit className="w-3.5 h-3.5 text-[#736E65]" />
+                            <Edit className="w-3.5 h-3.5 text-[#667085]" />
                             <span>Edit Details</span>
                           </button>
-                          <div className="my-1 border-t border-[#F0ECE4]" />
+                          <div className="my-1 border-t border-[#F6F4F2]" />
                           {isDeactivated ? (
                             <button
                               onClick={() => {
                                 void reactivateEmployee(emp.employee_uid);
                                 setActiveMenuEmpUid(null);
                               }}
-                              className="w-full px-3 py-1.5 text-xs text-[#2F6B45] hover:bg-[#EBF3EC] flex items-center gap-2 text-left cursor-pointer"
+                              className="w-full px-3 py-1.5 text-xs text-[#800020] hover:bg-[#F7E9EE] flex items-center gap-2 text-left cursor-pointer"
                             >
                               <RotateCcw className="w-3.5 h-3.5" />
                               <span>Reactivate</span>
@@ -297,7 +297,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                                 setEmpToDeactivate(emp);
                                 setActiveMenuEmpUid(null);
                               }}
-                              className="w-full px-3 py-1.5 text-xs text-[#C98232] hover:bg-[#FFF3E4] flex items-center gap-2 text-left cursor-pointer"
+                              className="w-full px-3 py-1.5 text-xs text-[#A56514] hover:bg-[#FDF3E2] flex items-center gap-2 text-left cursor-pointer"
                             >
                               <UserX className="w-3.5 h-3.5" />
                               <span>Deactivate Staff</span>
@@ -308,7 +308,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                               setEmpToDelete(emp);
                               setActiveMenuEmpUid(null);
                             }}
-                            className="w-full px-3 py-1.5 text-xs text-[#C53B3B] hover:bg-[#FDE8E8] flex items-center gap-2 text-left cursor-pointer"
+                            className="w-full px-3 py-1.5 text-xs text-[#D64545] hover:bg-[#FAEBEB] flex items-center gap-2 text-left cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             <span>Delete Permanently</span>
@@ -320,23 +320,23 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
 
                   {/* ID & Department Tag */}
                   <div className="flex items-center justify-between text-xs mb-3">
-                    <span className="font-mono text-[11px] text-[#736E65] px-1.5 py-0.5 rounded bg-[#FAF8F5] border border-[#EAE5DC]">
+                    <span className="font-mono text-[11px] text-[#667085] px-1.5 py-0.5 rounded bg-[#FFFFFF] border border-[#E7E5E4]">
                       {emp.employee_uid}
                     </span>
-                    <span className="text-[11px] font-medium text-[#48443E] bg-[#F2ECE3] px-2 py-0.5 rounded-full truncate max-w-[170px]">
+                    <span className="text-[11px] font-medium text-[#0D1C42] bg-[#F6F4F2] px-2 py-0.5 rounded-full truncate max-w-[170px]">
                       {emp.department}
                     </span>
                   </div>
 
                   {/* Contact Info */}
-                  <div className="space-y-1 text-xs text-[#6C675F] font-body mb-3">
+                  <div className="space-y-1 text-xs text-[#667085] font-body mb-3">
                     <div className="flex items-center gap-2 truncate">
-                      <Mail className="w-3.5 h-3.5 text-[#9E988E] shrink-0" />
+                      <Mail className="w-3.5 h-3.5 text-[#98A2B3] shrink-0" />
                       <span className="truncate">{emp.email}</span>
                     </div>
                     {emp.phone && (
                       <div className="flex items-center gap-2">
-                        <Phone className="w-3.5 h-3.5 text-[#9E988E] shrink-0" />
+                        <Phone className="w-3.5 h-3.5 text-[#98A2B3] shrink-0" />
                         <span>{emp.phone}</span>
                       </div>
                     )}
@@ -344,7 +344,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
 
                   {/* Zone / Area Assignment Dropdown */}
                   <div className="mb-2">
-                    <label className="block text-[10px] font-semibold text-[#8C867C] uppercase tracking-wider mb-1 font-body">
+                    <label className="block text-[10px] font-semibold text-[#667085] uppercase tracking-wider mb-1 font-body">
                       {isDeactivated ? 'Last Zone / Area' : 'Assigned Zone / Area'}
                     </label>
                     <select
@@ -366,7 +366,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                         }
                       }}
                       disabled={isDeactivated}
-                      className="w-full bg-[#FAF8F5] border border-[#DDD7CB] rounded-[8px] px-2.5 py-1 text-xs text-[#24221F] focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-full bg-[#FFFFFF] border border-[#D6D3D1] rounded-[8px] px-2.5 py-1 text-xs text-[#0D1C42] focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <option value="">(Unallocated Pool)</option>
                       <option value="property-wide">Whole property — every zone</option>
@@ -393,7 +393,7 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                         }
                         disabled={isDeactivated}
                         title="More zone allocation — cover a second zone"
-                        className="mt-1 w-full bg-[#FAF8F5] border border-[#DDD7CB] rounded-[8px] px-2.5 py-1 text-xs text-[#24221F] focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="mt-1 w-full bg-[#FFFFFF] border border-[#D6D3D1] rounded-[8px] px-2.5 py-1 text-xs text-[#0D1C42] focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <option value="">+ Second zone…</option>
                         {currentPropertyZones
@@ -409,24 +409,24 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                 </div>
 
                 {/* Footer: Leave Balance / Status */}
-                <div className="pt-2.5 border-t border-[#F2ECE3] flex items-center justify-between text-xs text-[#6C675F]">
+                <div className="pt-2.5 border-t border-[#F6F4F2] flex items-center justify-between text-xs text-[#667085]">
                   <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-[#8C867C]" />
+                    <Calendar className="w-3.5 h-3.5 text-[#667085]" />
                     <span>
                       Leave balance: <strong>{emp.leave_balance_days ?? '—'}</strong> days
                     </span>
                   </div>
 
                   {isDeactivated ? (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FDE8E8] text-[#A82828]">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FAEBEB] text-[#A83434]">
                       Deactivated{emp.deactivated_at ? ` · ${fmtDateTimeIST(emp.deactivated_at)}` : ''}
                     </span>
                   ) : emp.status === 'On Leave' || emp.leave_status ? (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF3E8] text-[#8C3F03]">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FDF3E2] text-[#A56514]">
                       On Leave
                     </span>
                   ) : (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#EBF3EC] text-[#2E6038]">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#F7E9EE] text-[#0D1C42]">
                       Active On Duty
                     </span>
                   )}
@@ -439,14 +439,14 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
 
       {/* Edit Employee Modal */}
       {editingEmp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1D1B18]/40">
-          <div className="w-full max-w-md bg-white border border-[#E4DFD5] rounded-[18px] p-6 shadow-xl">
-            <h3 className="font-display font-bold text-lg text-[#24221F] mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0D1C42]/40">
+          <div className="w-full max-w-md bg-white border border-[#E7E5E4] rounded-[18px] p-6 shadow-xl">
+            <h3 className="font-display font-bold text-lg text-[#0D1C42] mb-4">
               Edit Employee Details
             </h3>
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
                   Full Name
                 </label>
                 <input
@@ -454,11 +454,11 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+                  className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
                   Job Title
                 </label>
                 <input
@@ -466,17 +466,17 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                   required
                   value={editJobTitle}
                   onChange={(e) => setEditJobTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+                  className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
                   Department
                 </label>
                 <select
                   value={editDept}
                   onChange={(e) => setEditDept(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+                  className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
                 >
                   {deptOptions.map((d) => (
                     <option key={d} value={d}>
@@ -486,14 +486,14 @@ export const EmployeeDirectory: React.FC<{ deactivated?: boolean }> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
                   Phone Number
                 </label>
                 <input
                   type="tel"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+                  className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
                 />
               </div>
               <div className="flex justify-end gap-2.5 pt-3">

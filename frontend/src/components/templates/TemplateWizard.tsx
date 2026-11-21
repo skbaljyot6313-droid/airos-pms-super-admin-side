@@ -54,8 +54,8 @@ const OVERDUE_ACTIONS = [
 ];
 
 const inputCls =
-  'w-full px-3 py-2.5 text-sm bg-white border border-[#E2DCD0] rounded-[10px] placeholder:text-[#B5AEA2] focus:outline-none focus:ring-[3px] focus:ring-[#386641]/15 focus:border-[#386641] transition-all';
-const labelCls = 'block text-[11px] font-semibold text-[#8C867C] uppercase tracking-wider mb-1.5';
+  'w-full px-3 py-2.5 text-sm bg-white border border-[#E7E5E4] rounded-[10px] placeholder:text-[#98A2B3] focus:outline-none focus:ring-[3px] focus:ring-[#800020]/15 focus:border-[#800020] transition-all';
+const labelCls = 'block text-[11px] font-semibold text-[#667085] uppercase tracking-wider mb-1.5';
 
 function Segmented<T extends string>({ value, onChange, options }: {
   value: T; onChange: (v: T) => void;
@@ -68,12 +68,12 @@ function Segmented<T extends string>({ value, onChange, options }: {
           key={o.v} type="button" onClick={() => onChange(o.v)}
           className={`px-3 py-2.5 rounded-[10px] border text-left transition-all cursor-pointer ${
             value === o.v
-              ? 'bg-[#EBF3EC] border-[#386641] text-[#244E2C]'
-              : 'bg-white border-[#E2DCD0] text-[#58534C] hover:border-[#C8C1B4]'
+              ? 'bg-[#F7E9EE] border-[#800020] text-[#0D1C42]'
+              : 'bg-white border-[#E7E5E4] text-[#667085] hover:border-[#CDC9C7]'
           }`}
         >
           <span className="block text-[13px] font-semibold">{o.l}</span>
-          {o.hint && <span className="block text-[11px] text-[#8C867C] mt-0.5">{o.hint}</span>}
+          {o.hint && <span className="block text-[11px] text-[#667085] mt-0.5">{o.hint}</span>}
         </button>
       ))}
     </div>
@@ -405,15 +405,15 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
           const current = i === step;
           return (
             <React.Fragment key={s.key}>
-              {i > 0 && <div className={`flex-1 h-px min-w-[8px] ${done ? 'bg-[#386641]' : 'bg-[#E2DCD0]'}`} />}
+              {i > 0 && <div className={`flex-1 h-px min-w-[8px] ${done ? 'bg-[#16865B]' : 'bg-[#E7E5E4]'}`} />}
               <button
                 type="button" onClick={() => i < step && setStep(i)}
                 className={`flex items-center gap-1.5 px-2 py-1.5 rounded-[8px] text-[11px] font-semibold whitespace-nowrap transition-colors ${
-                  current ? 'bg-[#EBF3EC] text-[#244E2C]' : done ? 'text-[#386641] cursor-pointer hover:bg-[#F5F2EB]' : 'text-[#A59F95]'
+                  current ? 'bg-[#F7E9EE] text-[#0D1C42]' : done ? 'text-[#16865B] cursor-pointer hover:bg-[#FFFCFA]' : 'text-[#98A2B3]'
                 }`}
               >
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                  done ? 'bg-[#386641] text-white' : current ? 'bg-[#244E2C] text-white' : 'bg-[#E2DCD0] text-[#8C867C]'
+                  done ? 'bg-[#16865B] text-white' : current ? 'bg-[#0D1C42] text-white' : 'bg-[#E7E5E4] text-[#667085]'
                 }`}>
                   {done ? <Check className="w-3 h-3" /> : i + 1}
                 </span>
@@ -424,7 +424,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
         })}
       </div>
 
-      <p className="text-[15px] font-semibold text-[#24221F] mb-4">{STEPS[step].q}</p>
+      <p className="text-[15px] font-semibold text-[#0D1C42] mb-4">{STEPS[step].q}</p>
 
       {/* ======================== STEP 1 — BASICS ======================== */}
       {step === 0 && (
@@ -455,17 +455,17 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                   }}
                   className={`px-3.5 py-2 rounded-[10px] border text-left cursor-pointer transition-all ${
                     form.template_type === t.v
-                      ? 'bg-[#EBF3EC] border-[#386641] text-[#244E2C]'
-                      : 'bg-white border-[#E2DCD0] text-[#58534C] hover:border-[#C8C1B4]'
+                      ? 'bg-[#F7E9EE] border-[#800020] text-[#0D1C42]'
+                      : 'bg-white border-[#E7E5E4] text-[#667085] hover:border-[#CDC9C7]'
                   }`}>
                   <span className="block text-[13px] font-medium">{t.l}</span>
                   <span className={`block text-[10.5px] mt-0.5 ${
-                    form.template_type === t.v ? 'text-[#386641]' : 'text-[#A59F95]'
+                    form.template_type === t.v ? 'text-[#800020]' : 'text-[#98A2B3]'
                   }`}>{t.hint}</span>
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-[#8C867C] mt-1.5">
+            <p className="text-[11px] text-[#667085] mt-1.5">
               Sets the kind of work and which employees are eligible. On each
               scheduled run the system creates an individual work item per
               matching room, dorm bed or unit — then allocates them zone by zone.
@@ -572,18 +572,18 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                       }}
                       className={`px-2.5 py-2 rounded-[9px] border text-left cursor-pointer transition-all text-[12px] font-medium ${
                         picked
-                          ? 'bg-[#EBF3EC] border-[#386641] text-[#244E2C]'
-                          : 'bg-white border-[#E2DCD0] text-[#58534C] hover:border-[#C8C1B4]'
+                          ? 'bg-[#F7E9EE] border-[#800020] text-[#0D1C42]'
+                          : 'bg-white border-[#E7E5E4] text-[#667085] hover:border-[#CDC9C7]'
                       }`}>
                       {e.name}
-                      <span className="block text-[10.5px] font-normal text-[#8C867C]">
+                      <span className="block text-[10.5px] font-normal text-[#667085]">
                         {e.job_title || e.department || 'Staff'}
                       </span>
                     </button>
                   );
                 })}
               </div>
-              <p className="text-[11px] text-[#8C867C] mt-1.5">
+              <p className="text-[11px] text-[#667085] mt-1.5">
                 The allocator rotates fairly across the selected people — nobody is first in line.
               </p>
             </div>
@@ -598,7 +598,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                 <option value="">Choose…</option>
                 {TEAMS.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
-              <p className="text-[11px] text-[#8C867C] mt-1.5">
+              <p className="text-[11px] text-[#667085] mt-1.5">
                 All active employees in this department form the pool; work is
                 distributed fairly by workload.
               </p>
@@ -617,7 +617,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                   { v: 'supervisor' as const, l: 'Supervisor Assignment', hint: 'Supervisor assigns' },
                 ]}
               />
-              <p className="text-[11px] text-[#8C867C] mt-2">
+              <p className="text-[11px] text-[#667085] mt-2">
                 Uses the shared Work Allocation Engine — the actual employee is chosen when work is generated.
               </p>
             </div>
@@ -627,9 +627,9 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
 
       {/* ======================== STEP 3 — CONDITION ======================== */}
       {step === 2 && form.template_type === 'operations' && (
-        <div className="rounded-[12px] border border-[#E2DCD0] bg-[#FBFAF7] px-4 py-3.5">
-          <div className="text-[12.5px] font-semibold text-[#3C3832]">No physical target</div>
-          <p className="text-[12px] text-[#8C867C] mt-1 leading-relaxed">
+        <div className="rounded-[12px] border border-[#E7E5E4] bg-[#FFFFFF] px-4 py-3.5">
+          <div className="text-[12.5px] font-semibold text-[#0D1C42]">No physical target</div>
+          <p className="text-[12px] text-[#667085] mt-1 leading-relaxed">
             Operations tasks apply to the property as a whole — no rooms, zones,
             or occupancy conditions. Who receives the work is decided by the
             assignment mode on the previous step (people, team, or department),
@@ -714,7 +714,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
           )}
 
           {condResource !== 'common_area' && (
-          <label className="flex items-center gap-2 text-[13px] text-[#555047] cursor-pointer w-fit">
+          <label className="flex items-center gap-2 text-[13px] text-[#667085] cursor-pointer w-fit">
             <input
               type="checkbox"
               checked={condScope === 'specific'}
@@ -723,7 +723,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                   scope: e.target.checked ? 'specific' : 'property',
                 })
               }
-              className="rounded border-[#C8C1B4] text-[#386641] cursor-pointer"
+              className="rounded border-[#CDC9C7] text-[#800020] cursor-pointer"
             />
             {condResource === 'beds'
               ? 'Pick specific dorms instead'
@@ -739,11 +739,11 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                 <input value={roomSearch} onChange={(e) => setRoomSearch(e.target.value)}
                   placeholder="Search rooms…" className={`${inputCls} flex-1`} />
                 <button type="button" onClick={() => setSub('location', { room_uids: zoneRooms.map((r) => r.room_uid) })}
-                  className="text-xs font-medium text-[#386641] hover:underline cursor-pointer whitespace-nowrap">
+                  className="text-xs font-medium text-[#800020] hover:underline cursor-pointer whitespace-nowrap">
                   Select all ({zoneRooms.length})
                 </button>
                 <button type="button" onClick={() => setSub('location', { room_uids: [] })}
-                  className="text-xs font-medium text-[#8C867C] hover:underline cursor-pointer">
+                  className="text-xs font-medium text-[#667085] hover:underline cursor-pointer">
                   Clear
                 </button>
               </div>
@@ -753,14 +753,14 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                   return (
                     <button key={r.room_uid} type="button" onClick={() => toggleRoom(r.room_uid)}
                       className={`px-2 py-2 rounded-[8px] border text-xs font-medium cursor-pointer transition-all ${
-                        sel ? 'bg-[#EBF3EC] border-[#386641] text-[#244E2C]' : 'bg-white border-[#E2DCD0] text-[#58534C]'
+                        sel ? 'bg-[#F7E9EE] border-[#800020] text-[#0D1C42]' : 'bg-white border-[#E7E5E4] text-[#667085]'
                       }`}>
                       {r.room_number}
                     </button>
                   );
                 })}
               </div>
-              <p className="text-[11px] text-[#8C867C] mt-1.5">{selectedRooms.length} selected</p>
+              <p className="text-[11px] text-[#667085] mt-1.5">{selectedRooms.length} selected</p>
             </div>
           )}
 
@@ -775,7 +775,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                                      : [...(loc.dorm_uids || []), d.dorm_uid],
                     })}
                     className={`px-3 py-2.5 rounded-[8px] border text-xs font-medium text-left cursor-pointer ${
-                      sel ? 'bg-[#EBF3EC] border-[#386641] text-[#244E2C]' : 'bg-white border-[#E2DCD0] text-[#58534C]'
+                      sel ? 'bg-[#F7E9EE] border-[#800020] text-[#0D1C42]' : 'bg-white border-[#E7E5E4] text-[#667085]'
                     }`}>
                     {d.name}
                   </button>
@@ -796,7 +796,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                         : [...(loc.washroom_uids || []), w.washroom_uid],
                     })}
                     className={`px-3 py-2.5 rounded-[8px] border text-xs font-medium text-left cursor-pointer ${
-                      sel ? 'bg-[#EBF3EC] border-[#386641] text-[#244E2C]' : 'bg-white border-[#E2DCD0] text-[#58534C]'
+                      sel ? 'bg-[#F7E9EE] border-[#800020] text-[#0D1C42]' : 'bg-white border-[#E7E5E4] text-[#667085]'
                     }`}>
                     {w.name}
                   </button>
@@ -809,7 +809,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
             <div className="space-y-2 max-h-52 overflow-y-auto">
               {currentPropertyDorms.map((d) => (
                 <div key={d.dorm_uid}>
-                  <p className="text-[11px] font-semibold text-[#8C867C] mb-1">{d.name}</p>
+                  <p className="text-[11px] font-semibold text-[#667085] mb-1">{d.name}</p>
                   <div className="grid grid-cols-5 gap-1.5">
                     {d.beds.map((b) => {
                       const sel = (loc.bed_uids || []).includes(b.bed_uid);
@@ -820,7 +820,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                                           : [...(loc.bed_uids || []), b.bed_uid],
                           })}
                           className={`px-2 py-1.5 rounded-[8px] border text-xs cursor-pointer ${
-                            sel ? 'bg-[#EBF3EC] border-[#386641] text-[#244E2C]' : 'bg-white border-[#E2DCD0] text-[#58534C]'
+                            sel ? 'bg-[#F7E9EE] border-[#800020] text-[#0D1C42]' : 'bg-white border-[#E7E5E4] text-[#667085]'
                           }`}>
                           {b.bed_number}
                         </button>
@@ -833,14 +833,14 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
           )}
 
           {/* Human-readable condition summary — the rule, not a snapshot */}
-          <div className="rounded-[10px] bg-[#F7F4EF] border border-[#EAE5DC] px-3.5 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#8C867C] mb-1">
+          <div className="rounded-[10px] bg-[#FFFCFA] border border-[#E7E5E4] px-3.5 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#667085] mb-1">
               Condition
             </p>
-            <p className="text-[13px] text-[#555047] leading-snug">
+            <p className="text-[13px] text-[#667085] leading-snug">
               {conditionSummary()}
             </p>
-            <p className="text-[11px] text-[#8C867C] mt-1">
+            <p className="text-[11px] text-[#667085] mt-1">
               Targets are re-evaluated every run — today&rsquo;s occupied rooms
               can differ from tomorrow&rsquo;s.
             </p>
@@ -885,7 +885,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                   {(['minutes', 'hourly', 'daily', 'weekly', 'monthly', 'custom'] as const).map((f) => (
                     <button key={f} type="button" onClick={() => setSub('schedule', { frequency: f })}
                       className={`px-3.5 py-2 rounded-[10px] border text-[13px] font-medium cursor-pointer ${
-                        sched.frequency === f ? 'bg-[#EBF3EC] border-[#386641] text-[#244E2C]' : 'bg-white border-[#E2DCD0] text-[#58534C]'
+                        sched.frequency === f ? 'bg-[#F7E9EE] border-[#800020] text-[#0D1C42]' : 'bg-white border-[#E7E5E4] text-[#667085]'
                       }`}>
                       {f[0].toUpperCase() + f.slice(1)}
                     </button>
@@ -957,7 +957,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                                             : [...(sched.weekdays || []), i],
                             })}
                             className={`w-10 h-10 rounded-[9px] border text-xs font-semibold cursor-pointer ${
-                              sel ? 'bg-[#386641] border-[#386641] text-white' : 'bg-white border-[#E2DCD0] text-[#58534C]'
+                              sel ? 'bg-[#800020] border-[#800020] text-white' : 'bg-white border-[#E7E5E4] text-[#667085]'
                             }`}>
                             {d[0]}
                           </button>
@@ -1011,10 +1011,10 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
 
               {sched.frequency === 'custom' && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-[#58534C]">Every</span>
+                  <span className="text-sm text-[#667085]">Every</span>
                   <input type="number" min={1} value={sched.every || 1}
                     onChange={(e) => setSub('schedule', { every: parseInt(e.target.value) || 1 })}
-                    className="w-20 px-3 py-2.5 text-sm bg-white border border-[#E2DCD0] rounded-[10px]" />
+                    className="w-20 px-3 py-2.5 text-sm bg-white border border-[#E7E5E4] rounded-[10px]" />
                   <select value={sched.custom_unit || 'days'}
                     onChange={(e) => setSub('schedule', { custom_unit: e.target.value as 'days' | 'weeks' | 'months' })}
                     className={`${inputCls} w-32 cursor-pointer`}>
@@ -1026,7 +1026,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3.5 pt-3 border-t border-[#F0ECE4]">
+              <div className="grid grid-cols-2 gap-3.5 pt-3 border-t border-[#F6F4F2]">
                 <div>
                   <label className={labelCls}>Start Date</label>
                   <input type="date" value={sched.start_date || ''} onChange={(e) => setSub('schedule', { start_date: e.target.value })} className={inputCls} />
@@ -1036,7 +1036,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                   <input type="date" value={sched.end_date || ''} onChange={(e) => setSub('schedule', { end_date: e.target.value })} className={inputCls} />
                 </div>
               </div>
-              <p className="text-[11px] text-[#8C867C]">Timezone: {activeProperty?.city || 'Property'} time ({tzLabel})</p>
+              <p className="text-[11px] text-[#667085]">Timezone: {activeProperty?.city || 'Property'} time ({tzLabel})</p>
             </>
           )}
         </div>
@@ -1063,34 +1063,34 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                   onDragStart={() => setDragIdx(i)}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => { if (dragIdx !== null && dragIdx !== i) moveItem(dragIdx, i); setDragIdx(null); }}
-                  className="flex items-center gap-2 px-2.5 py-2 bg-[#FAF8F5] border border-[#EAE5DC] rounded-[9px]"
+                  className="flex items-center gap-2 px-2.5 py-2 bg-[#FFFFFF] border border-[#E7E5E4] rounded-[9px]"
                 >
-                  <GripVertical className="w-3.5 h-3.5 text-[#C8C1B4] cursor-grab" />
-                  <span className="flex-1 text-[13px] text-[#35322E]">{item.title}</span>
-                  <label className="flex items-center gap-1 text-[11px] text-[#8C867C] cursor-pointer">
+                  <GripVertical className="w-3.5 h-3.5 text-[#CDC9C7] cursor-grab" />
+                  <span className="flex-1 text-[13px] text-[#0D1C42]">{item.title}</span>
+                  <label className="flex items-center gap-1 text-[11px] text-[#667085] cursor-pointer">
                     <input type="checkbox" checked={item.required}
                       onChange={(e) => {
                         const items = [...(form.checklist || [])];
                         items[i] = { ...item, required: e.target.checked };
                         set({ checklist: items });
                       }}
-                      className="accent-[#386641]" />
+                      className="accent-[#800020]" />
                     required
                   </label>
                   <button type="button"
                     onClick={() => set({ checklist: (form.checklist || []).filter((_, j) => j !== i) })}
-                    className="p-1 text-[#C8C1B4] hover:text-[#B91C1C] cursor-pointer">
+                    className="p-1 text-[#CDC9C7] hover:text-[#A83434] cursor-pointer">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
               {!(form.checklist || []).length && (
-                <p className="text-xs text-[#A59F95] py-4 text-center border border-dashed border-[#E2DCD0] rounded-[9px]">
+                <p className="text-xs text-[#98A2B3] py-4 text-center border border-dashed border-[#E7E5E4] rounded-[9px]">
                   No checklist items — add steps the worker should complete.
                 </p>
               )}
             </div>
-            <p className="text-[10.5px] text-[#8C867C] mt-1.5">Drag items to reorder — saved when you create the template.</p>
+            <p className="text-[10.5px] text-[#667085] mt-1.5">Drag items to reorder — saved when you create the template.</p>
           </div>
         </div>
       )}
@@ -1106,14 +1106,14 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                 { k: 'photo_required', l: 'Photo evidence', hint: 'Worker uploads photos' },
                 { k: 'supervisor_approval', l: 'Supervisor approval', hint: 'Work enters pending review' },
               ] as const).map((o) => (
-                <label key={o.k} className="flex items-center gap-3 px-3.5 py-2.5 bg-white border border-[#E2DCD0] rounded-[10px] cursor-pointer hover:border-[#C8C1B4]">
+                <label key={o.k} className="flex items-center gap-3 px-3.5 py-2.5 bg-white border border-[#E7E5E4] rounded-[10px] cursor-pointer hover:border-[#CDC9C7]">
                   <input type="checkbox"
                     checked={Boolean(form.verification?.[o.k])}
                     onChange={(e) => setSub('verification', { [o.k]: e.target.checked })}
-                    className="w-4 h-4 accent-[#386641]" />
+                    className="w-4 h-4 accent-[#800020]" />
                   <span className="flex-1">
-                    <span className="block text-[13px] font-medium text-[#35322E]">{o.l}</span>
-                    <span className="block text-[11px] text-[#8C867C]">{o.hint}</span>
+                    <span className="block text-[13px] font-medium text-[#0D1C42]">{o.l}</span>
+                    <span className="block text-[11px] text-[#667085]">{o.hint}</span>
                   </span>
                 </label>
               ))}
@@ -1147,7 +1147,7 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                                    : [...(form.overdue?.actions || []), o.v],
                     })}
                     className={`px-3 py-2 rounded-[10px] border text-[12.5px] font-medium text-left cursor-pointer ${
-                      sel ? 'bg-[#FDF6EC] border-[#D9A441] text-[#7A5410]' : 'bg-white border-[#E2DCD0] text-[#58534C]'
+                      sel ? 'bg-[#FFFCFA] border-[#A56514] text-[#A56514]' : 'bg-white border-[#E7E5E4] text-[#667085]'
                     }`}>
                     {o.l}
                   </button>
@@ -1155,11 +1155,11 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
               })}
             </div>
             <div className="flex items-center gap-2 mt-2.5">
-              <span className="text-xs text-[#8C867C]">after</span>
+              <span className="text-xs text-[#667085]">after</span>
               <input type="number" min={5} value={form.overdue?.threshold_minutes || 30}
                 onChange={(e) => setSub('overdue', { threshold_minutes: parseInt(e.target.value) || 30 })}
-                className="w-20 px-2.5 py-1.5 text-xs bg-white border border-[#E2DCD0] rounded-[8px]" />
-              <span className="text-xs text-[#8C867C]">minutes overdue</span>
+                className="w-20 px-2.5 py-1.5 text-xs bg-white border border-[#E7E5E4] rounded-[8px]" />
+              <span className="text-xs text-[#667085]">minutes overdue</span>
               {(form.overdue?.actions || []).includes('auto_reassign') && (
                 <select value={form.overdue?.reassign_method || 'next_zone_employee'}
                   onChange={(e) => setSub('overdue', { reassign_method: e.target.value as never })}
@@ -1177,12 +1177,12 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
       {/* ======================== STEP 7 — REVIEW ======================== */}
       {step === 6 && (
         <div className="space-y-4">
-          <div className="rounded-[12px] border border-[#EAE5DC] overflow-hidden">
-            <div className="px-4 py-3 bg-[#F6F4EF] border-b border-[#EAE5DC]">
-              <p className="font-semibold text-[15px] text-[#24221F]">{form.name || 'Untitled'}</p>
-              <p className="text-xs text-[#8C867C] mt-0.5">{form.description || 'No description'}</p>
+          <div className="rounded-[12px] border border-[#E7E5E4] overflow-hidden">
+            <div className="px-4 py-3 bg-[#FFFCFA] border-b border-[#E7E5E4]">
+              <p className="font-semibold text-[15px] text-[#0D1C42]">{form.name || 'Untitled'}</p>
+              <p className="text-xs text-[#667085] mt-0.5">{form.description || 'No description'}</p>
             </div>
-            <dl className="divide-y divide-[#F0ECE4] text-[13px]">
+            <dl className="divide-y divide-[#F6F4F2] text-[13px]">
               {[
                 ['WORK TYPE', `${WORK_TYPES.find((t) => t.v === form.template_type)?.l || LEGACY_TYPE_LABELS[form.template_type] || form.template_type} · ${(form.category || '').replace('_', ' ')} · ${form.priority} priority`],
                 ['ASSIGNMENT', assign.mode === 'automatic'
@@ -1221,13 +1221,13 @@ export const TemplateWizard: React.FC<Props> = ({ editTemplate, onClose, onSaved
                 ['OVERDUE', ((form.overdue?.actions || []).map((a) => a.replace(/_/g, ' ')).join(', ') || 'Nothing') + ` after ${form.overdue?.threshold_minutes || 30} min`],
               ].map(([k, v]) => (
                 <div key={k} className="grid grid-cols-[110px_1fr] px-4 py-2.5">
-                  <dt className="text-[10.5px] font-semibold text-[#8C867C] tracking-wider pt-0.5">{k}</dt>
-                  <dd className="text-[#35322E]">{v}</dd>
+                  <dt className="text-[10.5px] font-semibold text-[#667085] tracking-wider pt-0.5">{k}</dt>
+                  <dd className="text-[#0D1C42]">{v}</dd>
                 </div>
               ))}
             </dl>
           </div>
-          <p className="text-[11px] text-[#8C867C]">
+          <p className="text-[11px] text-[#667085]">
             Drafts don't generate work. Activating starts the schedule — the backend generates
             tasks and assigns them automatically.
           </p>

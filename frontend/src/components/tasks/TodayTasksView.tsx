@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Search, Clock, AlertTriangle, Zap, ChevronRight, ChevronDown, RefreshCw,
-  CalendarCheck, UserCheck, Play, CheckCircle2, Timer,
+  CalendarCheck, UserCheck, Play, CheckCircle2, Timer, CalendarClock, Ban,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { usePolling } from '../../hooks/usePolling';
@@ -12,7 +12,7 @@ import { useRealtimeChannel, propChannel } from '../../realtime/useRealtimeChann
 import { fmtTimeIST, fmtDateLongIST } from '../../lib/datetime';
 
 const inputCls =
-  'px-3 py-2 text-sm bg-white border border-[#E2DCD0] rounded-[10px] focus:outline-none focus:ring-[3px] focus:ring-[#386641]/15 focus:border-[#386641]';
+  'px-3 py-2 text-sm bg-white border border-[#E7E5E4] rounded-[10px] focus:outline-none focus:ring-[3px] focus:ring-[#800020]/15 focus:border-[#800020]';
 
 const GEN_BADGE: Record<string, { label: string; variant: 'sage' | 'orange' | 'red' | 'neutral' }> = {
   generated: { label: 'Generated', variant: 'sage' },
@@ -22,8 +22,8 @@ const GEN_BADGE: Record<string, { label: string; variant: 'sage' | 'orange' | 'r
   cancelled: { label: 'Cancelled', variant: 'neutral' },
 };
 
-const WORK_BADGE: Record<string, 'sage' | 'orange' | 'red' | 'lavender' | 'neutral'> = {
-  assigned: 'lavender', pending: 'neutral', in_progress: 'orange',
+const WORK_BADGE: Record<string, 'sage' | 'orange' | 'red' | 'lavender' | 'info' | 'neutral'> = {
+  assigned: 'info', pending: 'neutral', in_progress: 'lavender',
   completed: 'sage', submitted: 'sage', overdue: 'red',
   unassigned: 'neutral', reopened: 'orange', cancelled: 'neutral',
   abandoned: 'neutral',
@@ -42,37 +42,43 @@ const GROUPS: {
   label: string;
   icon: React.ElementType;
   tone: string;
+  bar: string;
+  badge: string;
   defaultOpen: boolean;
   hideWhenEmpty?: boolean;
   match: (i: TodayTaskItem) => boolean;
 }[] = [
   {
     key: 'pending', label: 'To be generated', icon: Timer,
-    tone: 'text-[#B45309]', defaultOpen: false,
+    tone: 'text-[#A56514]', bar: 'border-l-[#FF9137]', badge: 'bg-[#FFF1E4] text-[#A56514]',
+    defaultOpen: false,
     match: (i) =>
       i.generation_state === 'pending_generation' ||
       i.generation_state === 'generation_failed',
   },
   {
     key: 'active', label: 'In progress', icon: Play,
-    tone: 'text-[#386641]', defaultOpen: true,
+    tone: 'text-[#800020]', bar: 'border-l-[#800020]', badge: 'bg-[#F7E9EE] text-[#800020]',
+    defaultOpen: true,
     match: (i) => i.generation_state === 'generated' && i.work_status !== 'overdue',
   },
   {
     key: 'delayed', label: 'Delayed', icon: AlertTriangle,
-    tone: 'text-[#B91C1C]', defaultOpen: true,
+    tone: 'text-[#A83434]', bar: 'border-l-[#D64545]', badge: 'bg-[#FAEBEB] text-[#A83434]',
+    defaultOpen: true,
     match: (i) => i.work_status === 'overdue',
   },
   {
     key: 'other', label: 'Skipped / Cancelled', icon: CalendarCheck,
-    tone: 'text-[#6C675F]', defaultOpen: false, hideWhenEmpty: true,
+    tone: 'text-[#667085]', bar: 'border-l-[#7A8495]', badge: 'bg-[#F6F4F2] text-[#667085]',
+    defaultOpen: false, hideWhenEmpty: true,
     match: (i) => i.generation_state === 'skipped' || i.generation_state === 'cancelled',
   },
 ];
 
 const TABLE_HEAD = (
   <thead>
-    <tr className="border-b border-[#EAE5DC] text-[10.5px] uppercase tracking-wider text-[#8C867C]">
+    <tr className="border-b border-[#E7E5E4] bg-[#F6F4F2] text-[10.5px] uppercase tracking-wider text-[#667085]">
       <th className="px-3.5 py-2.5 font-semibold">Time</th>
       <th className="px-3.5 py-2.5 font-semibold">Task</th>
       <th className="px-3.5 py-2.5 font-semibold">Target</th>
@@ -197,10 +203,10 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
       || !['completed', 'cancelled', 'abandoned'].includes(i.work_status);
     if (open && i.scheduled_at) {
       const hrs = (Date.now() - new Date(i.scheduled_at).getTime()) / 3.6e6;
-      if (hrs > 3) return 'bg-[#FDE8E8]';
-      if (hrs > 1) return 'bg-[#FDF3DC]';
+      if (hrs > 3) return 'bg-[#FAEBEB]';
+      if (hrs > 1) return 'bg-[#F2D9AF]';
     }
-    return 'bg-[#EDF6EF]';
+    return 'bg-[#F7E9EE]';
   };
 
   const renderRow = (item: TodayTaskItem) => {
@@ -209,39 +215,39 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
     return (
       <tr
         key={item.occurrence_key || item.task_uid}
-        className={`border-b border-[#F0ECE4] last:border-0 ${rowTint(item)}`}
+        className={`border-b border-[#F6F4F2] last:border-0 transition hover:brightness-[0.985] ${rowTint(item)}`}
       >
-        <td className="px-3.5 py-2.5 whitespace-nowrap text-[12px] text-[#58534C]">
+        <td className="px-3.5 py-2.5 whitespace-nowrap text-[12px] text-[#667085]">
           <span className="inline-flex items-center gap-1.5">
-            <Clock className="w-3 h-3 text-[#A59F95]" /> {fmtTime(item.scheduled_at)}
+            <Clock className="w-3 h-3 text-[#98A2B3]" /> {fmtTime(item.scheduled_at)}
           </span>
         </td>
         <td className="px-3.5 py-2.5">
-          <p className="font-semibold text-[13px] text-[#24221F] leading-tight">{item.title}</p>
+          <p className="font-semibold text-[13px] text-[#0D1C42] leading-tight">{item.title}</p>
           <span className="inline-flex items-center gap-1.5 mt-0.5">
             {item.origin === 'guest_request' && (
               <Badge variant="orange" size="sm">Guest Request</Badge>
             )}
             {item.ticket_number && (
-              <span className="text-[10.5px] text-[#8C867C]">{item.ticket_number}</span>
+              <span className="text-[10.5px] text-[#667085]">{item.ticket_number}</span>
             )}
           </span>
         </td>
-        <td className="px-3.5 py-2.5 text-[12px] text-[#58534C]">
+        <td className="px-3.5 py-2.5 text-[12px] text-[#667085]">
           {item.target_label || item.room_number || 'Property-wide'}
         </td>
-        <td className="px-3.5 py-2.5 text-[12px] text-[#58534C] whitespace-nowrap">
+        <td className="px-3.5 py-2.5 text-[12px] text-[#667085] whitespace-nowrap">
           {item.zone_name || '—'}
         </td>
         <td className="px-3.5 py-2.5 text-[12px] whitespace-nowrap">
           {pending ? (
-            <span className="text-[#8C867C]">
+            <span className="text-[#667085]">
               {item.allocation_method === 'zone_round_robin'
                 ? 'Auto · Round Robin'
                 : item.assignment_mode === 'individual' ? 'Individual' : item.assignment_mode || '—'}
             </span>
           ) : (
-            <span className="text-[#58534C]">{item.assignee || 'Unassigned'}</span>
+            <span className="text-[#667085]">{item.assignee || 'Unassigned'}</span>
           )}
         </td>
         <td className="px-3.5 py-2.5 whitespace-nowrap">
@@ -259,7 +265,7 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
             <button
               onClick={() => void generate(item)}
               disabled={generating === item.occurrence_key}
-              className="px-2.5 py-1.5 text-xs font-semibold text-[#386641] hover:bg-[#EBF3EC] rounded-[8px] inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              className="px-2.5 py-1.5 text-xs font-semibold text-[#800020] hover:bg-[#F7E9EE] rounded-[8px] inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
             >
               <Zap className="w-3.5 h-3.5" />
               {generating === item.occurrence_key ? 'Generating…' : 'Generate Now'}
@@ -267,7 +273,7 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
           ) : (
             <button
               onClick={() => item.task_uid && onOpenTask(item.task_uid)}
-              className="px-2.5 py-1.5 text-xs font-semibold text-[#386641] hover:bg-[#EBF3EC] rounded-[8px] inline-flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1.5 text-xs font-semibold text-[#800020] hover:bg-[#F7E9EE] rounded-[8px] inline-flex items-center gap-1 cursor-pointer"
             >
               Open <ChevronRight className="w-3.5 h-3.5" />
             </button>
@@ -280,9 +286,9 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
   const summary = data?.summary;
   const attention = summary
     ? [
-        { n: summary.overdue, l: 'Overdue', icon: AlertTriangle, tone: 'text-[#B91C1C] bg-[#FDE8E8] border-[#F5C8C8]' },
-        { n: summary.pending_generation, l: 'Pending Generation', icon: Timer, tone: 'text-[#B45309] bg-[#FDF6EC] border-[#F0DFC0]' },
-        { n: summary.unassigned, l: 'Unassigned', icon: UserCheck, tone: 'text-[#6C675F] bg-[#F5F2EB] border-[#E2DCD0]' },
+        { n: summary.overdue, l: 'Overdue', icon: AlertTriangle, tone: 'text-[#A83434] bg-[#FAEBEB] border-[#F0C8C8]' },
+        { n: summary.pending_generation, l: 'Pending Generation', icon: Timer, tone: 'text-[#A56514] bg-[#FFFCFA] border-[#F2D9AF]' },
+        { n: summary.unassigned, l: 'Unassigned', icon: UserCheck, tone: 'text-[#667085] bg-[#FFFCFA] border-[#E7E5E4]' },
       ].filter((x) => x.n > 0)
     : [];
 
@@ -291,25 +297,26 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
       {/* Header + summary */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-display font-bold text-xl text-[#24221F]">Today's Tasks</h2>
-          <p className="text-sm text-[#8C867C]">
+          <h2 className="font-display font-bold text-xl text-[#0D1C42]">Today's Tasks</h2>
+          <p className="text-sm text-[#667085]">
             {data ? fmtDateLongIST(data.date) : ''}
           </p>
         </div>
         {summary && (
           <div className="flex flex-wrap gap-1.5">
-            {[
-              ['Planned', summary.total_planned], ['Generated', summary.generated],
-              ['Pending', summary.pending_generation], ['Assigned', summary.assigned],
-              ['In Progress', summary.in_progress], ['Completed', summary.completed],
-              ['Abandoned', summary.abandoned], ['Overdue', summary.overdue],
-            ].map(([l, n]) => (
-              <span key={l as string} className={`px-2.5 py-1.5 rounded-[9px] text-[11px] font-semibold border ${
-                l === 'Overdue' && (n as number) > 0
-                  ? 'bg-[#FDE8E8] border-[#F5C8C8] text-[#B91C1C]'
-                  : 'bg-white border-[#EAE5DC] text-[#58534C]'
-              }`}>
-                {l} <span className="text-[#24221F]">{n}</span>
+            {([
+              { l: 'Planned', n: summary.total_planned, icon: CalendarClock, tone: 'bg-[#E9EDF5] border-[#C9D4EA] text-[#0D1C42]' },
+              { l: 'Generated', n: summary.generated, icon: Zap, tone: 'bg-[#F7E9EE] border-[#EAD3DB] text-[#800020]' },
+              { l: 'Pending', n: summary.pending_generation, icon: Timer, tone: 'bg-[#FFF1E4] border-[#F4DCC3] text-[#A56514]' },
+              { l: 'Assigned', n: summary.assigned, icon: UserCheck, tone: 'bg-[#EAF1FB] border-[#C3D6F0] text-[#2457A8]' },
+              { l: 'In Progress', n: summary.in_progress, icon: Clock, tone: 'bg-[#F0EBFA] border-[#D8CAF0] text-[#5C41A5]' },
+              { l: 'Completed', n: summary.completed, icon: CheckCircle2, tone: 'bg-[#E6F4EE] border-[#BFE3D2] text-[#0F6847]' },
+              { l: 'Abandoned', n: summary.abandoned, icon: Ban, tone: 'bg-[#FAEBEB] border-[#F0C8C8] text-[#A83434]' },
+              { l: 'Overdue', n: summary.overdue, icon: AlertTriangle, tone: 'bg-[#790D16] border-[#790D16] text-white' },
+            ] as const).map(({ l, n, icon: Icon, tone }) => (
+              <span key={l} className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[9px] text-[11px] font-semibold border ${tone}`}>
+                <Icon className="w-3 h-3" />
+                {l} <span className="font-num tabular-nums font-bold">{n}</span>
               </span>
             ))}
           </div>
@@ -338,7 +345,7 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#A59F95]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#98A2B3]" />
           <input value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search tasks…" className={`${inputCls} w-full pl-8`} />
         </div>
@@ -353,29 +360,29 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
           <option value="template">Template</option>
           <option value="manual">Manual / One-time</option>
         </select>
-        <div className="flex items-center gap-1 bg-[#F0EDE6] rounded-[10px] p-1">
+        <div className="flex items-center gap-1 bg-[#F6F4F2] rounded-[10px] p-1">
           {(['all', 'unassigned'] as const).map((s) => (
             <button key={s} onClick={() => setScope(s)}
               className={`px-3 py-1.5 text-xs font-medium rounded-[8px] cursor-pointer ${
-                scope === s ? 'bg-white text-[#24221F] shadow-sm' : 'text-[#6C675F]'
+                scope === s ? 'bg-white text-[#0D1C42] shadow-sm' : 'text-[#667085]'
               }`}>
               {s === 'all' ? 'All Tasks' : 'Unassigned'}
             </button>
           ))}
         </div>
-        <button onClick={() => void load()} className="p-2 text-[#8C867C] hover:bg-[#F5F2EB] rounded-[9px] cursor-pointer" title="Refresh">
+        <button onClick={() => void load()} className="p-2 text-[#667085] hover:bg-[#FFFCFA] rounded-[9px] cursor-pointer" title="Refresh">
           <RefreshCw className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Table */}
       {loading ? (
-        <p className="text-sm text-[#8C867C] py-12 text-center">Loading today's schedule…</p>
+        <p className="text-sm text-[#667085] py-12 text-center">Loading today's schedule…</p>
       ) : rows.length === 0 ? (
         <div className="py-16 text-center">
-          <CalendarCheck className="w-10 h-10 text-[#D5CFC3] mx-auto mb-3" />
-          <p className="text-sm font-medium text-[#6C675F]">No work scheduled for today</p>
-          <p className="text-xs text-[#8C867C] mt-1">
+          <CalendarCheck className="w-10 h-10 text-[#D6D3D1] mx-auto mb-3" />
+          <p className="text-sm font-medium text-[#667085]">No work scheduled for today</p>
+          <p className="text-xs text-[#667085] mt-1">
             There are currently no scheduled or generated tasks for this property.
           </p>
         </div>
@@ -389,32 +396,32 @@ export const TodayTasksView: React.FC<Props> = ({ onOpenTask }) => {
             return (
               <div
                 key={g.key}
-                className="rounded-[12px] border border-[#EAE5DC] bg-white overflow-hidden"
+                className={`rounded-[12px] border border-l-[3px] border-[#E7E5E4] ${g.bar} bg-white overflow-hidden`}
               >
                 <button
                   onClick={() =>
                     setOpenGroups((p) => ({ ...p, [g.key]: !p[g.key] }))
                   }
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-[#FAF8F4] transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-[#FFFCFA] transition-colors cursor-pointer"
                 >
                   <ChevronDown
-                    className={`w-4 h-4 text-[#8C867C] transition-transform ${open ? '' : '-rotate-90'}`}
+                    className={`w-4 h-4 text-[#667085] transition-transform ${open ? '' : '-rotate-90'}`}
                   />
                   <Icon className={`w-4 h-4 ${g.tone}`} />
-                  <span className="font-display font-semibold text-sm text-[#24221F]">
+                  <span className="font-display font-semibold text-sm text-[#0D1C42]">
                     {g.label}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#F0EDE6] text-[#58534C]">
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${g.badge}`}>
                     {items.length}
                   </span>
                 </button>
                 {open && (
                   items.length === 0 ? (
-                    <p className="px-4 pb-3.5 -mt-1 text-xs text-[#8C867C]">
+                    <p className="px-4 pb-3.5 -mt-1 text-xs text-[#667085]">
                       No tasks in this group.
                     </p>
                   ) : (
-                    <div className="border-t border-[#EAE5DC] overflow-x-auto">
+                    <div className="border-t border-[#E7E5E4] overflow-x-auto">
                       <table className="w-full text-left text-sm min-w-[860px]">
                         {TABLE_HEAD}
                         <tbody>{items.map(renderRow)}</tbody>

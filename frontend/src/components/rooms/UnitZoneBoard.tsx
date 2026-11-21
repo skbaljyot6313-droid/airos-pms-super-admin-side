@@ -22,7 +22,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { Room, Dorm, Washroom, Zone } from '../../types';
 import { RoomStatusBadge, Badge } from '../ui/Badge';
-import { zoneSupportsUnits, ZONE_TYPE_LABELS } from '../../lib/zoneUtils';
+import { zoneSupportsUnits, zoneTypeLabel } from '../../lib/zoneUtils';
 
 type DragItem = {
   kind: 'room' | 'dorm' | 'washroom';
@@ -58,9 +58,9 @@ const DraggableUnitCard: React.FC<{
       style={style}
       {...(isOverlay ? {} : listeners)}
       {...(isOverlay ? {} : attributes)}
-      className={`bg-white rounded-[12px] p-3 border border-[#E5E0D6] shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-[#386641]/50 hover:shadow-sm transition-all select-none touch-none ${
+      className={`bg-white rounded-[12px] p-3 border border-[#E7E5E4] shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-[#800020]/50 hover:shadow-sm transition-all select-none touch-none ${
         isOverlay
-          ? 'shadow-xl rotate-1 scale-105 cursor-grabbing ring-2 ring-[#386641]'
+          ? 'shadow-xl rotate-1 scale-105 cursor-grabbing ring-2 ring-[#800020]'
           : 'cursor-grab active:cursor-grabbing'
       }`}
     >
@@ -69,10 +69,10 @@ const DraggableUnitCard: React.FC<{
           <div
             className={`w-7 h-7 rounded-[8px] flex items-center justify-center shrink-0 ${
               kind === 'room'
-                ? 'bg-[#EBF3EC] text-[#386641]'
+                ? 'bg-[#F7E9EE] text-[#800020]'
                 : kind === 'dorm'
-                ? 'bg-[#F2EFF9] text-[#554388]'
-                : 'bg-[#EFF6FA] text-[#2D5D7B]'
+                ? 'bg-[#EAF1FB] text-[#2457A8]'
+                : 'bg-[#EAF1FB] text-[#2457A8]'
             }`}
           >
             {kind === 'room' ? (
@@ -84,14 +84,14 @@ const DraggableUnitCard: React.FC<{
             )}
           </div>
           <div className="min-w-0">
-            <h4 className="font-semibold text-xs text-[#24221F] leading-tight truncate">
+            <h4 className="font-semibold text-xs text-[#0D1C42] leading-tight truncate">
               {kind === 'room'
                 ? (item as Room).room_number
                 : kind === 'dorm'
                 ? (item as Dorm).name
                 : (item as Washroom).name}
             </h4>
-            <p className="text-[11px] text-[#6C675F] font-body truncate">
+            <p className="text-[11px] text-[#667085] font-body truncate">
               {kind === 'room'
                 ? (item as Room).type
                 : kind === 'dorm'
@@ -105,11 +105,11 @@ const DraggableUnitCard: React.FC<{
           </div>
         </div>
 
-        <GripVertical className="w-3.5 h-3.5 text-[#8C867C] shrink-0" />
+        <GripVertical className="w-3.5 h-3.5 text-[#667085] shrink-0" />
       </div>
 
-      <div className="flex items-center justify-between pt-2 mt-2 border-t border-[#F5F2EC]">
-        <span className="text-[9px] uppercase tracking-wider font-semibold text-[#8C867C]">
+      <div className="flex items-center justify-between pt-2 mt-2 border-t border-[#FFFCFA]">
+        <span className="text-[9px] uppercase tracking-wider font-semibold text-[#667085]">
           {kind === 'room'
             ? 'Private Room'
             : kind === 'dorm'
@@ -119,7 +119,7 @@ const DraggableUnitCard: React.FC<{
         {kind === 'room' ? (
           <RoomStatusBadge status={(item as Room).status} />
         ) : kind === 'washroom' ? (
-          <span className="text-[10px] capitalize text-[#6C675F]">
+          <span className="text-[10px] capitalize text-[#667085]">
             {(item as Washroom).status.replace('_', ' ')}
           </span>
         ) : null}
@@ -150,34 +150,34 @@ const DroppableZoneColumn: React.FC<{
       ref={setNodeRef}
       className={`flex flex-col rounded-[16px] p-3.5 min-w-[270px] max-w-[320px] w-full shrink-0 border transition-all ${
         isOver
-          ? 'bg-[#EBF3EC] border-[#386641] ring-2 ring-[#386641]/20'
+          ? 'bg-[#F7E9EE] border-[#800020] ring-2 ring-[#800020]/20'
           : isUnallocated
-          ? 'bg-[#FAF7F2] border-[#E8E2D7]'
-          : 'bg-[#F6F3EE] border-[#E5DFD4]'
+          ? 'bg-[#FFFCFA] border-[#E7E5E4]'
+          : 'bg-[#FFFCFA] border-[#E7E5E4]'
       }`}
     >
       {/* Column header */}
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2 min-w-0">
           {isUnallocated ? (
-            <MapPinOff className="w-4 h-4 text-[#C8681A] shrink-0" />
+            <MapPinOff className="w-4 h-4 text-[#A56514] shrink-0" />
           ) : (
-            <Layers className="w-4 h-4 text-[#386641] shrink-0" />
+            <Layers className="w-4 h-4 text-[#800020] shrink-0" />
           )}
           <div className="min-w-0">
-            <h3 className="font-display font-bold text-sm text-[#24221F] truncate">
+            <h3 className="font-display font-bold text-sm text-[#0D1C42] truncate">
               {title}
             </h3>
             {subtitle && (
-              <p className="text-[10px] text-[#736E65] truncate">{subtitle}</p>
+              <p className="text-[10px] text-[#667085] truncate">{subtitle}</p>
             )}
           </div>
         </div>
         <span
           className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full shrink-0 ${
             isUnallocated && units.length > 0
-              ? 'bg-[#FCE8D5] text-[#A85808]'
-              : 'bg-white text-[#524E47] border border-[#DDD7CB]'
+              ? 'bg-[#F2D9AF] text-[#A56514]'
+              : 'bg-white text-[#667085] border border-[#D6D3D1]'
           }`}
         >
           {units.length}
@@ -187,7 +187,7 @@ const DroppableZoneColumn: React.FC<{
       {zone && (
         <div className="px-1 pb-2 -mt-1">
           <Badge variant="sage" size="sm">
-            {ZONE_TYPE_LABELS[zone.zone_type || 'stay']}
+            {zoneTypeLabel(zone)}
           </Badge>
         </div>
       )}
@@ -195,7 +195,7 @@ const DroppableZoneColumn: React.FC<{
       {/* Cards */}
       <div className="flex-1 space-y-2.5 min-h-[160px] overflow-y-auto max-h-[calc(100vh-280px)] pr-0.5">
         {units.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-[#DDD7CB] rounded-[12px] text-center text-xs text-[#8C867C]">
+          <div className="h-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-[#D6D3D1] rounded-[12px] text-center text-xs text-[#667085]">
             <p className="font-medium">
               {isUnallocated ? 'Everything is allocated' : 'No units in this zone'}
             </p>
@@ -305,21 +305,21 @@ export const UnitZoneBoard: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Helper */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-[12px] bg-[#FAF8F5] border border-[#EAE5DC] text-xs text-[#6C675F]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-[12px] bg-[#FFFFFF] border border-[#E7E5E4] text-xs text-[#667085]">
         <div className="flex items-center gap-2">
-          <CheckCircle2 className="w-3.5 h-3.5 text-[#386641]" />
+          <CheckCircle2 className="w-3.5 h-3.5 text-[#16865B]" />
           <span>
             <strong>Zone Allocation Board:</strong> drag rooms, dorms, and
             washrooms into a zone column — or drop them into <strong>Unallocated</strong>.
           </span>
         </div>
-        <span className="text-[11px] text-[#8C867C]">
+        <span className="text-[11px] text-[#667085]">
           Changes persist immediately to the property structure.
         </span>
       </div>
 
       {allocationZones.length === 0 && unallocatedCount === 0 ? (
-        <div className="p-12 text-center border-2 border-dashed border-[#DDD7CB] rounded-[16px] text-sm text-[#8C867C]">
+        <div className="p-12 text-center border-2 border-dashed border-[#D6D3D1] rounded-[16px] text-sm text-[#667085]">
           No units or zones yet. Create rooms, dorms, or washrooms, then assign them to zones.
         </div>
       ) : (

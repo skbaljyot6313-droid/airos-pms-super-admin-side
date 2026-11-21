@@ -92,4 +92,53 @@ export const attendanceApi = {
       `/attendance/requests/${request_uid}/reject`,
       { method: 'POST', body: { review_comment } }
     ),
+  employeeHistory: (employeeUid: string, from: string, to: string) =>
+    apiFetch<AttendanceHistory>('/attendance/employees/' + employeeUid + '/history', {
+      query: { from, to },
+    }),
 };
+
+export interface HistoryBreak {
+  started_at: string | null;
+  ended_at: string | null;
+  duration_seconds: number;
+  open: boolean;
+}
+
+export interface HistoryDay {
+  date: string;
+  employee_uid: string;
+  employee_name: string;
+  status: string;
+  leave_type: string | null;
+  holiday: boolean;
+  is_past: boolean;
+  shift: {
+    name: string;
+    start_time: string;
+    end_time: string;
+    grace_minutes: number;
+    early_exit_minutes: number | null;
+    overnight: boolean;
+    scheduled: boolean;
+  } | null;
+  started_at: string | null;
+  ended_at: string | null;
+  work_seconds: number | null;
+  break_seconds: number;
+  breaks: HistoryBreak[];
+  on_break_now: boolean;
+  late_minutes: number | null;
+  on_time: boolean | null;
+  early_exit_minutes: number | null;
+  incomplete: boolean;
+}
+
+export interface AttendanceHistory {
+  employee_uid: string;
+  employee_name: string;
+  department_uid: string | null;
+  from: string;
+  to: string;
+  items: HistoryDay[];
+}

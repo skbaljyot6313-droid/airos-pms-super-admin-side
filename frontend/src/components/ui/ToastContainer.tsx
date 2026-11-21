@@ -10,19 +10,19 @@ export const ToastContainer: React.FC = () => {
   return (
     <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
       {toasts.map((toast) => {
-        let icon = <Info className="w-4 h-4 text-[#554388]" />;
-        let borderColor = 'border-[#DDD5F0]';
-        let bgColor = 'bg-[#FFFFFF]';
+        let icon = <Info className="w-4 h-4 text-[#2457A8]" />;
+        let borderColor = 'border-[#C3D6F0]';
+        let bgColor = 'bg-[#ffffff]';
 
         if (toast.type === 'success') {
-          icon = <CheckCircle2 className="w-4 h-4 text-[#2E6038]" />;
-          borderColor = 'border-[#CFE4D1]';
+          icon = <CheckCircle2 className="w-4 h-4 text-[#16865B]" />;
+          borderColor = 'border-[#BFE3D2]';
         } else if (toast.type === 'warning') {
-          icon = <AlertTriangle className="w-4 h-4 text-[#A85808]" />;
-          borderColor = 'border-[#FCD9BD]';
+          icon = <AlertTriangle className="w-4 h-4 text-[#A56514]" />;
+          borderColor = 'border-[#F2D9AF]';
         } else if (toast.type === 'error') {
-          icon = <AlertCircle className="w-4 h-4 text-[#A82828]" />;
-          borderColor = 'border-[#F9C3C3]';
+          icon = <AlertCircle className="w-4 h-4 text-[#A83434]" />;
+          borderColor = 'border-[#F0C8C8]';
         }
 
         return (
@@ -32,18 +32,18 @@ export const ToastContainer: React.FC = () => {
           >
             <div className="mt-0.5 shrink-0">{icon}</div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-xs font-semibold text-[#24221F] font-body leading-tight">
+              <h4 className="text-xs font-semibold text-[#0D1C42] font-body leading-tight">
                 {toast.title}
               </h4>
               {toast.description && (
-                <p className="text-xs text-[#6C675F] font-body mt-0.5 leading-snug">
+                <p className="text-xs text-[#667085] font-body mt-0.5 leading-snug">
                   {toast.description}
                 </p>
               )}
             </div>
             <button
               onClick={() => dismissToast(toast.id)}
-              className="p-1 text-[#8C867C] hover:text-[#24221F] rounded transition-colors cursor-pointer shrink-0"
+              className="p-1 text-[#667085] hover:text-[#0D1C42] rounded transition-colors cursor-pointer shrink-0"
               aria-label="Dismiss toast"
             >
               <X className="w-3.5 h-3.5" />

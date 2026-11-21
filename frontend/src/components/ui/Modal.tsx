@@ -50,29 +50,29 @@ export const Modal: React.FC<ModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-[#24221F]/40 backdrop-blur-xs transition-opacity ea-fade"
+        className="fixed inset-0 bg-[#0D1C42]/40 backdrop-blur-xs transition-opacity ea-fade"
         onClick={onClose}
       />
 
       {/* Surface Card Modal */}
       <div
         className={cn(
-          'relative w-full bg-[#FFFFFF] border border-[#E4DFD5] rounded-[18px] shadow-[0_20px_45px_rgba(0,0,0,0.12)] p-6 z-10 my-8 transition-all flex flex-col max-h-[85vh]',
+          'relative w-full bg-[#ffffff] border border-[#E7E5E4] rounded-[18px] shadow-[0_20px_45px_rgba(0,0,0,0.12)] p-6 z-10 my-8 transition-all flex flex-col max-h-[85vh]',
           maxWidthStyles[maxWidth]
         )}
       >
-        <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#F2ECE3] mb-5 shrink-0">
+        <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#F6F4F2] mb-5 shrink-0">
           <div>
-            <h2 className="font-display font-bold text-xl text-[#24221F] tracking-tight">
+            <h2 className="font-display font-bold text-xl text-[#0D1C42] tracking-tight">
               {title}
             </h2>
             {description && (
-              <p className="text-sm text-[#6C675F] mt-1 font-body">{description}</p>
+              <p className="text-sm text-[#667085] mt-1 font-body">{description}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center text-[#736E65] hover:text-[#24221F] hover:bg-[#F3EFE9] rounded-lg transition-colors cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center text-[#667085] hover:text-[#0D1C42] hover:bg-[#F6F4F2] rounded-lg transition-colors cursor-pointer"
             aria-label="Close"
           >
             <X className="w-[18px] h-[18px]" />
@@ -89,7 +89,7 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {footer && (
-          <div className="pt-4 mt-1 border-t border-[#F2ECE3] shrink-0">
+          <div className="pt-4 mt-1 border-t border-[#F6F4F2] shrink-0">
             {footer}
           </div>
         )}

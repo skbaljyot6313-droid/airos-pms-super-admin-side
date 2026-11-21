@@ -81,7 +81,7 @@ export const EditDormModal: React.FC<EditDormModalProps> = ({ isOpen, dorm, onCl
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+          <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
             Dorm Name / Number *
           </label>
           <input
@@ -90,14 +90,14 @@ export const EditDormModal: React.FC<EditDormModalProps> = ({ isOpen, dorm, onCl
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Dorm 104 (Lotus Quarters)"
-            className={`w-full px-3.5 py-2 bg-[#FAF8F5] border rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 ${
+            className={`w-full px-3.5 py-2 bg-[#FFFFFF] border rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 ${
               nameTaken
-                ? 'border-[#E5A3A3] focus:ring-[#C53B3B]'
-                : 'border-[#DDD7CB] focus:ring-[#386641]'
+                ? 'border-[#B34A68] focus:ring-[#D64545]'
+                : 'border-[#D6D3D1] focus:ring-[#800020]'
             }`}
           />
           {nameTaken && (
-            <p className="text-[11px] text-[#A82828] font-body mt-1 flex items-center gap-1">
+            <p className="text-[11px] text-[#A83434] font-body mt-1 flex items-center gap-1">
               <AlertTriangle className="w-3 h-3 shrink-0" />
               A dorm named "{name.trim()}" already exists in this property.
             </p>
@@ -106,7 +106,7 @@ export const EditDormModal: React.FC<EditDormModalProps> = ({ isOpen, dorm, onCl
 
         <div className="grid grid-cols-2 gap-3.5">
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
               Number of Beds *
             </label>
             <input
@@ -116,9 +116,9 @@ export const EditDormModal: React.FC<EditDormModalProps> = ({ isOpen, dorm, onCl
               required
               value={bedCount}
               onChange={(e) => setBedCount(parseInt(e.target.value) || 1)}
-              className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             />
-            <span className="text-[11px] mt-0.5 block font-medium text-[#386641]">
+            <span className="text-[11px] mt-0.5 block font-medium text-[#800020]">
               {bedCount > currentBedCount
                 ? `Adds Bed ${String(currentBedCount + 1).padStart(2, '0')} through Bed ${String(bedCount).padStart(2, '0')}`
                 : shrinking
@@ -126,7 +126,7 @@ export const EditDormModal: React.FC<EditDormModalProps> = ({ isOpen, dorm, onCl
                 : `${bedCount} beds`}
             </span>
             {shrinking && occupiedCount > 0 && (
-              <span className="text-[11px] text-[#A82828] mt-0.5 block font-medium">
+              <span className="text-[11px] text-[#A83434] mt-0.5 block font-medium">
                 {occupiedCount} bed(s) currently occupied — they will be marked inactive,
                 not deleted.
               </span>
@@ -134,13 +134,13 @@ export const EditDormModal: React.FC<EditDormModalProps> = ({ isOpen, dorm, onCl
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
               Dorm Type *
             </label>
             <select
               value={dormType}
               onChange={(e) => setDormType(e.target.value as (typeof DORM_TYPES)[number])}
-              className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             >
               {DORM_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -153,13 +153,13 @@ export const EditDormModal: React.FC<EditDormModalProps> = ({ isOpen, dorm, onCl
 
         <div className="grid grid-cols-2 gap-3.5">
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
               Washroom Facility *
             </label>
             <select
               value={washroom}
               onChange={(e) => setWashroom(e.target.value as (typeof WASHROOM_TYPES)[number])}
-              className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             >
               {WASHROOM_TYPES.map((w) => (
                 <option key={w} value={w}>
@@ -170,13 +170,13 @@ export const EditDormModal: React.FC<EditDormModalProps> = ({ isOpen, dorm, onCl
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
               Assign to Zone
             </label>
             <select
               value={zoneUid}
               onChange={(e) => setZoneUid(e.target.value)}
-              className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             >
               <option value="">(Unallocated)</option>
               {currentPropertyZones.filter((z) => zoneSupportsUnits(z)).map((z) => (
@@ -190,7 +190,7 @@ export const EditDormModal: React.FC<EditDormModalProps> = ({ isOpen, dorm, onCl
 
         <div className="grid grid-cols-2 gap-3.5">
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
               Floor (Optional)
             </label>
             <input
@@ -198,25 +198,25 @@ export const EditDormModal: React.FC<EditDormModalProps> = ({ isOpen, dorm, onCl
               value={floor}
               onChange={(e) => setFloor(e.target.value)}
               placeholder="e.g. 2nd Floor"
-              className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
               Area (Sq Ft)
             </label>
             <input
               type="number"
               value={areaSqft}
               onChange={(e) => setAreaSqft(e.target.value)}
-              className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+          <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
             Description (Optional)
           </label>
           <textarea
@@ -224,11 +224,11 @@ export const EditDormModal: React.FC<EditDormModalProps> = ({ isOpen, dorm, onCl
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Locker specs, reading lights, AC schedule..."
-            className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+            className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
           />
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F0ECE4]">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F6F4F2]">
           <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>

@@ -182,3 +182,57 @@ Route `/property/:uid/overview` is retained (no broken URLs); the user-facing la
 - Maintenance ticket table: unit, zone, issue, status, created, duration.
 - Verified: backend suite 363 passed; trend reconciled against SQL for 30 days (0 mismatches); tsc clean; vitest 89/89; production build passes; no horizontal overflow at 390, 768, 1024 or 1440 px.
 - Known gaps: no previous-period comparison; zone and room-type clicks open the Zones or Units page unfiltered, not a filtered room list; maintenance table rows are not clickable; trend denominator is current room inventory (no historical inventory is recorded).
+
+## Product-wide redesign — Phases 1–3 (2026, local only)
+
+**Phase 1 — design system.** Canonical AiROS palette applied across ~140 SA files (background `#F7F8FA`, ink `#20292C`, brand `#33B059`/`#218A42`, semantic danger/warn/info + softs). Manrope (interface/headings) + Inter (numbers). `recharts` added as the chart dependency. Legacy heading green `#176B33` and secondary `#454E53` swept to ink/secondary everywhere.
+
+**Phase 2 — application shell.** New `components/navigation/Sidebar.tsx` (grouped IA: Workspace / Operations / People / Insights, role-gated, collapsible with persisted state, property switcher near top), `CommandMenu.tsx` (search/command surface), slim `Header.tsx` (breadcrumbs, search trigger, IST clock, notifications, user menu). `App.tsx` rewired: authenticated routes render inside the shell; landing/auth pages stay full-width. All existing routes and legacy redirects preserved.
+
+**Phase 3 — dashboards.**
+- `dashboard/charts.tsx` rebuilt on Recharts (AreaChart trends with null-gap handling, BarChart columns, PieChart donut; DOM StackBar/HBarList retained as compact non-chart primitives). Shared tooltip shells; every chart carries an accessible `role="img"` label.
+- `DashboardView.tsx` restructured to the spec's six questions: (1) occupancy trend primary with current % inline, (2) space distribution with rooms/beds/dorms segmented control + units links, (3) new "Attention required" exception list (overdue work, critical tickets itemised, unassigned work, pending reviews, unverified cleaning states, attendance exceptions; positive empty state), (4) workforce performance (duty-status distribution + attendance trend + departments), (5) operational performance behind a tabbed metric selector (Tasks / Maintenance / Reviews / Cleaning) + department performance table, (6) recent activity + data quality. All real API fields; no fabricated metrics.
+- `employees/management/EmployeeDashboard.tsx` (route `/workforce/dashboard`) rebuilt: duty-status distribution, 30-day attendance trend, staff-by-department, tasks-completed-by-department, open-workload — each with drill-down. Data: `getPropertyDashboard` + `departmentOverview`, one request each.
+- `insights/InsightsView.tsx` rebuilt as grouped index (Occupancy / Workforce / Tasks / Maintenance / Attendance / Audit & activity), SA-only audit gated.
+- Stragglers: `#176B33`/`#454E53` swept repo-wide (33 files).
+
+**Employee app (Phase 5 start).** `employee/frontend` tokens remapped to the canonical palette in place (`index.css` `--color-*` kept; 615 inline hexes normalised); Space Grotesk → Manrope in `index.html` + all `font-['Space_Grotesk']` class references; body font-family set. No structural screen changes yet.
+
+**Verification.** SA: `tsc --noEmit` clean, `vite build` clean, vitest 12 files / 92 tests pass. Employee: `tsc --noEmit` clean, `vite build` clean (chunk-size warnings only). Nothing staged, committed, pushed or deployed.
+
+## Brand colour direction — burgundy/charcoal rebrand (local only)
+
+Green is no longer the brand colour. Canonical palette now: burgundy `#800020` (primary action/brand), charcoal `#303841` (ink), warm neutrals (`#F7F5F4` canvas, `#E9E4E3` line, `#6D686B` secondary, `#9A9193` muted), supporting accents (dusty rose `#B34A68`, mauve `#C18B9B`, gold `#D6A354`, steel `#426B83`, slate `#687C91`, violet `#8B6B9A`), semantic set — success `#367A61`, warning `#D6A354`, danger `#B83245`, info `#426B83`, pending `#8B6B9A`.
+
+- Central tokens updated in both apps (`super-admin/frontend/src/index.css` `@theme` block gains `--color-accent-*`, `--color-success*`, `--color-pending*`; `employee/frontend/src/index.css` token values remapped in place — `--color-acc` is the brand alias there).
+- ~4,200 inline hexes remapped across both `src/` trees. Green literals were context-aware: lines carrying success semantics (completed/approved/occupied/present/resolved/…) → success `#367A61`; everything else → burgundy `#800020`. Zero old-green hexes remain.
+- Charts: `CHART` palette moved to burgundy primary trend + `accents` array (burgundy/rose/gold/steel/violet/slate/mauve) for multi-series; occupied/on-duty/completed parts use `CHART.success` so positive status is never confused with brand.
+- Fixes after sweep: `Badge` `sage` variant → success softs; success toast icon/border → success; `analysis/kit.tsx` `successBg`; `MaintenanceView` resolved chip; STATE_STYLE `available` → success tokens.
+- Verified: SA `tsc` clean, vitest 92/92, build clean; employee `tsc` clean, build clean. Nothing staged/pushed/deployed.
+
+## Rich dark semantic colour system (local only)
+
+Pastel semantic accents replaced by dark, saturated operational colours. Surfaces stay light — the saturated colour carries status on text, icons, dots, borders and chart series; tinted backgrounds are supporting only.
+
+- Canonical semantic set (tokens in both apps' index.css): available/completed `#245B45`, occupied/critical `#8A2635`, cleaning/in-progress `#A34B13`, assigned/info `#244C78`, pending/review `#69418A`, maintenance/warning `#76521D`, unavailable/inactive `#46515E`, scheduled `#14616B`. Brand remains `#800020`; charcoal `#303841`; accents gain midnight `#172554` and deep violet `#4C1D5F`.
+- Each semantic token ships `*-ink`/`*-soft`/`*-line` variants so chips, badges and borders share one source.
+- ~950 old semantic hexes remapped across both repos. `Badge.tsx` central `UNIT_VISUAL_TINT/DOT/TEXT` resolver updated — Zones, Rooms/Dorms (per-bed grids), Washrooms (per-fixture) all inherit: available→forest, occupied→crimson, cleaning→burnt orange, maintenance→dark amber, inactive→steel slate; selection ring stays burgundy `#800020`. Server-derived `visual_state` logic untouched.
+- Employee app `RESOURCE_STATE_STYLES` (UnitTile) updated to the same mapping; stale violet/gold literals removed.
+- `CHART` palette: burgundy primary + semantic series + accent array (midnight/violet/rose/steel/teal/slate); no library defaults.
+- Verified: SA tsc clean, vitest 92/92, build clean; employee tsc clean, build clean. Nothing staged/pushed/deployed.
+
+## 2026-11-24 — Burgundy / Midnight Navy / Vibrant Orange identity
+
+- Token layer (`frontend/src/index.css` + employee `src/index.css`): brand `#800020`, ink → navy `#0D1C42`, canvas `#FFFCFA` warm white, accent `#FF9137` orange; semantic set per spec — success `#16865B`, warning `#E99A23`, danger `#D64545`, info `#3478D4`, pending/in-progress `#7554C8`, neutral `#7A8495` (each with ink/soft/line variants). New light-tint tokens: burgundy `#F7E9EE`, navy `#E9EDF5`, orange `#FFF1E4`.
+- ~3,700 inline hexes remapped repo-wide (charcoal → navy, old semantic set → new, green accents → burgundy). User-mandated resource-state colors preserved: available `#1E3B2F`, occupied `#1B365D`, cleaning `#FBF5DD`, maintenance `#790D16`, washroom `#3C3D37`.
+- Typography: Satoshi (Fontshare) as primary face in both apps; Inter retained for tabular numerics.
+- Shared components: `Button` primary = burgundy → navy hover; `Badge` gains `info` variant (`#3478D4`); sidebar active = burgundy ink on `#F7E9EE` tint; tab bar selected = solid burgundy.
+- Tasks page: KPI chips now per-status tinted with icons (planned navy / generated burgundy / pending orange / assigned info / in-progress violet / completed green / abandoned red / overdue deep `#790D16`); group sections get colored left accent + tinted count badges; table header tinted, rows get hover treatment; WORK_BADGE remap (assigned→info, in-progress→lavender).
+- Verified: SA tsc clean, 92/92 tests, vite build clean; employee tsc clean. Local only — nothing staged/committed/pushed.
+
+## 2026-11-24 — Sections layer (Property → Section → Area → Zone)
+
+- New `sections` table + `areas.section_id` (FK, SET NULL) — migration `z6f1c8a4d2e5`, mirrored into the employee repo's chain per the shared-DB convention; applied to dev DB (head confirmed).
+- Backend: `Section` model, `SectionCreate/UpdateRequest` + `section_uid` on area payloads, `section_out`/`area_out`, `StructureService.create/update/delete_section` (delete detaches areas, never cascades), POST/PATCH/DELETE `/sections`, GET `/sections`, `list_sections` repo — all company/property-scoped via existing `_company_scope`.
+- Employee repo: mirrored migration + `Area.section_id` mapped read-only for schema parity.
+- Frontend: `sectionsApi` + `Section` type, `AppContext.currentPropertySections` + CRUD; Zones page reworked — filter chips and Group-By toggle removed; Property bar with zone switcher (dropdown opens any zone's workspace); sections render as top-level groups containing their areas; "Add Section" + CreateSectionModal; section picker on create/edit area; edit/delete section with ungroup-not-delete semantics.

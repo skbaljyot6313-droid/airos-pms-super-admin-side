@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { BarChart3, CalendarOff, ClipboardList, Clock, LayoutGrid, List, MapPin, Plus, UserX } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -22,19 +22,19 @@ const MetricPill: React.FC<{
 }> = ({ value, label, tone = 'default' }) => (
   <div
     className={`flex items-baseline gap-1.5 px-3 py-1.5 rounded-[8px] ${
-      tone === 'warn' ? 'bg-[#FFF3E4]' : 'bg-[#F1EEE7]'
+      tone === 'warn' ? 'bg-[#FDF3E2]' : 'bg-[#F6F4F2]'
     }`}
   >
     <span
       className={`font-display text-lg font-bold leading-none tabular-nums ${
-        tone === 'warn' ? 'text-[#C98232]' : 'text-[#17221B]'
+        tone === 'warn' ? 'text-[#A56514]' : 'text-[#0D1C42]'
       }`}
     >
       {String(value).padStart(2, '0')}
     </span>
     <span
       className={`text-[10px] font-medium uppercase tracking-wider ${
-        tone === 'warn' ? 'text-[#C98232]' : 'text-[#8A918C]'
+        tone === 'warn' ? 'text-[#A56514]' : 'text-[#800020]'
       }`}
     >
       {label}
@@ -54,6 +54,14 @@ export const EmployeesView: React.FC = () => {
     const t = searchParams.get('tab');
     return EMP_TABS.includes(t as EmpTab) ? (t as EmpTab) : 'board';
   });
+  // Sidebar links change ?tab= while this component stays mounted — keep in sync.
+  useEffect(() => {
+    const t = searchParams.get('tab');
+    setActiveTab((prev) => {
+      const next = EMP_TABS.includes(t as EmpTab) ? (t as EmpTab) : 'board';
+      return prev === next ? prev : next;
+    });
+  }, [searchParams]);
   const setTab = (t: EmpTab) => {
     setActiveTab(t);
     setSearchParams((prev) => {
@@ -80,12 +88,12 @@ export const EmployeesView: React.FC = () => {
           <div className="mb-2">
             <BackButton to={`/property/${activeProperty?.property_uid}/overview`} />
           </div>
-          <h1 className="font-display font-semibold text-[28px] text-[#17221B] tracking-tight leading-tight">
+          <h1 className="font-display font-semibold text-[28px] text-[#0D1C42] tracking-tight leading-tight">
             Employee Management
           </h1>
-          <p className="font-body text-sm text-[#66706A] mt-1">
+          <p className="font-body text-sm text-[#800020] mt-1">
             Physical zone assignments, staff roster, and team scheduling for{' '}
-            <span className="text-[#17221B] font-medium">{activeProperty?.name}</span>
+            <span className="text-[#0D1C42] font-medium">{activeProperty?.name}</span>
           </p>
 
           {/* Compact staffing summary */}
@@ -103,7 +111,7 @@ export const EmployeesView: React.FC = () => {
         <Button
           variant="primary"
           onClick={() => setCreateModalOpen(true)}
-          className="self-start gap-2 !bg-[#2F6B45] hover:!bg-[#245538] !rounded-[8px]"
+          className="self-start gap-2 !bg-[#800020] hover:!bg-[#0D1C42] !rounded-[8px]"
         >
           <Plus className="w-4 h-4" />
           <span>Add Staff Member</span>
@@ -113,17 +121,17 @@ export const EmployeesView: React.FC = () => {
 
       {/* Segmented control + exception chip */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="inline-flex p-1 rounded-[10px] bg-[#EDEAE2] w-fit">
+        <div className="inline-flex p-1 rounded-[10px] bg-[#F6F4F2] w-fit">
           <button
             onClick={() => setTab('board')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'board'
-                ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
-                : 'text-[#66706A] hover:text-[#17221B]'
+                ? 'bg-white text-[#0D1C42] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                : 'text-[#800020] hover:text-[#0D1C42]'
             }`}
           >
             <LayoutGrid
-              className={`w-3.5 h-3.5 ${activeTab === 'board' ? 'text-[#2F6B45]' : ''}`}
+              className={`w-3.5 h-3.5 ${activeTab === 'board' ? 'text-[#800020]' : ''}`}
             />
             <span>Zone Board</span>
           </button>
@@ -131,19 +139,19 @@ export const EmployeesView: React.FC = () => {
             onClick={() => setTab('directory')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'directory'
-                ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
-                : 'text-[#66706A] hover:text-[#17221B]'
+                ? 'bg-white text-[#0D1C42] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                : 'text-[#800020] hover:text-[#0D1C42]'
             }`}
           >
             <List
-              className={`w-3.5 h-3.5 ${activeTab === 'directory' ? 'text-[#2F6B45]' : ''}`}
+              className={`w-3.5 h-3.5 ${activeTab === 'directory' ? 'text-[#800020]' : ''}`}
             />
             <span>Active Staff</span>
             <span
               className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] ${
                 activeTab === 'directory'
-                  ? 'bg-[#E7F0E9] text-[#2F6B45]'
-                  : 'bg-[#E3DED2] text-[#66706A]'
+                  ? 'bg-[#F7E9EE] text-[#800020]'
+                  : 'bg-[#E7E5E4] text-[#800020]'
               }`}
             >
               {activeEmployees.length}
@@ -153,19 +161,19 @@ export const EmployeesView: React.FC = () => {
             onClick={() => setTab('deactivated')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'deactivated'
-                ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
-                : 'text-[#66706A] hover:text-[#17221B]'
+                ? 'bg-white text-[#0D1C42] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                : 'text-[#800020] hover:text-[#0D1C42]'
             }`}
           >
             <UserX
-              className={`w-3.5 h-3.5 ${activeTab === 'deactivated' ? 'text-[#B33A3A]' : ''}`}
+              className={`w-3.5 h-3.5 ${activeTab === 'deactivated' ? 'text-[#A83434]' : ''}`}
             />
             <span>Deactivated Staff</span>
             <span
               className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] ${
                 activeTab === 'deactivated'
-                  ? 'bg-[#FDE8E8] text-[#A82828]'
-                  : 'bg-[#E3DED2] text-[#66706A]'
+                  ? 'bg-[#FAEBEB] text-[#A83434]'
+                  : 'bg-[#E7E5E4] text-[#800020]'
               }`}
             >
               {deactivatedEmployees.length}
@@ -175,12 +183,12 @@ export const EmployeesView: React.FC = () => {
             onClick={() => setTab('shifts')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'shifts'
-                ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
-                : 'text-[#66706A] hover:text-[#17221B]'
+                ? 'bg-white text-[#0D1C42] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                : 'text-[#800020] hover:text-[#0D1C42]'
             }`}
           >
             <Clock
-              className={`w-3.5 h-3.5 ${activeTab === 'shifts' ? 'text-[#2F6B45]' : ''}`}
+              className={`w-3.5 h-3.5 ${activeTab === 'shifts' ? 'text-[#800020]' : ''}`}
             />
             <span>Shifts</span>
           </button>
@@ -188,12 +196,12 @@ export const EmployeesView: React.FC = () => {
             onClick={() => setTab('attendance')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'attendance'
-                ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
-                : 'text-[#66706A] hover:text-[#17221B]'
+                ? 'bg-white text-[#0D1C42] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                : 'text-[#800020] hover:text-[#0D1C42]'
             }`}
           >
             <ClipboardList
-              className={`w-3.5 h-3.5 ${activeTab === 'attendance' ? 'text-[#2F6B45]' : ''}`}
+              className={`w-3.5 h-3.5 ${activeTab === 'attendance' ? 'text-[#800020]' : ''}`}
             />
             <span>Attendance</span>
           </button>
@@ -201,12 +209,12 @@ export const EmployeesView: React.FC = () => {
             onClick={() => setTab('analytics')}
             className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'analytics'
-                ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
-                : 'text-[#66706A] hover:text-[#17221B]'
+                ? 'bg-white text-[#0D1C42] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                : 'text-[#800020] hover:text-[#0D1C42]'
             }`}
           >
             <BarChart3
-              className={`w-3.5 h-3.5 ${activeTab === 'analytics' ? 'text-[#365D78]' : ''}`}
+              className={`w-3.5 h-3.5 ${activeTab === 'analytics' ? 'text-[#2457A8]' : ''}`}
             />
             <span>Analytics</span>
           </button>
@@ -216,12 +224,12 @@ export const EmployeesView: React.FC = () => {
                 onClick={() => setTab('live')}
                 className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
                   activeTab === 'live'
-                    ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
-                    : 'text-[#66706A] hover:text-[#17221B]'
+                    ? 'bg-white text-[#0D1C42] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                    : 'text-[#800020] hover:text-[#0D1C42]'
                 }`}
               >
                 <MapPin
-                  className={`w-3.5 h-3.5 ${activeTab === 'live' ? 'text-[#2F6B45]' : ''}`}
+                  className={`w-3.5 h-3.5 ${activeTab === 'live' ? 'text-[#800020]' : ''}`}
                 />
                 <span>Live Location</span>
               </button>
@@ -229,12 +237,12 @@ export const EmployeesView: React.FC = () => {
                 onClick={() => setTab('leaves')}
                 className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
                   activeTab === 'leaves'
-                    ? 'bg-white text-[#17221B] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
-                    : 'text-[#66706A] hover:text-[#17221B]'
+                    ? 'bg-white text-[#0D1C42] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                    : 'text-[#800020] hover:text-[#0D1C42]'
                 }`}
               >
                 <CalendarOff
-                  className={`w-3.5 h-3.5 ${activeTab === 'leaves' ? 'text-[#2F6B45]' : ''}`}
+                  className={`w-3.5 h-3.5 ${activeTab === 'leaves' ? 'text-[#800020]' : ''}`}
                 />
                 <span>Leaves</span>
               </button>
@@ -243,8 +251,8 @@ export const EmployeesView: React.FC = () => {
         </div>
 
         {currentPropertyUnallocatedEmployees.length > 0 && (
-          <div className="text-[11px] font-medium text-[#C98232] bg-[#FFF3E4] px-2.5 py-1 rounded-[8px] inline-flex items-center gap-1.5 w-fit">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C98232]" />
+          <div className="text-[11px] font-medium text-[#A56514] bg-[#FDF3E2] px-2.5 py-1 rounded-[8px] inline-flex items-center gap-1.5 w-fit">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#A56514]" />
             <span>
               {currentPropertyUnallocatedEmployees.length} staff unallocated to physical zones
             </span>

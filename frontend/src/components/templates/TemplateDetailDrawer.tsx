@@ -75,10 +75,10 @@ export const TemplateDetailDrawer: React.FC<Props> = ({ template, onClose, onCha
         className="relative w-full max-w-md bg-white h-full shadow-xl overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white border-b border-[#EAE5DC] px-5 py-4 flex items-start justify-between z-10">
+        <div className="sticky top-0 bg-white border-b border-[#E7E5E4] px-5 py-4 flex items-start justify-between z-10">
           <div>
-            <p className="font-display font-bold text-lg text-[#24221F]">{template.name}</p>
-            <p className="text-xs text-[#8C867C] mt-0.5">
+            <p className="font-display font-bold text-lg text-[#0D1C42]">{template.name}</p>
+            <p className="text-xs text-[#667085] mt-0.5">
               {TYPE_LABELS[template.template_type]} · v{template.version} · by {template.created_by_name || '—'}
             </p>
           </div>
@@ -86,7 +86,7 @@ export const TemplateDetailDrawer: React.FC<Props> = ({ template, onClose, onCha
             <Badge variant={template.status === 'active' ? 'sage' : template.status === 'paused' ? 'orange' : 'neutral'}>
               {template.status}
             </Badge>
-            <button onClick={onClose} className="p-1.5 text-[#8C867C] hover:bg-[#F5F2EB] rounded-[8px] cursor-pointer">
+            <button onClick={onClose} className="p-1.5 text-[#667085] hover:bg-[#FFFCFA] rounded-[8px] cursor-pointer">
               <X className="w-4.5 h-4.5 w-5 h-5" />
             </button>
           </div>
@@ -94,7 +94,7 @@ export const TemplateDetailDrawer: React.FC<Props> = ({ template, onClose, onCha
 
         <div className="p-5 space-y-5">
           {template.description && (
-            <p className="text-sm text-[#58534C]">{template.description}</p>
+            <p className="text-sm text-[#667085]">{template.description}</p>
           )}
 
           <div className="flex flex-wrap gap-2">
@@ -124,17 +124,17 @@ export const TemplateDetailDrawer: React.FC<Props> = ({ template, onClose, onCha
               ['Next run', template.next_run_at ? fmtDateTimeIST(template.next_run_at) : '—'],
               ['Checklist', `${template.checklist?.length || 0} items`],
             ].map(([k, v]) => (
-              <div key={k} className="bg-[#FAF8F5] border border-[#EAE5DC] rounded-[10px] px-3 py-2.5 text-center">
-                <p className="text-sm font-semibold text-[#24221F]">{v}</p>
-                <p className="text-[10px] text-[#8C867C] uppercase tracking-wider mt-0.5">{k}</p>
+              <div key={k} className="bg-[#FFFFFF] border border-[#E7E5E4] rounded-[10px] px-3 py-2.5 text-center">
+                <p className="text-sm font-semibold text-[#0D1C42]">{v}</p>
+                <p className="text-[10px] text-[#667085] uppercase tracking-wider mt-0.5">{k}</p>
               </div>
             ))}
           </div>
 
           {/* Config summary */}
           <section>
-            <h3 className="text-[11px] font-semibold text-[#8C867C] uppercase tracking-wider mb-2">Configuration</h3>
-            <div className="space-y-1.5 text-[13px] text-[#35322E]">
+            <h3 className="text-[11px] font-semibold text-[#667085] uppercase tracking-wider mb-2">Configuration</h3>
+            <div className="space-y-1.5 text-[13px] text-[#0D1C42]">
               <p>Assignment: {template.assignment?.mode === 'automatic' ? `Auto (${template.assignment.method?.replace(/_/g, ' ')})` : template.assignment?.mode}</p>
               <p>Location: {template.location?.scope}{template.location?.target ? ` · ${template.location.target}` : ''}</p>
               <p>Schedule: {template.schedule?.kind === 'recurring' ? `Recurring · ${template.schedule.frequency}` : `One time · ${template.schedule?.date || ''}`}</p>
@@ -145,13 +145,13 @@ export const TemplateDetailDrawer: React.FC<Props> = ({ template, onClose, onCha
           {/* Checklist */}
           {!!template.checklist?.length && (
             <section>
-              <h3 className="text-[11px] font-semibold text-[#8C867C] uppercase tracking-wider mb-2">Checklist</h3>
+              <h3 className="text-[11px] font-semibold text-[#667085] uppercase tracking-wider mb-2">Checklist</h3>
               <ul className="space-y-1">
                 {template.checklist.map((c, i) => (
-                  <li key={i} className="flex items-center gap-2 text-[13px] text-[#35322E]">
-                    <span className={`w-1.5 h-1.5 rounded-full ${c.required ? 'bg-[#386641]' : 'bg-[#C8C1B4]'}`} />
+                  <li key={i} className="flex items-center gap-2 text-[13px] text-[#0D1C42]">
+                    <span className={`w-1.5 h-1.5 rounded-full ${c.required ? 'bg-[#800020]' : 'bg-[#CDC9C7]'}`} />
                     {c.title}
-                    {!c.required && <span className="text-[10px] text-[#A59F95]">(optional)</span>}
+                    {!c.required && <span className="text-[10px] text-[#98A2B3]">(optional)</span>}
                   </li>
                 ))}
               </ul>
@@ -160,18 +160,18 @@ export const TemplateDetailDrawer: React.FC<Props> = ({ template, onClose, onCha
 
           {/* Generated work */}
           <section>
-            <h3 className="text-[11px] font-semibold text-[#8C867C] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <h3 className="text-[11px] font-semibold text-[#667085] uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <RefreshCw className="w-3 h-3" /> Generated Work
             </h3>
             {allWork.length === 0 ? (
-              <p className="text-xs text-[#A59F95] py-3">Nothing generated yet.</p>
+              <p className="text-xs text-[#98A2B3] py-3">Nothing generated yet.</p>
             ) : (
               <div className="space-y-1.5">
                 {allWork.slice(0, 30).map((w) => (
-                  <div key={w.number} className="flex items-center gap-2.5 px-3 py-2 bg-[#FAF8F5] border border-[#EAE5DC] rounded-[9px]">
-                    <span className="font-mono text-xs font-semibold text-[#24221F]">{w.number}</span>
-                    <span className="flex-1 text-xs text-[#58534C] truncate">{w.title}</span>
-                    <span className="text-[10px] text-[#8C867C]">{w.assignee || 'unassigned'}</span>
+                  <div key={w.number} className="flex items-center gap-2.5 px-3 py-2 bg-[#FFFFFF] border border-[#E7E5E4] rounded-[9px]">
+                    <span className="font-mono text-xs font-semibold text-[#0D1C42]">{w.number}</span>
+                    <span className="flex-1 text-xs text-[#667085] truncate">{w.title}</span>
+                    <span className="text-[10px] text-[#667085]">{w.assignee || 'unassigned'}</span>
                     <Badge size="sm" variant={['completed', 'closed', 'resolved'].includes(w.status) ? 'sage' : w.status === 'overdue' ? 'red' : 'orange'}>
                       {w.status}
                     </Badge>

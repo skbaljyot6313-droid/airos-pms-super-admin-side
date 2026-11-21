@@ -77,7 +77,7 @@ export const TransferModal: React.FC<Props> = ({
   };
 
   const inputCls =
-    'w-full rounded-lg border border-[#D8D0BF] bg-white px-3 py-2 text-sm font-body text-[#17221B] focus:outline-none focus:border-[#4A5D4F]';
+    'w-full rounded-lg border border-[#D6D3D1] bg-white px-3 py-2 text-sm font-body text-[#0D1C42] focus:outline-none focus:border-[#800020]';
 
   return (
     <Modal
@@ -93,14 +93,14 @@ export const TransferModal: React.FC<Props> = ({
           </div>
         )}
 
-        <div className="rounded-lg bg-[#F6F3EC] px-3 py-2 max-h-32 overflow-y-auto">
+        <div className="rounded-lg bg-[#FFFCFA] px-3 py-2 max-h-32 overflow-y-auto">
           {employees.map((e) => (
             <div
               key={e.employee_uid}
               className="flex items-center justify-between font-body text-sm py-0.5"
             >
-              <span className="text-[#17221B]">{e.name}</span>
-              <span className="text-[#9A9484] text-xs">
+              <span className="text-[#0D1C42]">{e.name}</span>
+              <span className="text-[#667085] text-xs">
                 {e.department || 'Unassigned'}
                 {headOf[e.employee_uid] ? ` · heads ${headOf[e.employee_uid]}` : ''}
               </span>
@@ -109,7 +109,7 @@ export const TransferModal: React.FC<Props> = ({
         </div>
 
         <div>
-          <label className="block font-body text-xs font-medium text-[#66706A] mb-1">
+          <label className="block font-body text-xs font-medium text-[#800020] mb-1">
             Destination department
           </label>
           <select
@@ -168,7 +168,7 @@ export const TransferModal: React.FC<Props> = ({
         )}
 
         <div>
-          <label className="block font-body text-xs font-medium text-[#66706A] mb-1">
+          <label className="block font-body text-xs font-medium text-[#800020] mb-1">
             Reason (optional)
           </label>
           <input

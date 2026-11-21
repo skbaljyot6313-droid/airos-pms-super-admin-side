@@ -659,6 +659,199 @@ async def generate_period(session: AsyncSession, *, property_id: uuid.UUID, comp
     return pr
 
 
+async def preview_period(session: AsyncSession, *, property_id: uuid.UUID,
+                         company_id: uuid.UUID, period: str,
+                         today: str | None = None) -> list[dict]:
+    """Read-only month-to-date view of the period — classifies every
+    employee's days up to today with the same rules as generation and
+    computes each line as it currently stands. Writes nothing: half-day
+    groups are counted as pending rather than persisted."""
+    start, end = period_bounds(period)
+    today = today or datetime.now(UTC).date().isoformat()
+    as_of = min(end, today)
+    dates = _dates(start, as_of)
+    policy = await _policy_for(session, property_id, end)
+    cfg = validate_policy(policy.config)
+
+    employees = (await session.execute(select(Employee).where(
+        Employee.property_id == property_id, Employee.company_id == company_id,
+        func.lower(Employee.status) != "deactivated"))).scalars().all()
+    emp_ids = [e.id for e in employees]
+    revisions = await _structures_for(session, emp_ids, end)
+    days = (await session.execute(select(AttendanceDay).where(
+        AttendanceDay.property_id == property_id,
+        AttendanceDay.employee_id.in_(emp_ids),
+        AttendanceDay.attendance_date >= start, AttendanceDay.attendance_date <= end,
+    ))).scalars().all() if emp_ids else []
+    by_emp_day = {(d.employee_id, d.attendance_date): d for d in days}
+    leaves = (await session.execute(select(AttendanceRequest).where(
+        AttendanceRequest.property_id == property_id,
+        AttendanceRequest.employee_id.in_(emp_ids),
+        AttendanceRequest.status == "approved",
+        AttendanceRequest.from_date <= end, AttendanceRequest.to_date >= start,
+    ))).scalars().all() if emp_ids else []
+    leave_by_day: dict[tuple, str] = {}
+    for lv in leaves:
+        for d in _dates(max(lv.from_date, start), min(lv.to_date, end)):
+            leave_by_day[(lv.employee_id, d)] = normalize_leave_type(lv.leave_type)
+    holiday_rows = (await session.execute(select(Holiday).where(
+        Holiday.property_id == property_id,
+        Holiday.date >= start, Holiday.date <= end))).scalars().all()
+    holidays = {h.date for h in holiday_rows}
+
+    from app.services.shifts import effective_assignments, shift_applies_on, shift_window_utc
+    shift_by_day = {d: await effective_assignments(session, emp_ids, d) for d in dates} if emp_ids else {}
+
+    # Half-days carried in from the previous month still feed the grouping.
+    prev_year, prev_month = int(start[:4]), int(start[5:7])
+    prev_month -= 1
+    if prev_month == 0:
+        prev_year, prev_month = prev_year - 1, 12
+    prev_period = await session.scalar(select(PayrollPeriod).where(
+        PayrollPeriod.property_id == property_id,
+        PayrollPeriod.period == f"{prev_year:04d}-{prev_month:02d}"))
+    carried_in: dict[uuid.UUID, list] = {}
+    if prev_period and policy_get(cfg, "half_day_carry_forward"):
+        prev_lines = (await session.execute(select(PayrollLine).where(
+            PayrollLine.period_id == prev_period.id))).scalars().all()
+        for pl in prev_lines:
+            dates_in = (pl.snapshot or {}).get("carried_half_day_dates") or []
+            if dates_in:
+                carried_in[pl.employee_id] = list(dates_in)
+
+    rows: list[dict] = []
+    for emp in employees:
+        m = Metrics(calendar_days=len(dates))
+        revs = revisions.get(emp.id, [])
+        structure = _in_force(revs, as_of)
+        mid_change = any(start < r.effective_from <= end for r in revs)
+        for d in dates:
+            pair = shift_by_day.get(d, {}).get(emp.id)
+            shift = pair[1] if pair else None
+            scheduled = shift is not None and shift_applies_on(shift, d)
+            if scheduled:
+                m.working_days_in_period += 1
+            row = by_emp_day.get((emp.id, d))
+            facts = DayFacts(
+                scheduled=scheduled,
+                status=row.status if row else None,
+                started=bool(row and row.started_at), ended=bool(row and row.ended_at),
+                worked_seconds=int(row.work_seconds or 0) if row else 0,
+                break_seconds=int(row.break_seconds or 0) if row else 0,
+                holiday=d in holidays,
+                approved_leave_type=leave_by_day.get((emp.id, d)),
+                past=d < today,
+            )
+            if row and row.started_at and scheduled:
+                window = shift_window_utc(shift, d)
+                delta = (row.started_at - window[0]).total_seconds() / 60
+                facts.late_minutes = max(0, int(delta))
+                facts.arrival_late = row.started_at > window[0] + timedelta(
+                    minutes=shift.grace_minutes)
+            res = classify_day(facts, cfg)
+            lt = facts.approved_leave_type
+            if lt:
+                m.leave_by_type[lt] = m.leave_by_type.get(lt, 0) + 1
+            if res.kind == "present":
+                m.present += 1
+            elif res.kind == "half":
+                m.half += 1
+                m.half_day_dates.append(d)
+            elif res.kind == "absent":
+                m.absent += 1
+                m.absent_dates.append(d)
+            elif res.kind == "paid_leave":
+                m.paid_leave += 1
+            elif res.kind == "unpaid_leave":
+                m.unpaid_leave += 1
+                m.unpaid_leave_dates.append(d)
+            elif res.kind == "week_off":
+                m.week_offs += 1
+            elif res.kind == "holiday":
+                m.holidays += 1
+            elif res.kind == "anomaly":
+                m.anomalies.append({"date": d, "reason": res.review})
+            if res.late:
+                m.late_entries += 1
+                m.late_minutes_total += res.late_minutes
+                m.late_dates.append({"date": d, "late_minutes": res.late_minutes,
+                                     "late_half_day": res.late_half_day})
+            m.worked_seconds += res.worked_seconds
+            m.break_seconds += res.break_seconds
+            expected = int(float(cfg["expected_hours_per_day"]) * 3600)
+            if res.kind in ("present", "half") and res.worked_seconds > expected:
+                m.overtime_seconds += res.worked_seconds - expected
+
+        # Grouping math identical to generation, but no group rows are
+        # written — complete groups are simply reported as pending.
+        pool = sorted(carried_in.get(emp.id, []) + m.half_day_dates)
+        m.carried_in_half_days = len(carried_in.get(emp.id, []))
+        n_groups = len(pool) // 3
+        m.ungrouped_half_days = len(pool) % 3
+        m.carried_half_days = m.ungrouped_half_days if policy_get(cfg, "half_day_carry_forward") else 0
+        m.pending_groups = n_groups
+        if m.pending_groups:
+            m.anomalies.append({"date": as_of,
+                                "reason": f"{m.pending_groups} half-day group(s) awaiting CL/LOP decision"})
+        if mid_change:
+            m.anomalies.append({"date": end, "reason": "salary revision effective inside this period — review"})
+
+        rate = None
+        rate_label = None
+        trace = None
+        if structure is not None:
+            trace = compute_line({
+                "calc_method": structure.calc_method, "basic": structure.basic, "hra": structure.hra,
+                "allowances": structure.allowances, "incentive": structure.incentive,
+                "overtime_rate": structure.overtime_rate, "deductions": structure.deductions,
+            }, cfg, m)
+            if structure.calc_method == "monthly":
+                fixed_total = Decimal(structure.basic) + Decimal(structure.hra) + sum(
+                    (Decimal(str(a["amount"])) for a in structure.allowances), Decimal(0))
+                div, div_label = per_day_divisor(cfg, m.working_days_in_period, m.calendar_days)
+                rate = money(fixed_total / div)
+                rate_label = f"per day ({div_label})"
+            elif structure.calc_method == "daily":
+                rate = money(structure.basic)
+                rate_label = "per day"
+            else:
+                rate = money(structure.basic)
+                rate_label = "per hour"
+        else:
+            m.anomalies.append({"date": as_of, "reason": "no salary structure in force"})
+
+        metrics = trace["metrics"] if trace else {
+            "calendar_days": m.calendar_days,
+            "working_days_in_period": m.working_days_in_period,
+            "present_days": m.present, "half_days": m.half,
+            "absent_days": m.absent, "paid_leave_days": m.paid_leave,
+            "unpaid_leave_days": m.unpaid_leave, "week_offs": m.week_offs,
+            "holidays": m.holidays, "late_entries": m.late_entries,
+            "late_minutes_total": m.late_minutes_total,
+            "worked_hours": str(round(m.worked_seconds / 3600, 2)),
+            "break_hours": str(round(m.break_seconds / 3600, 2)),
+            "overtime_hours": str(round(m.overtime_seconds / 3600, 2)),
+            "lop_group_days": m.lop_group_days, "cl_consumed": m.cl_consumed,
+            "pending_half_day_groups": m.pending_groups,
+            "carried_half_days": m.carried_half_days,
+            "carried_in_half_days": m.carried_in_half_days,
+            "leave_by_type": m.leave_by_type,
+        }
+        rows.append({
+            "employee_uid": str(emp.id),
+            "employee_name": emp.name,
+            "calc_method": structure.calc_method if structure else None,
+            "rate": str(rate) if rate is not None else None,
+            "rate_label": rate_label,
+            "metrics": metrics,
+            "gross": trace["gross"] if trace else "0",
+            "total_deductions": trace["total_deductions"] if trace else "0",
+            "net": trace["net"] if trace else "0",
+            "anomalies": m.anomalies,
+        })
+    return rows
+
+
 async def _period(session, property_id, period) -> PayrollPeriod:
     pr = await session.scalar(select(PayrollPeriod).where(
         PayrollPeriod.property_id == property_id, PayrollPeriod.period == period))

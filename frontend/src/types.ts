@@ -169,6 +169,12 @@ export interface Task {
    *  scheduler downtime). Absent on manual/one-time tasks. */
   scheduled_for?: string;
   expires_at?: string;
+  /** IST operational-day key (YYYY-MM-DD) stamped at generation/rollover */
+  operational_date?: string;
+  /** Department attribution — department-head allocated work */
+  department_id?: string | null;
+  /** Manager-authored checklist (takes precedence over template checklist) */
+  checklist?: { title: string; description?: string | null; required?: boolean }[] | null;
   abandoned_at?: string;
   abandoned_reason?: string;   // NEXT_SCHEDULED_OCCURRENCE | SYSTEM_DAILY_ROLLOVER
   abandoned_from_status?: string;
@@ -285,9 +291,19 @@ export interface Property {
   created_at: string;
 }
 
+export interface Section {
+  section_uid: string;
+  property_uid: string;
+  name: string; // e.g. "Stay", "Kitchen", "Pool", "Reception"
+  code: string; // e.g. "SECTION-001"
+  description?: string;
+  created_at: string;
+}
+
 export interface Area {
   area_uid: string;
   property_uid: string;
+  section_uid?: string | null;
   name: string; // e.g. "Ground Floor", "First Floor", "Second Floor", "Rooftop Terrace"
   code: string; // e.g. "AREA-001"
   level_number: number; // e.g. 0 for Ground, 1 for First Floor, -1 for Basement
@@ -305,7 +321,13 @@ export type ZoneType =
   | 'dining'
   | 'amenities'
   | 'outdoor'
-  | 'back_of_house';
+  | 'back_of_house'
+  | (string & {});
+
+export interface ZoneCustomUnit {
+  name: string;
+  qty: number;
+}
 
 export interface Zone {
   zone_uid: string;
@@ -316,6 +338,7 @@ export interface Zone {
   zone_type?: ZoneType; // defaults to 'stay' when absent
   floor?: string; // display string / backward compatible area name
   description?: string;
+  custom_units?: (ZoneCustomUnit | string)[]; // free-text units for non-stay zones (e.g. {name:"Walk-in freezer", qty:2})
   created_at: string;
 }
 

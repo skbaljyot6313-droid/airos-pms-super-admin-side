@@ -10,6 +10,7 @@ import logging
 import uuid
 from collections.abc import Iterable
 from datetime import UTC, date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
@@ -667,4 +668,178 @@ async def day_status_board(
         "operational_day_start": day_start.strftime("%H:%M"),
         "is_today": op_date == today,
         "employees": items,
+    }
+
+
+async def employee_history(
+    session: AsyncSession,
+    user: User,
+    employee_id: uuid.UUID,
+    from_date: str,
+    to_date: str,
+    *,
+    now: datetime | None = None,
+) -> dict:
+    """Per-workday attendance record for one employee over a date range —
+    the auditable counterpart to the daily status board.
+
+    Every calendar day in [from..to] gets a row: the shift effective on
+    that date, the actual punches, every break as a separate interval,
+    and the evaluation (late vs grace, early exit, incomplete, leave,
+    week off, holiday). Nothing is back-filled or estimated — a day with
+    no punches reports exactly that.
+    """
+    try:
+        from_d = date.fromisoformat(from_date)
+        to_d = date.fromisoformat(to_date)
+    except ValueError:
+        raise ValidationErr("Expected YYYY-MM-DD dates.", field="from")
+    if to_d < from_d:
+        raise ValidationErr("to must be on or after from.", field="to")
+    if (to_d - from_d).days > 186:
+        raise ValidationErr("History range is capped at 186 days.", field="to")
+
+    emp = await session.get(Employee, employee_id)
+    if emp is None:
+        raise NotFoundErr("Employee not found.")
+    if user.role == UserRole.SUPER_ADMIN:
+        if emp.company_id != user.company_id:
+            raise NotFoundErr("Employee not found.")
+    else:
+        if user.property_id is None or emp.property_id != user.property_id:
+            raise NotFoundErr("Employee not found.")
+    if user.role == UserRole.DEPARTMENT_MANAGER:
+        from app.services.dept_scope import managed_department_ids
+        ids = await managed_department_ids(session, user) or set()
+        if emp.department_id not in ids:
+            raise NotFoundErr("Employee not found.")
+    elif user.role not in (
+        UserRole.SUPER_ADMIN, UserRole.PROPERTY_MANAGER, UserRole.HUMAN_RESOURCE
+    ):
+        from app.dependencies.auth import Forbidden
+        raise Forbidden()
+
+    from app.models.payroll import Holiday
+
+    now_utc = now or datetime.now(UTC)
+    today = now_utc.astimezone(ZoneInfo("Asia/Kolkata")).date().isoformat()
+
+    day_rows = (await session.execute(
+        select(AttendanceDay).where(
+            AttendanceDay.employee_id == emp.id,
+            AttendanceDay.attendance_date >= from_d.isoformat(),
+            AttendanceDay.attendance_date <= to_d.isoformat(),
+        ))).scalars().all()
+    by_date = {d.attendance_date: d for d in day_rows}
+    day_ids = [d.id for d in day_rows]
+    breaks_by_day: dict[uuid.UUID, list[AttendanceBreak]] = {}
+    if day_ids:
+        for br in (await session.execute(
+            select(AttendanceBreak).where(
+                AttendanceBreak.attendance_day_id.in_(day_ids))
+            .order_by(AttendanceBreak.started_at)
+        )).scalars():
+            breaks_by_day.setdefault(br.attendance_day_id, []).append(br)
+
+    approved = (await session.execute(
+        select(AttendanceRequest).where(
+            AttendanceRequest.employee_id == emp.id,
+            AttendanceRequest.status == "approved",
+            AttendanceRequest.from_date <= to_d.isoformat(),
+            AttendanceRequest.to_date >= from_d.isoformat(),
+        ))).scalars().all()
+    leave_by_day: dict[str, str] = {}
+    for req in approved:
+        cur = max(date.fromisoformat(req.from_date), from_d)
+        end = min(date.fromisoformat(req.to_date), to_d)
+        while cur <= end:
+            leave_by_day[cur.isoformat()] = req.leave_type or "leave"
+            cur += timedelta(days=1)
+
+    holidays = {h.date for h in (await session.execute(
+        select(Holiday).where(
+            Holiday.property_id == emp.property_id,
+            Holiday.date >= from_d.isoformat(),
+            Holiday.date <= to_d.isoformat(),
+        ))).scalars()}
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    items = []
+    cur = from_d
+    while cur <= to_d:
+        d = cur.isoformat()
+        cur += timedelta(days=1)
+        pair = (await effective_assignments(session, [emp.id], d)).get(emp.id)
+        shift = pair[1] if pair else None
+        scheduled = shift is not None and shift_applies_on(shift, d)
+        row = by_date.get(d)
+        leave = leave_by_day.get(d)
+        holiday = d in holidays
+
+        late_minutes = None
+        early_exit_minutes = None
+        on_time = None
+        if row and row.started_at and shift and scheduled:
+            w_start, w_end = shift_window_utc(shift, d)
+            delta = int((row.started_at - w_start).total_seconds() / 60)
+            late_minutes = max(0, delta)
+            on_time = row.started_at <= w_start + timedelta(
+                minutes=shift.grace_minutes)
+            if row.ended_at and row.ended_at < w_end:
+                early_exit_minutes = int(
+                    (w_end - row.ended_at).total_seconds() / 60)
+
+        breaks = breaks_by_day.get(row.id, []) if row else []
+        status = (
+            row.status if row else
+            "leave" if leave else
+            "holiday" if holiday else
+            "day_off" if (shift and not scheduled) else
+            "not_scheduled" if not scheduled else
+            "not_marked"
+        )
+        items.append({
+            "date": d,
+            "employee_uid": str(emp.id),
+            "employee_name": emp.name,
+            "status": status,
+            "leave_type": leave,
+            "holiday": holiday,
+            "is_past": d < today,
+            "shift": ({
+                "name": shift.name,
+                "start_time": shift.start_time.strftime("%H:%M"),
+                "end_time": shift.end_time.strftime("%H:%M"),
+                "grace_minutes": shift.grace_minutes,
+                "early_exit_minutes": shift.early_exit_minutes,
+                "overnight": shift.end_time <= shift.start_time,
+                "scheduled": scheduled,
+            } if shift else None),
+            "started_at": _iso(row.started_at) if row else None,
+            "ended_at": _iso(row.ended_at) if row else None,
+            "work_seconds": row.work_seconds if row else None,
+            "break_seconds": row.break_seconds if row else 0,
+            "breaks": [{
+                "started_at": _iso(b.started_at),
+                "ended_at": _iso(b.ended_at),
+                "duration_seconds": b.duration_seconds,
+                "open": b.ended_at is None,
+            } for b in breaks],
+            "on_break_now": any(b.ended_at is None for b in breaks),
+            "late_minutes": late_minutes,
+            "on_time": on_time,
+            "early_exit_minutes": early_exit_minutes,
+            "incomplete": bool(
+                row and row.started_at and not row.ended_at and d < today),
+        })
+    items.reverse()
+    return {
+        "employee_uid": str(emp.id),
+        "employee_name": emp.name,
+        "department_uid": str(emp.department_id) if emp.department_id else None,
+        "from": from_d.isoformat(),
+        "to": to_d.isoformat(),
+        "items": items,
     }

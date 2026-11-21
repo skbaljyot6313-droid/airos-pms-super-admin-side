@@ -25,7 +25,7 @@ const STATUS_STYLE: Record<VaCamera['connection_status'], string> = {
   online: 'bg-emerald-100 text-emerald-700',
   offline: 'bg-red-100 text-red-700',
   error: 'bg-amber-100 text-amber-700',
-  unknown: 'bg-[#EFECE5] text-[#8C867C]',
+  unknown: 'bg-[#F6F4F2] text-[#667085]',
 };
 
 const emptyForm = (): VaCameraPayload => ({
@@ -52,7 +52,7 @@ const Field: React.FC<{
   required?: boolean;
 }> = ({ label, children, required }) => (
   <label className="block">
-    <span className="text-[11.5px] font-medium text-[#58534C]">
+    <span className="text-[11.5px] font-medium text-[#667085]">
       {label}
       {required && <span className="text-red-500"> *</span>}
     </span>
@@ -61,7 +61,7 @@ const Field: React.FC<{
 );
 
 const inputCls =
-  'mt-1 w-full px-3 py-2 rounded-lg border border-[#EAE5DC] bg-white text-[13px] outline-none focus:border-[#386641]';
+  'mt-1 w-full px-3 py-2 rounded-lg border border-[#E7E5E4] bg-white text-[13px] outline-none focus:border-[#800020]';
 
 export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
   propertyUid,
@@ -219,18 +219,18 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 pb-4">
         <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A39D92]" />
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name or ID…"
-            className="pl-8 pr-3 py-2 rounded-lg border border-[#EAE5DC] bg-white text-[12.5px] w-52 outline-none focus:border-[#386641]"
+            className="pl-8 pr-3 py-2 rounded-lg border border-[#E7E5E4] bg-white text-[12.5px] w-52 outline-none focus:border-[#800020]"
           />
         </div>
         <select
           value={fSection}
           onChange={(e) => setFSection(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-[#EAE5DC] bg-white text-[12.5px]"
+          className="px-3 py-2 rounded-lg border border-[#E7E5E4] bg-white text-[12.5px]"
         >
           <option value="all">All zones &amp; areas</option>
           {areas.map((a) => (
@@ -250,7 +250,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
         <select
           value={fStatus}
           onChange={(e) => setFStatus(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-[#EAE5DC] bg-white text-[12.5px]"
+          className="px-3 py-2 rounded-lg border border-[#E7E5E4] bg-white text-[12.5px]"
         >
           <option value="all">All statuses</option>
           <option value="online">Online</option>
@@ -263,7 +263,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
             <select
               value={moveTo}
               onChange={(e) => setMoveTo(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-[#EAE5DC] bg-white text-[12.5px]"
+              className="px-3 py-2 rounded-lg border border-[#E7E5E4] bg-white text-[12.5px]"
             >
               <option value="">Move to…</option>
               {areas.map((a) => (
@@ -284,7 +284,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
             <button
               onClick={doBulkMove}
               disabled={!moveTo}
-              className="px-3 py-2 rounded-lg bg-[#386641] text-white text-[12.5px] font-medium disabled:opacity-50"
+              className="px-3 py-2 rounded-lg bg-[#800020] text-white text-[12.5px] font-medium disabled:opacity-50"
             >
               Move {selected.size}
             </button>
@@ -297,17 +297,17 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
             setForm(emptyForm());
             setModal('add');
           }}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#386641] text-white text-[12.5px] font-medium hover:bg-[#2F5737]"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#800020] text-white text-[12.5px] font-medium hover:bg-[#0D1C42]"
         >
           <Plus className="w-4 h-4" /> Add Camera
         </button>
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-[#EAE5DC] bg-white overflow-hidden">
+      <div className="rounded-xl border border-[#E7E5E4] bg-white overflow-hidden">
         <table className="w-full text-[12.5px]">
           <thead>
-            <tr className="bg-[#FBFAF7] border-b border-[#EAE5DC] text-left text-[#8C867C] text-[11px] uppercase tracking-wide">
+            <tr className="bg-[#FFFFFF] border-b border-[#E7E5E4] text-left text-[#667085] text-[11px] uppercase tracking-wide">
               <th className="px-3 py-2.5 w-8">
                 <input
                   type="checkbox"
@@ -336,13 +336,13 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
           <tbody>
             {loading && cameras.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-[#A39D92]">
+                <td colSpan={8} className="py-12 text-center text-[#98A2B3]">
                   <Loader2 className="w-5 h-5 animate-spin inline" />
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-[#A39D92]">
+                <td colSpan={8} className="py-12 text-center text-[#98A2B3]">
                   No cameras — click "Add Camera" to register one.
                 </td>
               </tr>
@@ -350,7 +350,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
               filtered.map((c) => (
                 <tr
                   key={c.camera_uid}
-                  className="border-b border-[#F0EDE6] last:border-0 hover:bg-[#FBFAF7]"
+                  className="border-b border-[#F6F4F2] last:border-0 hover:bg-[#FFFFFF]"
                 >
                   <td className="px-3 py-2.5">
                     <input
@@ -366,33 +366,33 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      <Video className="w-4 h-4 text-[#A39D92] flex-none" />
+                      <Video className="w-4 h-4 text-[#98A2B3] flex-none" />
                       <div className="min-w-0">
-                        <div className="font-medium text-[#1F1B16] truncate">
+                        <div className="font-medium text-[#0D1C42] truncate">
                           {c.name}
                           {!c.is_enabled && (
-                            <span className="ml-1.5 text-[10px] text-[#A39D92]">
+                            <span className="ml-1.5 text-[10px] text-[#98A2B3]">
                               (disabled)
                             </span>
                           )}
                         </div>
                         {c.location && (
-                          <div className="text-[11px] text-[#A39D92] truncate">
+                          <div className="text-[11px] text-[#98A2B3] truncate">
                             {c.location}
                           </div>
                         )}
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 font-mono text-[11.5px] text-[#8C867C]">
+                  <td className="px-3 py-2.5 font-mono text-[11.5px] text-[#667085]">
                     {shortId(c.camera_uid)}
                   </td>
-                  <td className="px-3 py-2.5 text-[#58534C]">
+                  <td className="px-3 py-2.5 text-[#667085]">
                     {c.zone_name
                       ? `${c.area_name ? c.area_name + ' — ' : ''}${c.zone_name}`
                       : (c.area_name ?? '—')}
                   </td>
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-[#8C867C]">
+                  <td className="px-3 py-2.5 font-mono text-[11px] text-[#667085]">
                     {c.rtsp_url_masked}
                   </td>
                   <td className="px-3 py-2.5">
@@ -402,7 +402,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
                       {c.connection_status}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-[#8C867C] text-[11.5px]">
+                  <td className="px-3 py-2.5 text-[#667085] text-[11.5px]">
                     {c.last_checked_at
                       ? new Date(c.last_checked_at).toLocaleTimeString()
                       : '—'}
@@ -412,7 +412,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
                       <button
                         onClick={() => doTest(c)}
                         title="Test connection"
-                        className="p-1.5 rounded-md text-[#8C867C] hover:text-[#386641] hover:bg-[#EFECE5]"
+                        className="p-1.5 rounded-md text-[#667085] hover:text-[#800020] hover:bg-[#F6F4F2]"
                       >
                         {testing === c.camera_uid ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -423,7 +423,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
                       <button
                         onClick={() => openEdit(c)}
                         title="Edit"
-                        className="p-1.5 rounded-md text-[#8C867C] hover:text-[#386641] hover:bg-[#EFECE5]"
+                        className="p-1.5 rounded-md text-[#667085] hover:text-[#800020] hover:bg-[#F6F4F2]"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -433,7 +433,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
                           setModal('delete');
                         }}
                         title="Delete"
-                        className="p-1.5 rounded-md text-[#8C867C] hover:text-red-600 hover:bg-red-50"
+                        className="p-1.5 rounded-md text-[#667085] hover:text-red-600 hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -451,11 +451,11 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between pb-4">
-              <h2 className="text-[15px] font-semibold text-[#1F1B16]">
+              <h2 className="text-[15px] font-semibold text-[#0D1C42]">
                 {modal === 'add' ? 'Add Camera' : `Edit — ${editing?.name}`}
               </h2>
               <button onClick={() => setModal(null)}>
-                <X className="w-4.5 h-4.5 text-[#8C867C]" />
+                <X className="w-4.5 h-4.5 text-[#667085]" />
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -648,7 +648,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
                   />
                 </Field>
               </div>
-              <label className="col-span-2 flex items-center gap-2 text-[12.5px] text-[#58534C]">
+              <label className="col-span-2 flex items-center gap-2 text-[12.5px] text-[#667085]">
                 <input
                   type="checkbox"
                   checked={form.warm ?? false}
@@ -659,7 +659,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
                 Keep stream warm — holds the upstream camera connection hot for
                 near-instant first frame (bounded, costs one pull per camera)
               </label>
-              <label className="col-span-2 flex items-center gap-2 text-[12.5px] text-[#58534C]">
+              <label className="col-span-2 flex items-center gap-2 text-[12.5px] text-[#667085]">
                 <input
                   type="checkbox"
                   checked={form.is_enabled}
@@ -673,7 +673,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
             <div className="flex justify-end gap-2 pt-5">
               <button
                 onClick={() => setModal(null)}
-                className="px-4 py-2 rounded-lg border border-[#EAE5DC] text-[12.5px] text-[#58534C]"
+                className="px-4 py-2 rounded-lg border border-[#E7E5E4] text-[12.5px] text-[#667085]"
               >
                 Cancel
               </button>
@@ -684,7 +684,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
                   !form.name ||
                   (modal === 'add' && !form.rtsp_url)
                 }
-                className="px-4 py-2 rounded-lg bg-[#386641] text-white text-[12.5px] font-medium disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-2 rounded-lg bg-[#800020] text-white text-[12.5px] font-medium disabled:opacity-50 flex items-center gap-1.5"
               >
                 {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {modal === 'add' ? 'Add camera' : 'Save changes'}
@@ -698,10 +698,10 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
       {modal === 'delete' && editing && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm p-6">
-            <h2 className="text-[15px] font-semibold text-[#1F1B16] pb-2">
+            <h2 className="text-[15px] font-semibold text-[#0D1C42] pb-2">
               Delete camera?
             </h2>
-            <p className="text-[12.5px] text-[#58534C]">
+            <p className="text-[12.5px] text-[#667085]">
               <span className="font-medium">{editing.name}</span> (
               {editing.rtsp_url_masked}) will be removed from all VMS views and
               its stream sessions ended. This is a soft delete — audit history
@@ -710,7 +710,7 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
             <div className="flex justify-end gap-2 pt-5">
               <button
                 onClick={() => setModal(null)}
-                className="px-4 py-2 rounded-lg border border-[#EAE5DC] text-[12.5px] text-[#58534C]"
+                className="px-4 py-2 rounded-lg border border-[#E7E5E4] text-[12.5px] text-[#667085]"
               >
                 Cancel
               </button>

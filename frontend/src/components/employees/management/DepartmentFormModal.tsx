@@ -91,7 +91,7 @@ export const DepartmentFormModal: React.FC<Props> = ({
   };
 
   const inputCls =
-    'w-full rounded-lg border border-[#D8D0BF] bg-white px-3 py-2 text-sm font-body text-[#17221B] focus:outline-none focus:border-[#4A5D4F]';
+    'w-full rounded-lg border border-[#D6D3D1] bg-white px-3 py-2 text-sm font-body text-[#0D1C42] focus:outline-none focus:border-[#800020]';
 
   return (
     <Modal
@@ -111,7 +111,7 @@ export const DepartmentFormModal: React.FC<Props> = ({
           </div>
         )}
         <div>
-          <label className="block font-body text-xs font-medium text-[#66706A] mb-1">
+          <label className="block font-body text-xs font-medium text-[#800020] mb-1">
             Name *
           </label>
           <input
@@ -124,7 +124,7 @@ export const DepartmentFormModal: React.FC<Props> = ({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block font-body text-xs font-medium text-[#66706A] mb-1">
+            <label className="block font-body text-xs font-medium text-[#800020] mb-1">
               Code
             </label>
             <input
@@ -136,7 +136,7 @@ export const DepartmentFormModal: React.FC<Props> = ({
             />
           </div>
           <div>
-            <label className="block font-body text-xs font-medium text-[#66706A] mb-1">
+            <label className="block font-body text-xs font-medium text-[#800020] mb-1">
               Status
             </label>
             <select
@@ -150,7 +150,7 @@ export const DepartmentFormModal: React.FC<Props> = ({
           </div>
         </div>
         <div>
-          <label className="block font-body text-xs font-medium text-[#66706A] mb-1">
+          <label className="block font-body text-xs font-medium text-[#800020] mb-1">
             Department head
           </label>
           <select
@@ -167,7 +167,7 @@ export const DepartmentFormModal: React.FC<Props> = ({
           </select>
         </div>
         <div>
-          <label className="block font-body text-xs font-medium text-[#66706A] mb-1">
+          <label className="block font-body text-xs font-medium text-[#800020] mb-1">
             Description
           </label>
           <textarea

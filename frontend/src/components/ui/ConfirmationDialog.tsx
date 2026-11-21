@@ -52,7 +52,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
       maxWidth="sm"
     >
       <div className="space-y-4">
-        <div className="flex items-start gap-3 p-3.5 bg-[#FDE8E8] border border-[#F9C3C3] rounded-[14px] text-[#8C2323]">
+        <div className="flex items-start gap-3 p-3.5 bg-[#FAEBEB] border border-[#F0C8C8] rounded-[14px] text-[#7C2730]">
           <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
           <div className="text-sm font-body">
             <p className="font-semibold">{warningTitle}</p>
@@ -60,18 +60,18 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
           </div>
         </div>
 
-        <p className="text-sm text-[#544F47] font-body">
+        <p className="text-sm text-[#667085] font-body">
           {promptMessage || (
             <>
               Are you sure you want to permanently delete{' '}
-              <strong className="text-[#24221F] font-semibold">{entityName}</strong>?
+              <strong className="text-[#0D1C42] font-semibold">{entityName}</strong>?
             </>
           )}
         </p>
 
         {confirmationText && (
           <div>
-            <label className="block text-xs font-semibold text-[#544F47] mb-1.5">
+            <label className="block text-xs font-semibold text-[#667085] mb-1.5">
               Type <span className="font-mono">{confirmationText}</span> to confirm
             </label>
             <input
@@ -79,12 +79,12 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
               value={typedConfirmation}
               onChange={(e) => setTypedConfirmation(e.target.value)}
               autoComplete="off"
-              className="w-full px-3 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#C53B3B]/20 focus:border-[#C53B3B]"
+              className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#D64545]/20 focus:border-[#D64545]"
             />
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F0EBE2]">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F6F4F2]">
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>

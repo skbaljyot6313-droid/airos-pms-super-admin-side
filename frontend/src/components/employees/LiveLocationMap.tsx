@@ -118,22 +118,22 @@ const QUALITY_META: Record<string, { label: string; hint: string; cls: string }>
   valid: {
     label: 'Valid',
     hint: 'Within accuracy, freshness, and movement bounds.',
-    cls: 'bg-[#E7F0E9] text-[#2F6B45]',
+    cls: 'bg-[#F7E9EE] text-[#800020]',
   },
   low_accuracy: {
     label: 'Low accuracy',
     hint: 'GPS accuracy worse than 500 m.',
-    cls: 'bg-[#FFF3E4] text-[#8A5A1E]',
+    cls: 'bg-[#FDF3E2] text-[#A56514]',
   },
   delayed: {
     label: 'Delayed',
     hint: 'Uploaded more than 24 h after capture (offline replay).',
-    cls: 'bg-[#F1EEE7] text-[#66706A]',
+    cls: 'bg-[#F6F4F2] text-[#800020]',
   },
   suspicious_speed: {
     label: 'GPS jump',
     hint: 'Implied movement over 80 m/s — usually a GPS glitch, not proof of spoofing.',
-    cls: 'bg-[#FDE8E8] text-[#A82828]',
+    cls: 'bg-[#FAEBEB] text-[#A83434]',
   },
 };
 
@@ -141,7 +141,7 @@ export const QualityBadge: React.FC<{ quality?: string }> = ({ quality }) => {
   const meta = (quality && QUALITY_META[quality]) || {
     label: quality || 'Unknown',
     hint: '',
-    cls: 'bg-[#F1EEE7] text-[#66706A]',
+    cls: 'bg-[#F6F4F2] text-[#800020]',
   };
   return (
     <span
@@ -154,10 +154,10 @@ export const QualityBadge: React.FC<{ quality?: string }> = ({ quality }) => {
 };
 
 const WORK_STATUS_META: Record<string, { label: string; cls: string }> = {
-  working: { label: 'Working', cls: 'bg-[#E7F0E9] text-[#2F6B45]' },
-  on_break: { label: 'On break', cls: 'bg-[#FFF3E4] text-[#8A5A1E]' },
-  off_duty: { label: 'Off duty', cls: 'bg-[#F1EEE7] text-[#66706A]' },
-  unknown: { label: 'Unknown', cls: 'bg-[#F1EEE7] text-[#8A918C]' },
+  working: { label: 'Working', cls: 'bg-[#F7E9EE] text-[#800020]' },
+  on_break: { label: 'On break', cls: 'bg-[#FDF3E2] text-[#A56514]' },
+  off_duty: { label: 'Off duty', cls: 'bg-[#F6F4F2] text-[#800020]' },
+  unknown: { label: 'Unknown', cls: 'bg-[#F6F4F2] text-[#800020]' },
 };
 
 /** Attendance-derived duty state — never inferred from GPS activity. */
@@ -184,7 +184,7 @@ const liveIcon = () =>
   L.divIcon({
     className: '',
     html: `<div style="
-      width:14px;height:14px;border-radius:9999px;background:#2F6B45;
+      width:14px;height:14px;border-radius:9999px;background:#800020;
       border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`,
     iconSize: [20, 20],
     iconAnchor: [10, 10],
@@ -431,7 +431,7 @@ export const LiveLocationMap: React.FC = () => {
         );
         if (!latlngs.length) return;
         L.polyline(latlngs, {
-          color: '#2F6B45',
+          color: '#800020',
           weight: 3,
           opacity: 0.75,
         }).addTo(routeLayer);
@@ -439,7 +439,7 @@ export const LiveLocationMap: React.FC = () => {
           radius: 6,
           color: '#fff',
           weight: 2,
-          fillColor: '#2F6B45',
+          fillColor: '#800020',
           fillOpacity: 1,
         }).addTo(routeLayer);
         const last = latlngs[latlngs.length - 1];
@@ -447,7 +447,7 @@ export const LiveLocationMap: React.FC = () => {
           radius: 6,
           color: '#fff',
           weight: 2,
-          fillColor: '#B33A3A',
+          fillColor: '#A83434',
           fillOpacity: 1,
         }).addTo(routeLayer);
         map.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40] });
@@ -741,17 +741,17 @@ export const LiveLocationMap: React.FC = () => {
   const selectedMeta = selected ? employeeFor(selected) : undefined;
 
   const selectCls =
-    'text-xs bg-white border border-[#EDEAE2] rounded-[8px] px-2 py-1.5 text-[#17221B] focus:outline-none focus:ring-1 focus:ring-[#2F6B45] max-w-[170px]';
+    'text-xs bg-white border border-[#F6F4F2] rounded-[8px] px-2 py-1.5 text-[#0D1C42] focus:outline-none focus:ring-1 focus:ring-[#800020] max-w-[170px]';
 
   const DetailRow: React.FC<{ label: string; children: React.ReactNode }> = ({
     label,
     children,
   }) => (
     <div className="flex items-start justify-between gap-3 py-1">
-      <span className="text-[10px] uppercase tracking-wider text-[#8A918C] font-medium">
+      <span className="text-[10px] uppercase tracking-wider text-[#800020] font-medium">
         {label}
       </span>
-      <span className="text-xs text-[#17221B] text-right break-all">
+      <span className="text-xs text-[#0D1C42] text-right break-all">
         {children}
       </span>
     </div>
@@ -759,13 +759,13 @@ export const LiveLocationMap: React.FC = () => {
 
   return (
     <Card className="p-0 overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-[#EDEAE2]">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-[#F6F4F2]">
         <div className="flex items-center gap-2">
-          <Signal className="w-4 h-4 text-[#2F6B45]" />
-          <h3 className="font-display font-semibold text-sm text-[#17221B]">
+          <Signal className="w-4 h-4 text-[#800020]" />
+          <h3 className="font-display font-semibold text-sm text-[#0D1C42]">
             Live Locations
           </h3>
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-[#E7F0E9] text-[#2F6B45]">
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-[#F7E9EE] text-[#800020]">
             {liveEmployees.length} live
           </span>
         </div>
@@ -799,7 +799,7 @@ export const LiveLocationMap: React.FC = () => {
             ))}
           </select>
           {lastSyncAt && (
-            <span className="text-[10px] text-[#8A918C]">
+            <span className="text-[10px] text-[#800020]">
               Updated {new Date(lastSyncAt).toLocaleTimeString()}
             </span>
           )}
@@ -814,41 +814,41 @@ export const LiveLocationMap: React.FC = () => {
             onClick={() => viewApiRef.current?.recenter()}
             aria-label="Re-center on staff"
             title="Re-center on staff"
-            className="absolute bottom-3 right-3 z-[500] inline-flex items-center gap-1.5 bg-white/95 border border-[#EDEAE2] rounded-[8px] px-2.5 py-1.5 text-[11px] font-medium text-[#17221B] shadow-sm hover:bg-white cursor-pointer"
+            className="absolute bottom-3 right-3 z-[500] inline-flex items-center gap-1.5 bg-white/95 border border-[#F6F4F2] rounded-[8px] px-2.5 py-1.5 text-[11px] font-medium text-[#0D1C42] shadow-sm hover:bg-white cursor-pointer"
           >
-            <Crosshair className="w-3.5 h-3.5 text-[#2F6B45]" />
+            <Crosshair className="w-3.5 h-3.5 text-[#800020]" />
             Recenter
           </button>
           {status === 'loading' && (
-            <div className="absolute inset-0 bg-[#FAF8F5]/80 flex items-center justify-center z-[500]">
-              <RefreshCw className="w-5 h-5 animate-spin text-[#8A918C]" />
+            <div className="absolute inset-0 bg-[#FFFFFF]/80 flex items-center justify-center z-[500]">
+              <RefreshCw className="w-5 h-5 animate-spin text-[#800020]" />
             </div>
           )}
           {status === 'error' && (
-            <div className="absolute inset-0 bg-[#FAF8F5]/90 flex flex-col items-center justify-center gap-2 z-[500] px-6 text-center">
-              <SignalZero className="w-6 h-6 text-[#B33A3A]" />
-              <p className="text-xs text-[#66706A]">{error}</p>
+            <div className="absolute inset-0 bg-[#FFFFFF]/90 flex flex-col items-center justify-center gap-2 z-[500] px-6 text-center">
+              <SignalZero className="w-6 h-6 text-[#A83434]" />
+              <p className="text-xs text-[#800020]">{error}</p>
             </div>
           )}
           {status === 'ready' && !error && liveEmployees.length === 0 && (
             <div className="absolute inset-x-0 bottom-3 flex justify-center z-[500] pointer-events-none">
-              <div className="bg-white/95 border border-[#EDEAE2] rounded-[10px] px-4 py-2 text-xs text-[#66706A] flex items-center gap-2 shadow-sm">
+              <div className="bg-white/95 border border-[#F6F4F2] rounded-[10px] px-4 py-2 text-xs text-[#800020] flex items-center gap-2 shadow-sm">
                 <MapPin className="w-3.5 h-3.5" />
                 No clocked-in staff are sharing their location right now.
               </div>
             </div>
           )}
           {error && status === 'ready' && (
-            <div className="absolute top-3 inset-x-3 z-[500] bg-[#FFF3E4] border border-[#F0D9B5] rounded-[8px] px-3 py-2 text-[11px] text-[#8A5A1E]">
+            <div className="absolute top-3 inset-x-3 z-[500] bg-[#FDF3E2] border border-[#F2D9AF] rounded-[8px] px-3 py-2 text-[11px] text-[#A56514]">
               {error} — showing the last known positions.
             </div>
           )}
         </div>
 
-        <div className="border-t lg:border-t-0 lg:border-l border-[#EDEAE2] max-h-[440px] overflow-y-auto">
+        <div className="border-t lg:border-t-0 lg:border-l border-[#F6F4F2] max-h-[440px] overflow-y-auto">
           {!selected ? (
             live.length === 0 ? (
-              <p className="px-4 py-6 text-xs text-[#8A918C] text-center">
+              <p className="px-4 py-6 text-xs text-[#800020] text-center">
                 No live staff
               </p>
             ) : (
@@ -856,10 +856,10 @@ export const LiveLocationMap: React.FC = () => {
                 <button
                   key={e.employee_id}
                   onClick={() => setSelected(e.employee_id)}
-                  className="w-full text-left px-4 py-2.5 border-b border-[#F4F1EA] last:border-0 hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                  className="w-full text-left px-4 py-2.5 border-b border-[#F6F4F2] last:border-0 hover:bg-[#FFFFFF] transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold text-[#17221B]">
+                    <p className="text-xs font-semibold text-[#0D1C42]">
                       {nameFor(e.employee_id)}
                     </p>
                     <div className="flex items-center gap-1">
@@ -869,11 +869,11 @@ export const LiveLocationMap: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <p className="text-[10px] text-[#8A918C]">
+                  <p className="text-[10px] text-[#800020]">
                     {zoneFor(e.employee_id) ?? 'Unallocated'}
                     {' · '}
                     {isEntryStale(e) ? (
-                      <span className="text-[#C98232] font-medium">
+                      <span className="text-[#A56514] font-medium">
                         offline — last seen {formatAge(e, nowSec)}
                       </span>
                     ) : (
@@ -885,39 +885,39 @@ export const LiveLocationMap: React.FC = () => {
             )
           ) : (
             <div className="flex flex-col">
-              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#EDEAE2] sticky top-0 bg-white z-10">
+              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#F6F4F2] sticky top-0 bg-white z-10">
                 <button
                   onClick={() => setSelected(null)}
-                  className="p-1 rounded-[6px] hover:bg-[#F1EEE7] text-[#66706A] cursor-pointer"
+                  className="p-1 rounded-[6px] hover:bg-[#F6F4F2] text-[#800020] cursor-pointer"
                   aria-label="Back to staff list"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                 </button>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-[#17221B] truncate">
+                  <p className="text-xs font-semibold text-[#0D1C42] truncate">
                     {nameFor(selected)}
                   </p>
-                  <p className="text-[10px] text-[#8A918C] truncate">
+                  <p className="text-[10px] text-[#800020] truncate">
                     {selectedMeta?.job_title || 'Staff'}
                     {zoneFor(selected) ? ` · ${zoneFor(selected)}` : ''}
                   </p>
                 </div>
               </div>
 
-              <div className="px-4 py-3 border-b border-[#F4F1EA] space-y-0.5">
+              <div className="px-4 py-3 border-b border-[#F6F4F2] space-y-0.5">
                 <div className="flex items-center gap-2 pb-1">
                   {selectedEntry ? (
                     isEntryStale(selectedEntry) ? (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-[#F1EEE7] text-[#66706A]">
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-[#F6F4F2] text-[#800020]">
                         Not reporting
                       </span>
                     ) : (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-[#E7F0E9] text-[#2F6B45]">
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-[#F7E9EE] text-[#800020]">
                         Live
                       </span>
                     )
                   ) : (
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-[#F1EEE7] text-[#66706A]">
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-[#F6F4F2] text-[#800020]">
                       No data
                     </span>
                   )}
@@ -989,28 +989,28 @@ export const LiveLocationMap: React.FC = () => {
 
               <div className="px-4 py-3">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <History className="w-3.5 h-3.5 text-[#2F6B45]" />
-                  <p className="text-[11px] font-semibold text-[#17221B]">
+                  <History className="w-3.5 h-3.5 text-[#800020]" />
+                  <p className="text-[11px] font-semibold text-[#0D1C42]">
                     Route history
                   </p>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] uppercase tracking-wider text-[#8A918C] font-medium">
+                  <label className="block text-[10px] uppercase tracking-wider text-[#800020] font-medium">
                     From
                     <input
                       type="datetime-local"
                       aria-label="History from"
-                      className="mt-0.5 w-full text-xs bg-white border border-[#EDEAE2] rounded-[8px] px-2 py-1.5 text-[#17221B] focus:outline-none focus:ring-1 focus:ring-[#2F6B45]"
+                      className="mt-0.5 w-full text-xs bg-white border border-[#F6F4F2] rounded-[8px] px-2 py-1.5 text-[#0D1C42] focus:outline-none focus:ring-1 focus:ring-[#800020]"
                       value={histFrom}
                       onChange={(e) => setHistFrom(e.target.value)}
                     />
                   </label>
-                  <label className="block text-[10px] uppercase tracking-wider text-[#8A918C] font-medium">
+                  <label className="block text-[10px] uppercase tracking-wider text-[#800020] font-medium">
                     To
                     <input
                       type="datetime-local"
                       aria-label="History to"
-                      className="mt-0.5 w-full text-xs bg-white border border-[#EDEAE2] rounded-[8px] px-2 py-1.5 text-[#17221B] focus:outline-none focus:ring-1 focus:ring-[#2F6B45]"
+                      className="mt-0.5 w-full text-xs bg-white border border-[#F6F4F2] rounded-[8px] px-2 py-1.5 text-[#0D1C42] focus:outline-none focus:ring-1 focus:ring-[#800020]"
                       value={histTo}
                       onChange={(e) => setHistTo(e.target.value)}
                     />
@@ -1019,7 +1019,7 @@ export const LiveLocationMap: React.FC = () => {
                     variant="primary"
                     onClick={() => void loadHistory()}
                     disabled={historyLoading}
-                    className="w-full gap-2 !bg-[#2F6B45] hover:!bg-[#245538] !rounded-[8px] !py-1.5 text-xs"
+                    className="w-full gap-2 !bg-[#800020] hover:!bg-[#0D1C42] !rounded-[8px] !py-1.5 text-xs"
                   >
                     {historyLoading ? (
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1029,15 +1029,15 @@ export const LiveLocationMap: React.FC = () => {
                     {historyLoading ? 'Loading…' : 'Load route'}
                   </Button>
                   {historyError && (
-                    <p className="text-[11px] text-[#A82828]">{historyError}</p>
+                    <p className="text-[11px] text-[#A83434]">{historyError}</p>
                   )}
                   {history && (
                     <>
-                      <p className="text-[10px] text-[#8A918C]">
+                      <p className="text-[10px] text-[#800020]">
                         {history.returned_points.toLocaleString()} of{' '}
                         {history.total_points.toLocaleString()} points
                         {history.downsampled && (
-                          <span className="text-[#8A5A1E]">
+                          <span className="text-[#A56514]">
                             {' '}
                             · downsampled — the route keeps its shape but not
                             every fix is shown
@@ -1045,26 +1045,26 @@ export const LiveLocationMap: React.FC = () => {
                         )}
                       </p>
                       {history.points.length === 0 ? (
-                        <p className="text-[11px] text-[#8A918C] py-2">
+                        <p className="text-[11px] text-[#800020] py-2">
                           No recorded locations in this window.
                         </p>
                       ) : (
-                        <div className="max-h-[180px] overflow-y-auto border border-[#F4F1EA] rounded-[8px]">
+                        <div className="max-h-[180px] overflow-y-auto border border-[#F6F4F2] rounded-[8px]">
                           {history.points.map((p, i) => (
                             <button
                               key={`${p.sequence_number ?? i}-${i}`}
                               onClick={() => routeApiRef.current?.focus(p)}
-                              className="w-full text-left px-2.5 py-1.5 border-b border-[#F4F1EA] last:border-0 hover:bg-[#FAF8F5] cursor-pointer"
+                              className="w-full text-left px-2.5 py-1.5 border-b border-[#F6F4F2] last:border-0 hover:bg-[#FFFFFF] cursor-pointer"
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <span className="text-[10px] text-[#17221B]">
+                                <span className="text-[10px] text-[#0D1C42]">
                                   {fmtDateTime(p.captured_at)}
                                 </span>
                                 {p.quality && p.quality !== 'valid' && (
                                   <QualityBadge quality={p.quality} />
                                 )}
                               </div>
-                              <span className="text-[10px] text-[#8A918C] font-mono">
+                              <span className="text-[10px] text-[#800020] font-mono">
                                 {fmtCoord(p.latitude)}, {fmtCoord(p.longitude)}
                               </span>
                             </button>

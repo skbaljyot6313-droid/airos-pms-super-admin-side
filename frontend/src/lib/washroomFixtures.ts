@@ -85,15 +85,15 @@ export const FIXTURE_STATUS_LABEL: Record<FixtureStatus, string> = {
 };
 
 export const FIXTURE_STATUS_DOT: Record<FixtureStatus, string> = {
-  operational: 'bg-[#386641]',
-  maintenance: 'bg-[#C53B3B]',
-  inactive: 'bg-[#8C867C]',
+  operational: 'bg-[#800020]',
+  maintenance: 'bg-[#D64545]',
+  inactive: 'bg-[#667085]',
 };
 
 export const FIXTURE_STATUS_TEXT: Record<FixtureStatus, string> = {
-  operational: 'text-[#2E6038]',
-  maintenance: 'text-[#A32A2A]',
-  inactive: 'text-[#736E65]',
+  operational: 'text-[#0D1C42]',
+  maintenance: 'text-[#A83434]',
+  inactive: 'text-[#667085]',
 };
 
 export const FIXTURE_CONDITION: Record<FixtureStatus, string> = {

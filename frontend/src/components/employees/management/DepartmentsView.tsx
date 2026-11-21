@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Search, Crown, ArrowLeftRight } from 'lucide-react';
 import {
   Department,
@@ -15,6 +15,7 @@ import { TransferModal } from './TransferModal';
 
 export const DepartmentsView: React.FC = () => {
   const { propertyUid } = useParams<{ propertyUid: string }>();
+  const navigate = useNavigate();
   const { currentPropertyEmployees } = useApp();
   const [depts, setDepts] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,10 +97,10 @@ export const DepartmentsView: React.FC = () => {
           <div className="mb-2">
             <BackButton to={`/property/${propertyUid}/overview`} />
           </div>
-          <h1 className="font-display font-semibold text-[28px] text-[#17221B] tracking-tight leading-tight">
+          <h1 className="font-display font-semibold text-[28px] text-[#0D1C42] tracking-tight leading-tight">
             Departments
           </h1>
-          <p className="font-body text-sm text-[#66706A] mt-1">
+          <p className="font-body text-sm text-[#800020] mt-1">
             Organisational groupings, heads and staff transfers
           </p>
         </div>
@@ -111,15 +112,15 @@ export const DepartmentsView: React.FC = () => {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[220px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9A9484]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085]" />
           <input
-            className="w-full rounded-lg border border-[#D8D0BF] bg-white pl-9 pr-3 py-2 text-sm font-body text-[#17221B] focus:outline-none focus:border-[#4A5D4F]"
+            className="w-full rounded-lg border border-[#D6D3D1] bg-white pl-9 pr-3 py-2 text-sm font-body text-[#0D1C42] focus:outline-none focus:border-[#800020]"
             placeholder="Search departments or heads…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <label className="flex items-center gap-1.5 font-body text-sm text-[#66706A]">
+        <label className="flex items-center gap-1.5 font-body text-sm text-[#800020]">
           <input
             type="checkbox"
             checked={showInactive}
@@ -128,7 +129,7 @@ export const DepartmentsView: React.FC = () => {
           Show inactive
         </label>
         <select
-          className="rounded-lg border border-[#D8D0BF] bg-white px-2.5 py-1.5 text-sm font-body text-[#17221B]"
+          className="rounded-lg border border-[#D6D3D1] bg-white px-2.5 py-1.5 text-sm font-body text-[#0D1C42]"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as 'name' | 'employees')}
         >
@@ -144,108 +145,105 @@ export const DepartmentsView: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="font-body text-sm text-[#66706A]">Loading…</div>
+        <div className="font-body text-sm text-[#800020]">Loading…</div>
       ) : rows.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[#D8D0BF] bg-white/40 px-6 py-10 text-center font-body text-sm text-[#66706A]">
+        <div className="rounded-xl border border-dashed border-[#D6D3D1] bg-white/40 px-6 py-10 text-center font-body text-sm text-[#800020]">
           {depts.length === 0
             ? 'No departments yet — create the first one.'
             : 'No departments match your filters.'}
         </div>
       ) : (
-        <div className="rounded-xl border border-[#E4DED1] bg-white/60 overflow-hidden">
-          <table className="w-full text-sm font-body">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wide text-[#9A9484] border-b border-[#EAE4D6]">
-                <th className="px-4 py-2.5 font-medium">Department</th>
-                <th className="px-4 py-2.5 font-medium">Head</th>
-                <th className="px-4 py-2.5 font-medium text-right">Staff</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
-                <th className="px-4 py-2.5 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((d) => (
-                <tr
-                  key={d.department_uid}
-                  className="border-b border-[#F0EBE0] last:border-0 hover:bg-[#FAF8F2]"
-                >
-                  <td className="px-4 py-2.5">
-                    <Link
-                      to={`/property/${propertyUid}/workforce/departments/${d.department_uid}`}
-                      className="font-medium text-[#17221B] hover:underline"
-                    >
-                      {d.name}
-                    </Link>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {rows.map((d) => (
+            <div
+              key={d.department_uid}
+              role="link"
+              tabIndex={0}
+              onClick={() => navigate(`/property/${propertyUid}/workforce/departments/${d.department_uid}`)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter')
+                  navigate(`/property/${propertyUid}/workforce/departments/${d.department_uid}`);
+              }}
+              className="rounded-xl border border-[#E7E5E4] bg-white p-4 flex flex-col gap-3 cursor-pointer transition-shadow hover:shadow-[0_2px_8px_rgba(13,28,66,0.06)] hover:border-[#EAD3DB]"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-display font-semibold text-[15px] text-[#0D1C42] leading-tight">
+                    {d.name}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-1">
                     {d.is_system && (
-                      <span className="ml-2 text-[10px] font-body uppercase tracking-wide bg-[#E4EFE4] text-[#3E5A44] px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] font-body uppercase tracking-wide bg-[#F7E9EE] text-[#800020] px-1.5 py-0.5 rounded">
                         Default
                       </span>
                     )}
                     {d.code && (
-                      <span className="ml-2 text-[11px] text-[#9A9484]">{d.code}</span>
+                      <span className="text-[11px] text-[#667085] font-num">{d.code}</span>
                     )}
-                  </td>
-                  <td className="px-4 py-2.5 text-[#66706A]">
-                    {d.head ? (
-                      <span className="inline-flex items-center gap-1">
-                        <Crown className="w-3.5 h-3.5 text-[#B08D3E]" />
-                        {d.head.name}
-                      </span>
-                    ) : (
-                      <span className="text-[#B8B0A0]">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-[#17221B]">
-                    {d.employee_count}
-                    <span className="text-[#9A9484] text-xs">
-                      {' '}({d.active_employee_count} active)
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span
-                      className={`text-[11px] uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                        d.status === 'active'
-                          ? 'bg-[#E4EFE4] text-[#3E5A44]'
-                          : 'bg-[#EAE4D6] text-[#8A8271]'
-                      }`}
-                    >
-                      {d.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                    <button
-                      className="text-[#4A5D4F] hover:underline text-xs mr-3"
-                      onClick={() => setTransferDept(d)}
-                      title="Move staff in/out of this department"
-                    >
-                      <ArrowLeftRight className="w-3.5 h-3.5 inline -mt-0.5 mr-0.5" />
-                      Transfer
-                    </button>
-                    <button
-                      className="text-[#4A5D4F] hover:underline text-xs mr-3"
-                      onClick={() => { setEditing(d); setFormOpen(true); }}
-                    >
-                      Edit
-                    </button>
-                    {!d.is_system && (
-                      <button
-                        className="text-red-600 hover:underline text-xs disabled:opacity-40 disabled:no-underline"
-                        disabled={d.employee_count > 0}
-                        title={
-                          d.employee_count > 0
-                            ? 'Transfer all employees out before deleting'
-                            : 'Delete department'
-                        }
-                        onClick={() => setDeleting(d)}
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+                <span
+                  className={`shrink-0 text-[10.5px] uppercase tracking-wide px-1.5 py-0.5 rounded font-semibold ${
+                    d.status === 'active'
+                      ? 'bg-[#E6F4EE] text-[#0F6847]'
+                      : 'bg-[#EFF1F4] text-[#5F6776]'
+                  }`}
+                >
+                  {d.status}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="inline-flex items-center gap-1.5 text-[#667085]">
+                  {d.head ? (
+                    <>
+                      <Crown className="w-3.5 h-3.5 text-[#A56514]" />
+                      <span className="text-[#0D1C42]">{d.head.name}</span>
+                    </>
+                  ) : (
+                    <span className="text-[#98A2B3]">No head assigned</span>
+                  )}
+                </span>
+                <span className="font-num tabular-nums text-[#0D1C42] font-semibold">
+                  {d.employee_count}
+                  <span className="text-[#667085] text-xs font-normal">
+                    {' '}({d.active_employee_count} active)
+                  </span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 border-t border-[#F6F4F2] pt-3">
+                <button
+                  className="text-[#800020] hover:underline text-xs font-semibold"
+                  onClick={(e) => { e.stopPropagation(); setTransferDept(d); }}
+                  title="Move staff in/out of this department"
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5 inline -mt-0.5 mr-0.5" />
+                  Transfer
+                </button>
+                <button
+                  className="text-[#800020] hover:underline text-xs font-semibold"
+                  onClick={(e) => { e.stopPropagation(); setEditing(d); setFormOpen(true); }}
+                >
+                  Edit
+                </button>
+                {!d.is_system && (
+                  <button
+                    className="ml-auto text-[#D64545] hover:underline text-xs font-semibold disabled:opacity-40 disabled:no-underline"
+                    disabled={d.employee_count > 0}
+                    title={
+                      d.employee_count > 0
+                        ? 'Transfer all employees out before deleting'
+                        : 'Delete department'
+                    }
+                    onClick={(e) => { e.stopPropagation(); setDeleting(d); }}
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

@@ -296,9 +296,12 @@ class DashboardService:
             )
         )).all()
         open_ledger = await self._open_occ(pid)
+        # First ledger record across rooms AND beds — a bed-only property has
+        # real occupancy history even when it has no room-level stays.
         first_ledger_at = (await self.session.execute(
             select(func.min(Occupancy.checked_in_at)).where(
-                Occupancy.property_id == pid, Occupancy.room_id.isnot(None),
+                Occupancy.property_id == pid,
+                (Occupancy.room_id.isnot(None)) | (Occupancy.bed_id.isnot(None)),
             )
         )).scalar_one()
         first_ledger_day = _op_day(first_ledger_at, op) if first_ledger_at else None
@@ -547,8 +550,9 @@ class DashboardService:
         beds_maint = unit["beds"]["maintenance"]
 
         trend_gran = "hour" if period in ("today", "yesterday") else granularity
+        n_beds = len(beds)
         trend = self._occupancy_trend(
-            occ_rows, d_from, d_to, op, n_rooms, trend_gran,
+            occ_rows, d_from, d_to, op, n_rooms + n_beds, trend_gran,
             p_start=p_start, p_end=p_end, now=now, first_record=first_ledger_day,
         )
         attendance_series = self._attendance_series(
@@ -627,6 +631,11 @@ class DashboardService:
                     "other_state": occ_cnt.get("other", 0),
                     "occupancy_pct": _pct(occ_cnt.get("occupied", 0), n_rooms),
                     "state_ledger_mismatch": state_mismatch,
+                },
+                "combined": {
+                    "total": n_rooms + len(beds),
+                    "occupied": occ_cnt.get("occupied", 0) + len(open_beds),
+                    "occupancy_pct": _pct(occ_cnt.get("occupied", 0) + len(open_beds), n_rooms + len(beds)),
                 },
                 "beds": unit["beds"],
                 "dorms": unit["dorms"],
@@ -792,19 +801,26 @@ class DashboardService:
         )).all()
 
     def _occupancy_trend(self, occ_rows, d_from: date, d_to: date, op: time,
-                         n_rooms: int, granularity: str, *, p_start: datetime,
+                         n_capacity: int, granularity: str, *, p_start: datetime,
                          p_end: datetime, now: datetime, first_record: date | None = None) -> dict:
-        """Occupancy from the ledger only (room rows; never room state).
+        """Occupancy from the ledger only (room + bed rows; never resource state).
 
-        hour       : rooms occupied at each whole hour (instant snapshot), up to now.
-        day        : rooms with any stay overlapping the operational day.
+        A unit of capacity is a room or a bed — dorm parents are never counted
+        because their beds are already the capacity units.
+
+        hour       : units occupied at each whole hour (instant snapshot), up to now.
+        day        : units with any stay overlapping the operational day.
         week/month : mean of the daily values in the bucket.
-        Denominator: current room inventory (n_rooms). Historical inventory is not
-        recorded, so rooms added later are counted in earlier periods as well.
+        Denominator: current unit inventory (rooms + beds). Historical inventory is
+        not recorded, so units added later are counted in earlier periods as well.
+        `occupied_rooms`/`total_rooms` are kept on the wire for compatibility and
+        carry the room-only counts; `occupied_units`/`total_units` carry the
+        capacity used for the percentage.
         """
-        room_rows = [o for o in occ_rows if o.room_id]
+        unit_rows = [o for o in occ_rows if o.room_id or o.bed_id]
+        key = lambda o: ("r", o.room_id) if o.room_id else ("b", o.bed_id)
         if first_record is None:
-            first_record = min((_op_day(o.checked_in_at, op) for o in room_rows), default=None)
+            first_record = min((_op_day(o.checked_in_at, op) for o in unit_rows), default=None)
         covers_range = first_record is not None and first_record <= d_from
         if granularity == "hour":
             points = []
@@ -813,16 +829,18 @@ class DashboardService:
                 t += timedelta(hours=1)
             end = min(p_end, now)
             while t < end:
-                occ = {o.room_id for o in room_rows
+                occ = {key(o) for o in unit_rows
                        if _aware(o.checked_in_at) <= t
                        and (o.checked_out_at is None or _aware(o.checked_out_at) > t)}
                 points.append({
                     "bucket": t.isoformat().replace("+00:00", "Z"),
                     "label": t.astimezone(IST).strftime("%H:%M"),
                     "date": _op_day(t, op).isoformat(),
-                    "occupied_rooms": len(occ),
-                    "total_rooms": n_rooms,
-                    "occupancy_pct": _pct(len(occ), n_rooms),
+                    "occupied_units": len(occ),
+                    "total_units": n_capacity,
+                    "occupied_rooms": len({k for k in occ if k[0] == "r"}),
+                    "total_rooms": n_capacity,
+                    "occupancy_pct": _pct(len(occ), n_capacity),
                 })
                 t += timedelta(hours=1)
             daily = []
@@ -830,17 +848,19 @@ class DashboardService:
         else:
             days = [d_from + timedelta(days=i) for i in range((d_to - d_from).days + 1)]
             occupied_by_day: dict[date, set] = {d: set() for d in days}
-            for o in room_rows:
+            for o in unit_rows:
                 start_d = max(_op_day(o.checked_in_at, op), d_from)
                 end_d = min(_op_day(o.checked_out_at, op) if o.checked_out_at else d_to, d_to)
                 d = start_d
                 while d <= end_d:
-                    occupied_by_day[d].add(o.room_id)
+                    occupied_by_day[d].add(key(o))
                     d += timedelta(days=1)
             daily = [
                 {"date": d.isoformat(), "bucket": d.isoformat(), "label": d.strftime("%d %b"),
-                 "occupied_rooms": len(occupied_by_day[d]), "total_rooms": n_rooms,
-                 "occupancy_pct": _pct(len(occupied_by_day[d]), n_rooms)}
+                 "occupied_units": len(occupied_by_day[d]), "total_units": n_capacity,
+                 "occupied_rooms": len({k for k in occupied_by_day[d] if k[0] == "r"}),
+                 "total_rooms": n_capacity,
+                 "occupancy_pct": _pct(len(occupied_by_day[d]), n_capacity)}
                 for d in days
             ]
             series_days = daily
@@ -852,18 +872,21 @@ class DashboardService:
                  "label": (date.fromisoformat(k).strftime("%d %b") if granularity == "day"
                            else date.fromisoformat(k).strftime("%d %b") if granularity == "week"
                            else date.fromisoformat(k).strftime("%b %Y")),
+                 "occupied_units": round(statistics.mean(x["occupied_units"] for x in v), 1),
+                 "total_units": n_capacity,
                  "occupied_rooms": round(statistics.mean(x["occupied_rooms"] for x in v), 1),
-                 "total_rooms": n_rooms,
+                 "total_rooms": n_capacity,
                  "occupancy_pct": round(statistics.mean(x["occupancy_pct"] or 0 for x in v), 1)
-                 if n_rooms else None,
-                 "peak_occupied_rooms": max(x["occupied_rooms"] for x in v),
+                 if n_capacity else None,
+                 "peak_occupied_units": max(x["occupied_units"] for x in v),
                  "days": len(v)}
                 for k, v in sorted(buckets.items())
             ]
-        days_with_records = sum(1 for p in series_days if p["occupied_rooms"] > 0)
-        peak = max(series_days, key=lambda p: p["occupied_rooms"]) if series_days else None
-        low = min(series_days, key=lambda p: p["occupied_rooms"]) if series_days else None
-        avg = (round(statistics.mean(p["occupied_rooms"] for p in series_days), 2)
+        series_key = "occupied_units"
+        days_with_records = sum(1 for p in series_days if p[series_key] > 0)
+        peak = max(series_days, key=lambda p: p[series_key]) if series_days else None
+        low = min(series_days, key=lambda p: p[series_key]) if series_days else None
+        avg = (round(statistics.mean(p[series_key] for p in series_days), 2)
                if series_days else None)
         if first_record is None:
             reason = "No occupancy ledger records exist for this property."
@@ -880,9 +903,12 @@ class DashboardService:
             "reason": reason,
             "first_record_date": first_record.isoformat() if first_record else None,
             "average_occupied_rooms": avg,
-            "peak": ({"date": peak.get("date", peak.get("bucket")), "occupied_rooms": peak["occupied_rooms"]}
+            "average_occupied_units": avg,
+            "peak": ({"date": peak.get("date", peak.get("bucket")), "occupied_rooms": peak[series_key],
+                      "occupied_units": peak[series_key]}
                      if peak else None),
-            "low": ({"date": low.get("date", low.get("bucket")), "occupied_rooms": low["occupied_rooms"]}
+            "low": ({"date": low.get("date", low.get("bucket")), "occupied_rooms": low[series_key],
+                     "occupied_units": low[series_key]}
                     if low else None),
             "days_with_records": days_with_records,
         }

@@ -54,12 +54,12 @@ export const OperationalCalendar: React.FC<OperationalCalendarProps> = ({
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between pb-4 border-b border-[#F4EFEB] mb-4">
+      <div className="flex items-center justify-between pb-4 border-b border-[#F6F4F2] mb-4">
         <div>
-          <h3 className="font-display font-semibold text-[17px] text-[#24221F] tracking-tight">
+          <h3 className="font-display font-semibold text-[17px] text-[#0D1C42] tracking-tight">
             {MONTH_NAMES[mon - 1]} {year}
           </h3>
-          <p className="text-xs text-[#8A857B] mt-0.5">
+          <p className="text-xs text-[#667085] mt-0.5">
             Operational days start at {operationalDayStart || '—'} IST
             — select a date for its full analysis
           </p>
@@ -67,20 +67,20 @@ export const OperationalCalendar: React.FC<OperationalCalendarProps> = ({
         <div className="flex items-center gap-1">
           <button
             onClick={() => shiftMonth(-1)}
-            className="p-2 rounded-[9px] hover:bg-[#F0EDE6] text-[#6C675F] transition-colors cursor-pointer"
+            className="p-2 rounded-[9px] hover:bg-[#F6F4F2] text-[#667085] transition-colors cursor-pointer"
             aria-label="Previous month"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => onMonthChange(istDateKey().slice(0, 7))}
-            className="px-3 py-1.5 text-[12px] font-semibold rounded-[9px] hover:bg-[#F0EDE6] text-[#575249] transition-colors cursor-pointer"
+            className="px-3 py-1.5 text-[12px] font-semibold rounded-[9px] hover:bg-[#F6F4F2] text-[#667085] transition-colors cursor-pointer"
           >
             Today
           </button>
           <button
             onClick={() => shiftMonth(1)}
-            className="p-2 rounded-[9px] hover:bg-[#F0EDE6] text-[#6C675F] transition-colors cursor-pointer"
+            className="p-2 rounded-[9px] hover:bg-[#F6F4F2] text-[#667085] transition-colors cursor-pointer"
             aria-label="Next month"
           >
             <ChevronRight className="w-4 h-4" />
@@ -89,7 +89,7 @@ export const OperationalCalendar: React.FC<OperationalCalendarProps> = ({
       </div>
 
       {error && (
-        <p className="text-sm text-[#A32A2A] bg-[#FDE8E8] rounded-[10px] px-4 py-3 mb-4">
+        <p className="text-sm text-[#A83434] bg-[#FAEBEB] rounded-[10px] px-4 py-3 mb-4">
           {error}
         </p>
       )}
@@ -102,7 +102,7 @@ export const OperationalCalendar: React.FC<OperationalCalendarProps> = ({
             {WEEKDAYS.map((d) => (
               <div
                 key={d}
-                className="text-center text-[11px] font-semibold uppercase tracking-wide text-[#A39E93] py-1"
+                className="text-center text-[11px] font-semibold uppercase tracking-wide text-[#98A2B3] py-1"
               >
                 {d}
               </div>
@@ -119,15 +119,15 @@ export const OperationalCalendar: React.FC<OperationalCalendarProps> = ({
                   onClick={() => onSelect(date)}
                   className={`min-h-[78px] text-left p-2 rounded-[10px] border transition-all cursor-pointer group ${
                     isToday
-                      ? 'border-[#386641] bg-[#F4F8F4] ring-1 ring-[#386641]/20'
-                      : 'border-[#EDE8DF] hover:border-[#CFC8BA] hover:bg-[#FBF9F4]'
+                      ? 'border-[#800020] bg-[#FFFCFA] ring-1 ring-[#800020]/20'
+                      : 'border-[#F6F4F2] hover:border-[#CDC9C7] hover:bg-[#FFFFFF]'
                   }`}
                 >
                   <span
                     className={`text-[13px] font-semibold ${
                       isToday
-                        ? 'text-[#386641]'
-                        : 'text-[#575249] group-hover:text-[#24221F]'
+                        ? 'text-[#800020]'
+                        : 'text-[#667085] group-hover:text-[#0D1C42]'
                     }`}
                   >
                     {Number(date.slice(8))}
@@ -135,14 +135,14 @@ export const OperationalCalendar: React.FC<OperationalCalendarProps> = ({
                   {day !== undefined ? (
                     renderDay(date, day)
                   ) : (
-                    <span className="block mt-1.5 text-[11px] text-[#C9C3B7]">—</span>
+                    <span className="block mt-1.5 text-[11px] text-[#CDC9C7]">—</span>
                   )}
                 </button>
               );
             })}
           </div>
           {legend && (
-            <div className="flex items-center gap-4 mt-4 pt-3 border-t border-[#F4EFEB] text-[11px] text-[#8A857B]">
+            <div className="flex items-center gap-4 mt-4 pt-3 border-t border-[#F6F4F2] text-[11px] text-[#667085]">
               {legend}
             </div>
           )}

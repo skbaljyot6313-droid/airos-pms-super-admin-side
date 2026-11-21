@@ -97,6 +97,21 @@ def _due_dt(task: Task) -> datetime | None:
     return dt
 
 
+def _parse_dt(value: str | None, field: str) -> datetime | None:
+    """Parse an ISO-8601 datetime for scheduled_for/expires_at. Naive
+    values are read as IST wall time; aware values are normalized to UTC —
+    matching _stamp_occurrence_window's storage convention."""
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        raise ValidationErr(f"Invalid datetime.", field=field)
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=IST).astimezone(UTC)
+    return dt.astimezone(UTC)
+
+
 def next_occurrence(task: Task, after: datetime) -> datetime | None:
     """Smallest scheduled occurrence strictly after `after` (naive IST).
 
@@ -243,15 +258,20 @@ class TaskService:
             from app.dependencies.auth import Forbidden
 
             raise Forbidden()
-        # Surface the template's checklist + evidence rules on the detail
-        # payload — the list stays slim; clients render what the server
-        # resolves (mirrors _resolved_area_id).
+        # Surface the checklist + evidence rules on the detail payload —
+        # a task's own checklist (department-head allocated work) takes
+        # precedence over the linked template's; verification still comes
+        # from the template. The list stays slim; clients render what the
+        # server resolves (mirrors _resolved_area_id).
+        if task.checklist:
+            task._checklist = task.checklist
         if task.template_id:
             from app.models.template import WorkTemplate
 
             tpl = await self.session.get(WorkTemplate, task.template_id)
             if tpl:
-                task._checklist = tpl.checklist or []
+                if not task.checklist:
+                    task._checklist = tpl.checklist or []
                 task._verification = tpl.verification or {}
         return task
 
@@ -264,6 +284,18 @@ class TaskService:
             from app.dependencies.auth import Forbidden
 
             raise Forbidden()
+
+    async def _department_or_none(self, department_id, property_id):
+        if department_id is None:
+            return None
+        from app.models.department import Department
+
+        dept = await self.session.get(Department, department_id)
+        if dept is None or dept.property_id != property_id:
+            raise ValidationErr(
+                "Department not found in this property.", field="department_uid"
+            )
+        return dept.id
 
     async def _employee_or_none(self, employee_id, property_id, work_type=None,
                                 emergency_override=False):
@@ -511,7 +543,9 @@ class TaskService:
 
     # ------------------------------------------------------------------
 
-    async def create_task(self, user: User, payload: TaskCreateRequest) -> Task:
+    async def create_task(self, user: User, payload: TaskCreateRequest,
+                          *, batch_id: uuid.UUID | None = None,
+                          employee_override: uuid.UUID | None = None) -> Task:
         prop = await self.structure._property_for_write(user, payload.property_uid)
         if payload.task_type not in TASK_TYPES:
             raise ValidationErr("Invalid task_type.", field="task_type")
@@ -525,8 +559,10 @@ class TaskService:
                 raise ValidationErr("Invalid work_type.", field="work_type")
         else:
             work_type = infer_task_work_type(title=payload.title)
+        department_id = await self._department_or_none(
+            payload.department_uid, prop.id)
         emp_id, emp_name = await self._employee_or_none(
-            payload.employee_uid, prop.id, work_type=work_type
+            employee_override or payload.employee_uid, prop.id, work_type=work_type
         )
         sup_id, sup_name = await self._employee_or_none(
             payload.supervisor_uid, prop.id
@@ -555,6 +591,12 @@ class TaskService:
                 rule["assign_to_uid"], prop.id, work_type=work_type
             )
             rule["assign_to_uid"] = str(rule["assign_to_uid"])
+        checklist = (
+            [c.model_dump() for c in payload.checklist]
+            if payload.checklist else None
+        )
+        scheduled_for = _parse_dt(payload.scheduled_for, "scheduled_for")
+        expires_at = _parse_dt(payload.expires_at, "expires_at")
 
         from app.services.task_location import resolve_task_location
 
@@ -606,6 +648,8 @@ class TaskService:
             washroom_fixture_label=fixture_label,
             supervisor_id=sup_id,
             supervisor_name=sup_name,
+            department_id=department_id,
+            checklist=checklist,
             employee_id=emp_id,
             assigned_to_name=emp_name,
             title=payload.title.strip(),
@@ -633,7 +677,9 @@ class TaskService:
             recurrence=payload.recurrence,
             recurrence_interval_days=payload.recurrence_interval_days,
             automation_rule=rule,
-            allocation_batch_id=auto_alloc.batch.id if auto_alloc else None,
+            scheduled_for=scheduled_for,
+            expires_at=expires_at,
+            allocation_batch_id=batch_id or (auto_alloc.batch.id if auto_alloc else None),
             allocation_status=(
                 "auto_assigned" if auto_alloc and emp_id
                 else "manually_assigned" if emp_id
@@ -811,6 +857,16 @@ class TaskService:
                 "scope_zone_uid": str(rule["scope_zone_uid"]) if rule.get("scope_zone_uid") else None,
                 "assign_to_uid": str(rule["assign_to_uid"]) if rule.get("assign_to_uid") else None,
             }
+        if "scheduled_for" in data:
+            task.scheduled_for = _parse_dt(data.pop("scheduled_for"), "scheduled_for")
+        if "expires_at" in data:
+            task.expires_at = _parse_dt(data.pop("expires_at"), "expires_at")
+        if "checklist" in data:
+            cl = data.pop("checklist")
+            task.checklist = (
+                [c.model_dump() if hasattr(c, "model_dump") else c for c in cl]
+                if cl else None
+            )
         for k, v in data.items():
             setattr(task, k, v)
         self._history(task, "edited", user)
@@ -1498,11 +1554,33 @@ class TaskService:
         reason = authorize_override(
             user, emergency_override=emergency_override, reason=override_reason,
         )
+        # Department managers may only move work that already belongs to
+        # one of their departments, and only to a member of it.
+        managed: set[uuid.UUID] | None = None
+        if user.role == UserRole.DEPARTMENT_MANAGER:
+            from app.services.dept_scope import managed_department_ids
+
+            managed = await managed_department_ids(self.session, user) or set()
+            task_dept = task.department_id
+            if task_dept is None and task.employee_id:
+                task_dept = await self.session.scalar(
+                    select(Employee.department_id).where(
+                        Employee.id == task.employee_id))
+            if task_dept not in managed:
+                from app.dependencies.auth import Forbidden
+                raise Forbidden()
         emp_id, emp_name = await self._employee_or_none(
             employee_uid, task.property_id,
             work_type=await self._task_work_type(task),
             emergency_override=reason is not None,
         )
+        if managed is not None:
+            new_dept = await self.session.scalar(
+                select(Employee.department_id).where(Employee.id == emp_id)
+            ) if emp_id else None
+            if new_dept not in managed:
+                from app.dependencies.auth import Forbidden
+                raise Forbidden()
         prev_id, prev_name = task.employee_id, task.assigned_to_name
         task.employee_id = emp_id
         task.assigned_to_name = emp_name

@@ -27,10 +27,13 @@ export interface OccupancyPoint {
   bucket: string;
   label: string;
   date?: string;
+  /** Room+bed capacity units (the percentage denominator). */
+  occupied_units: number;
+  total_units: number;
   occupied_rooms: number;
   total_rooms: number;
   occupancy_pct: number | null;
-  peak_occupied_rooms?: number;
+  peak_occupied_units?: number;
   days?: number;
 }
 
@@ -41,8 +44,9 @@ export interface OccupancyTrend {
   reason: string | null;
   first_record_date: string | null;
   average_occupied_rooms: number | null;
-  peak: { date: string; occupied_rooms: number } | null;
-  low: { date: string; occupied_rooms: number } | null;
+  average_occupied_units?: number | null;
+  peak: { date: string; occupied_rooms: number; occupied_units?: number } | null;
+  low: { date: string; occupied_rooms: number; occupied_units?: number } | null;
   days_with_records: number;
 }
 
@@ -120,6 +124,8 @@ export interface PropertyDashboard {
       occupancy_pct: number | null;
       state_ledger_mismatch: number;
     };
+    /** Rooms + beds combined — the property-level occupancy headline. */
+    combined: { total: number; occupied: number; occupancy_pct: number | null };
     beds: {
       total: number;
       occupied: number;

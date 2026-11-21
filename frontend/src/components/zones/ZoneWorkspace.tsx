@@ -28,12 +28,13 @@ import {
   Badge,
   unitVisualState,
   UNIT_VISUAL_TINT,
+  WASHROOM_TILE,
   UNIT_VISUAL_BADGE_VARIANT,
   UNIT_VISUAL_LABEL,
 } from '../ui/Badge';
 import { Bed as BedUnit, Dorm, Room, Zone, MaintenanceTicket, Washroom } from '../../types';
 import { getEffectiveTaskStatus } from '../../lib/taskUtils';
-import { ZONE_TYPE_LABELS, zoneSupportsUnits } from '../../lib/zoneUtils';
+import { zoneTypeLabel, zoneSupportsUnits, unitIcon, normalizeZoneUnits } from '../../lib/zoneUtils';
 import { isBlockingTicket } from '../../lib/maintenanceUtils';
 import { fixtureCountsFor, fixtureMeta, isCustomKind } from '../../lib/washroomFixtures';
 import { CreateMaintenanceModal, MaintenanceTarget } from '../maintenance/CreateMaintenanceModal';
@@ -217,6 +218,44 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
   );
 
   const supportsUnits = zoneSupportsUnits(zone);
+  const zoneUnits = normalizeZoneUnits(zone.custom_units);
+  const totalCustomUnits = zoneUnits.reduce((a, u) => a + (u.qty || 1), 0);
+
+  // Non-stay zones list their equipment/assets instead of guest units.
+  const unitsSection = !supportsUnits ? (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-display font-semibold text-lg text-[#0D1C42] flex items-center gap-2">
+          <Layers className="w-4 h-4 text-[#7554C8]" />
+          <span>Zone Units ({totalCustomUnits})</span>
+        </h3>
+      </div>
+      {zoneUnits.length === 0 ? (
+        <Card className="p-6 text-center text-xs text-[#667085] border-dashed">
+          No units listed yet — add equipment on this zone's card back on the Zones view.
+        </Card>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {zoneUnits.map((u, i) => {
+            const Icon = unitIcon(u.name);
+            return (
+              <Card key={`${u.name}-${i}`} className="p-3.5 flex items-center gap-3">
+                <span className="w-9 h-9 rounded-[10px] bg-[#F7E9EE] text-[#800020] flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4" />
+                </span>
+                <p className="text-sm font-semibold text-[#0D1C42] truncate flex-1 min-w-0">
+                  {u.name}
+                </p>
+                {u.qty > 1 && (
+                  <Badge variant="lavender" size="sm">×{u.qty}</Badge>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  ) : null;
 
   const allZoneBeds = zoneDorms.flatMap((d) => d.beds);
   const totalSelectedCount = selectedRoomUids.length + selectedBedUids.length;
@@ -320,13 +359,13 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
   const washroomSection = (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-display font-semibold text-lg text-[#24221F] flex items-center gap-2">
-          <Bath className="w-4 h-4 text-[#2D5D7B]" />
+        <h3 className="font-display font-semibold text-lg text-[#0D1C42] flex items-center gap-2">
+          <Bath className="w-4 h-4 text-[#2457A8]" />
           <span>Washrooms ({zoneWashrooms.length})</span>
         </h3>
       </div>
       {zoneWashrooms.length === 0 ? (
-        <Card className="p-6 text-center text-xs text-[#736E65] border-dashed">
+        <Card className="p-6 text-center text-xs text-[#667085] border-dashed">
           No washrooms assigned to this zone yet.
         </Card>
       ) : (
@@ -341,15 +380,15 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                   dorm: null,
                 })
               }
-              className="p-4 cursor-pointer transition-all hover:border-[#D5CFC3] hover:shadow-xs"
+              className="p-4 cursor-pointer transition-all hover:border-[#D6D3D1] hover:shadow-xs"
               title={`${washroom.name} — view facility details`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-[8px] bg-[#EFF6FA] border border-[#D7E7F1] text-[#2D5D7B] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-[8px] bg-[#EAF1FB] border border-[#C3D6F0] text-[#2457A8] flex items-center justify-center">
                     <Bath className="w-4 h-4" />
                   </div>
-                  <span className="font-display font-bold text-lg text-[#24221F] truncate">
+                  <span className="font-display font-bold text-lg text-[#0D1C42] truncate">
                     {washroom.name}
                   </span>
                 </div>
@@ -362,15 +401,15 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                   {UNIT_VISUAL_LABEL[unitVisualState(washroom)]}
                 </Badge>
               </div>
-              <p className="text-xs font-medium text-[#4B4741] capitalize">
+              <p className="text-xs font-medium text-[#0D1C42] capitalize">
                 {washroom.washroom_type} washroom
               </p>
-              <p className="text-[11px] text-[#8C867C] mt-1">
+              <p className="text-[11px] text-[#667085] mt-1">
                 {facilityCount(washroom.stall_count, 'stall')} ·{' '}
                 {facilityCount(washroom.urinal_count, 'urinal')} ·{' '}
                 {facilityCount(washroom.shower_count, 'shower')}
               </p>
-              <div className="mt-3 pt-2.5 border-t border-[#F2ECE3] flex items-center justify-end">
+              <div className="mt-3 pt-2.5 border-t border-[#F6F4F2] flex items-center justify-end">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -379,8 +418,8 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                   }}
                   className={`text-[11px] font-medium inline-flex items-center gap-1 cursor-pointer ${
                     ticketsByWashroom.has(washroom.washroom_uid)
-                      ? 'text-[#B3372C] hover:underline'
-                      : 'text-[#555047] hover:underline'
+                      ? 'text-[#A83434] hover:underline'
+                      : 'text-[#667085] hover:underline'
                   }`}
                   title={
                     ticketsByWashroom.has(washroom.washroom_uid)
@@ -406,7 +445,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
   return (
     <div className="space-y-6">
       {/* Header with Back button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#EAE5DC]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E7E5E4]">
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={onBack}>
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -415,14 +454,14 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
 
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-[#F4F0E8] text-[#555047]">
+              <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-[#F6F4F2] text-[#667085]">
                 {zone.code}
               </span>
-              <h1 className="font-display font-bold text-2xl text-[#24221F] tracking-tight">
+              <h1 className="font-display font-bold text-2xl text-[#0D1C42] tracking-tight">
                 {zone.name}
               </h1>
               <Badge variant={supportsUnits ? 'sage' : 'lavender'} size="sm">
-                {ZONE_TYPE_LABELS[zone.zone_type || 'stay']}
+                {zoneTypeLabel(zone)}
               </Badge>
               {associatedArea && (
                 <Badge variant="sage" size="sm">
@@ -431,7 +470,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
               )}
             </div>
             {zone.description && (
-              <p className="text-xs text-[#6C675F] font-body mt-0.5">
+              <p className="text-xs text-[#667085] font-body mt-0.5">
                 {zone.description}
               </p>
             )}
@@ -477,8 +516,8 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
       <Card
         className={`p-4 transition-all duration-200 ${
           totalSelectedCount > 0
-            ? 'bg-[#F2F8F3] border-[#386641] ring-2 ring-[#386641]/20 shadow-sm'
-            : 'bg-white border-[#E8E2D7]'
+            ? 'bg-[#FFFCFA] border-[#800020] ring-2 ring-[#800020]/20 shadow-sm'
+            : 'bg-white border-[#E7E5E4]'
         }`}
       >
         {/* Row 1: selection controls — toggle, quick picks, count hint */}
@@ -493,8 +532,8 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
               }}
               className={`px-3 py-1.5 rounded-[10px] text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
                 isMultiSelectMode
-                  ? 'bg-[#386641] text-white shadow-xs'
-                  : 'bg-[#FAF8F5] text-[#555047] hover:bg-[#F2ECE3] border border-[#DDD7CB]'
+                  ? 'bg-[#800020] text-white shadow-xs'
+                  : 'bg-[#FFFFFF] text-[#667085] hover:bg-[#F6F4F2] border border-[#D6D3D1]'
               }`}
             >
               {isMultiSelectMode ? (
@@ -505,26 +544,26 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
               <span>{isMultiSelectMode ? 'Multi-Select Active' : 'Enable Multi-Select'}</span>
             </button>
 
-            <span className="text-[#C4BDB0] text-xs hidden sm:inline mx-0.5">|</span>
+            <span className="text-[#CDC9C7] text-xs hidden sm:inline mx-0.5">|</span>
 
             <button
               type="button"
               onClick={selectAllOccupied}
-              className="text-xs px-2.5 py-1 rounded-[8px] bg-[#EEF2F6] hover:bg-[#DCE6F1] text-[#1E3A56] font-medium transition-colors cursor-pointer"
+              className="text-xs px-2.5 py-1 rounded-[8px] bg-[#EAF1FB] hover:bg-[#C3D6F0] text-[#2457A8] font-medium transition-colors cursor-pointer"
             >
               Select Occupied
             </button>
             <button
               type="button"
               onClick={selectAllCleaning}
-              className="text-xs px-2.5 py-1 rounded-[8px] bg-[#FEF3E8] hover:bg-[#FCE6D2] text-[#8C3F03] font-medium transition-colors cursor-pointer"
+              className="text-xs px-2.5 py-1 rounded-[8px] bg-[#FDF3E2] hover:bg-[#F2D9AF] text-[#A56514] font-medium transition-colors cursor-pointer"
             >
               Select In Cleaning
             </button>
             <button
               type="button"
               onClick={selectAllUnits}
-              className="text-xs px-2.5 py-1 rounded-[8px] bg-[#FAF8F5] hover:bg-[#F2ECE3] text-[#555047] font-medium transition-colors cursor-pointer border border-[#DDD7CB]"
+              className="text-xs px-2.5 py-1 rounded-[8px] bg-[#FFFFFF] hover:bg-[#F6F4F2] text-[#667085] font-medium transition-colors cursor-pointer border border-[#D6D3D1]"
             >
               Select All
             </button>
@@ -542,21 +581,21 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
 
           <span className="text-xs whitespace-nowrap">
             {totalSelectedCount > 0 ? (
-              <span className="font-semibold text-[#1E4324]">
+              <span className="font-semibold text-[#0D1C42]">
                 {selectedRoomUids.length > 0 && `${selectedRoomUids.length} room${selectedRoomUids.length > 1 ? 's' : ''}`}
                 {selectedRoomUids.length > 0 && selectedBedUids.length > 0 && ' & '}
                 {selectedBedUids.length > 0 && `${selectedBedUids.length} bed${selectedBedUids.length > 1 ? 's' : ''}`}{' '}
                 selected
               </span>
             ) : (
-              <span className="text-[#8C867C]">Click rooms or beds below to select</span>
+              <span className="text-[#667085]">Click rooms or beds below to select</span>
             )}
           </span>
         </div>
 
         {/* Row 2: bulk actions on the selected units — ops actions are
             manager-only; employees can only raise maintenance tickets */}
-        <div className="flex items-center justify-end gap-2 flex-wrap mt-3 pt-3 border-t border-[#F2ECE3]">
+        <div className="flex items-center justify-end gap-2 flex-wrap mt-3 pt-3 border-t border-[#F6F4F2]">
           {!isEmployee && (
             <>
           {/* Action 1: Bulk Check Out */}
@@ -567,7 +606,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
             onClick={handleBulkCheckout}
             className={`text-xs gap-1.5 ${
               totalSelectedCount > 0
-                ? 'border-[#C8681A] text-[#9A4C07] hover:bg-[#FEF3E8] bg-white'
+                ? 'border-[#A56514] text-[#A56514] hover:bg-[#FDF3E2] bg-white'
                 : 'opacity-50'
             }`}
             title="Check out guests from all selected units and flag them for cleaning"
@@ -584,7 +623,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
             onClick={handleBulkCleaning}
             className={`text-xs gap-1.5 ${
               totalSelectedCount > 0
-                ? 'bg-[#386641] hover:bg-[#2F5637] text-white shadow-xs'
+                ? 'bg-[#800020] hover:bg-[#0D1C42] text-white shadow-xs'
                 : 'opacity-50'
             }`}
             title="Queue all selected units for housekeeping cleaning"
@@ -599,10 +638,10 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
               variant="sage"
               size="sm"
               onClick={handleBulkAvailable}
-              className="text-xs gap-1.5 bg-white border-[#386641] text-[#244E2C]"
+              className="text-xs gap-1.5 bg-white border-[#800020] text-[#0D1C42]"
               title="Release selected units to Available — closes occupancy and blocking cleaning/maintenance work"
             >
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#386641]" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#16865B]" />
               <span>Available</span>
             </Button>
           )}
@@ -617,7 +656,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
             onClick={handleBulkMaintenance}
             className={`text-xs gap-1.5 ${
               totalSelectedCount > 0
-                ? 'border-[#C53B3B] text-[#A32A2A] hover:bg-[#FDF1F1] bg-white'
+                ? 'border-[#D64545] text-[#A83434] hover:bg-[#FAEBEB] bg-white'
                 : 'opacity-50'
             }`}
             title="Flag all selected units as under maintenance"
@@ -629,20 +668,20 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
       </Card>
       )}
 
-          {!supportsUnits && zoneWashrooms.length === 0 ? (
-            <Card className="p-8 text-center border-dashed border-[#D9D3C7]">
-              <div className="w-12 h-12 rounded-full bg-[#F2EFF9] text-[#554388] flex items-center justify-center mx-auto mb-3">
+          {!supportsUnits && zoneWashrooms.length === 0 && zoneUnits.length === 0 ? (
+            <Card className="p-8 text-center border-dashed border-[#D6D3D1]">
+              <div className="w-12 h-12 rounded-full bg-[#EAF1FB] text-[#2457A8] flex items-center justify-center mx-auto mb-3">
                 <Layers className="w-6 h-6" />
               </div>
-              <h3 className="font-display font-semibold text-lg text-[#24221F]">
-                {ZONE_TYPE_LABELS[zone.zone_type || 'stay']} zone — no guest units
+              <h3 className="font-display font-semibold text-lg text-[#0D1C42]">
+                {zoneTypeLabel(zone)} zone — no guest units
               </h3>
-              <p className="font-body text-sm text-[#6C675F] max-w-md mx-auto mt-1">
+              <p className="font-body text-sm text-[#667085] max-w-md mx-auto mt-1">
                 This zone type doesn't contain rooms, dorms, beds, or washrooms. Manage its staff on the
                 Zone Staff Board and its work through the Tasks module.
               </p>
               {zone.description && (
-                <p className="text-xs text-[#8C867C] font-body mt-3">{zone.description}</p>
+                <p className="text-xs text-[#667085] font-body mt-3">{zone.description}</p>
               )}
             </Card>
           ) : (
@@ -652,12 +691,12 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
           {/* Private Rooms in Zone */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-display font-semibold text-lg text-[#24221F] flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-[#2563EB]" />
+              <h3 className="font-display font-semibold text-lg text-[#0D1C42] flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-[#3478D4]" />
                 <span>Private Rooms ({zoneRooms.length})</span>
               </h3>
               {zoneRooms.length > 0 && (
-                <span className="text-[11px] text-[#736E65]">
+                <span className="text-[11px] text-[#667085]">
                   {isEmployee
                     ? 'Click checkbox to select rooms for a maintenance ticket'
                     : 'Click checkbox to multi-select for cleaning or checkout'}
@@ -666,7 +705,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
             </div>
 
             {zoneRooms.length === 0 ? (
-              <Card className="p-6 text-center text-xs text-[#736E65] border-dashed">
+              <Card className="p-6 text-center text-xs text-[#667085] border-dashed">
                 No private rooms allocated to this zone yet. Allocate rooms from the Rooms & Dorms view.
               </Card>
             ) : (
@@ -686,8 +725,8 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                         UNIT_VISUAL_TINT[unitVisualState(room)]
                       } ${
                         isSelected
-                          ? 'border-[#386641] ring-2 ring-[#386641]/20 shadow-xs'
-                          : 'hover:border-[#D5CFC3]'
+                          ? 'border-[#800020] ring-2 ring-[#800020]/20 shadow-xs'
+                          : 'hover:border-[#D6D3D1]'
                       } ${isMultiSelectMode ? 'cursor-pointer select-none' : ''}`}
                     >
                       {/* Top Row with Selection Checkbox & Room Number */}
@@ -701,37 +740,37 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                             }}
                             className={`w-5 h-5 rounded-[6px] border flex items-center justify-center transition-all cursor-pointer ${
                               isSelected
-                                ? 'bg-[#386641] border-[#386641] text-white'
-                                : 'bg-[#FAF8F5] border-[#DDD7CB] text-transparent hover:border-[#386641]'
+                                ? 'bg-[#800020] border-[#800020] text-white'
+                                : 'bg-[#FFFFFF] border-[#D6D3D1] text-transparent hover:border-[#800020]'
                             }`}
                             title={isSelected ? 'Deselect room' : 'Select room'}
                           >
                             <Check className="w-3.5 h-3.5" strokeWidth={3} />
                           </button>
 
-                          <span className="font-display font-bold text-lg text-[#24221F]">
+                          <span className="font-display font-bold text-lg text-[#0D1C42]">
                             {room.room_number}
                           </span>
                         </div>
                         <RoomStatusBadge status={room.status} />
                       </div>
 
-                      <p className="text-xs font-medium text-[#4B4741]">{room.type}</p>
-                      <div className="text-[11px] text-[#736E65] mt-1.5 flex items-center justify-between">
+                      <p className="text-xs font-medium text-[#0D1C42]">{room.type}</p>
+                      <div className="text-[11px] text-[#667085] mt-1.5 flex items-center justify-between">
                         <span>{room.area_sqft} sq ft · {room.bed_count} Bed</span>
                         {room.current_guest ? (
-                          <span className="text-[#2563EB] font-medium truncate max-w-[120px]">
+                          <span className="text-[#3478D4] font-medium truncate max-w-[120px]">
                             {room.current_guest}
                           </span>
                         ) : (
-                          <span className="text-[#8C867C] italic">No guest assigned</span>
+                          <span className="text-[#667085] italic">No guest assigned</span>
                         )}
                       </div>
 
                       {/* Occupancy toggle + workflow actions — commands only,
                           ResourceStateService stays the authority */}
                       <div
-                        className="mt-3 pt-2.5 border-t border-[#F2ECE3] flex items-center justify-between gap-2 flex-wrap"
+                        className="mt-3 pt-2.5 border-t border-[#F6F4F2] flex items-center justify-between gap-2 flex-wrap"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {!isEmployee ? (
@@ -773,11 +812,11 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                                 })
                               )
                             }
-                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors focus:outline-none focus:ring-1 focus:ring-[#386641] ${
+                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors focus:outline-none focus:ring-1 focus:ring-[#800020] ${
                               isCleanable(room) &&
                               !busyUnits.has(`room:${room.room_uid}`)
-                                ? 'text-[#386641] border-[#CDE0CF] bg-[#F4F8F4] hover:bg-[#EBF3EC] cursor-pointer'
-                                : 'text-[#C4BDB1] border-[#EDE8DD] bg-[#FAF8F5] cursor-not-allowed'
+                                ? 'text-[#800020] border-[#EAD3DB] bg-[#FFFCFA] hover:bg-[#F7E9EE] cursor-pointer'
+                                : 'text-[#CDC9C7] border-[#E7E5E4] bg-[#FFFFFF] cursor-not-allowed'
                             }`}
                             title={
                               room.status === 'cleaning'
@@ -805,11 +844,11 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                                 room.current_guest ?? null
                               )
                             }
-                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors focus:outline-none focus:ring-1 focus:ring-[#9A4C07] ${
+                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors focus:outline-none focus:ring-1 focus:ring-[#A56514] ${
                               (room.is_occupied ?? room.status === 'occupied') &&
                               !busyUnits.has(`room:${room.room_uid}`)
-                                ? 'text-[#9A4C07] border-[#F0D5B8] bg-[#FDF6EE] hover:bg-[#FBEEDA] cursor-pointer'
-                                : 'text-[#C4BDB1] border-[#EDE8DD] bg-[#FAF8F5] cursor-not-allowed'
+                                ? 'text-[#A56514] border-[#F2D9AF] bg-[#FFFCFA] hover:bg-[#F2D9AF] cursor-pointer'
+                                : 'text-[#CDC9C7] border-[#E7E5E4] bg-[#FFFFFF] cursor-not-allowed'
                             }`}
                             title={
                               room.is_occupied ?? room.status === 'occupied'
@@ -833,11 +872,11 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                                 guest: room.current_guest ?? null,
                               })
                             }
-                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-[#386641] ${
+                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-[#800020] ${
                               (room.is_occupied ?? room.status === 'occupied') &&
                               !busyUnits.has(`room:${room.room_uid}`)
-                                ? 'text-[#386641] border-[#CDE0CF] bg-[#F4F8F4] hover:bg-[#EBF3EC] cursor-pointer'
-                                : 'text-[#C4BDB1] border-[#EDE8DD] bg-[#FAF8F5] cursor-not-allowed'
+                                ? 'text-[#800020] border-[#EAD3DB] bg-[#FFFCFA] hover:bg-[#F7E9EE] cursor-pointer'
+                                : 'text-[#CDC9C7] border-[#E7E5E4] bg-[#FFFFFF] cursor-not-allowed'
                             }`}
                             title={
                               room.is_occupied ?? room.status === 'occupied'
@@ -851,7 +890,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                           <button
                             type="button"
                             onClick={() => setRequestTarget({ room })}
-                            className="px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#B45309] text-[#9A4C07] border-[#F0D5B8] bg-[#FDF6EE] hover:bg-[#FBEEDA]"
+                            className="px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#A56514] text-[#A56514] border-[#F2D9AF] bg-[#FFFCFA] hover:bg-[#F2D9AF]"
                             title="Raise a guest request — towel, extra mattress, etc. (urgent priority)"
                           >
                             <ConciergeBell className="w-3 h-3" />
@@ -864,10 +903,10 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                             onClick={() =>
                               setMaintenanceTarget({ kind: 'room', room })
                             }
-                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#A32A2A] ${
+                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#A83434] ${
                               ticketsByRoom.has(room.room_uid)
-                                ? 'text-[#A32A2A] border-[#F0C7C7] bg-[#FDF1F1] hover:bg-[#FBE4E4]'
-                                : 'text-[#555047] border-[#E3DCD0] bg-white hover:bg-[#FAF8F5]'
+                                ? 'text-[#A83434] border-[#F0C8C8] bg-[#FAEBEB] hover:bg-[#FAEBEB]'
+                                : 'text-[#667085] border-[#E7E5E4] bg-white hover:bg-[#FFFFFF]'
                             }`}
                             title={
                               ticketsByRoom.has(room.room_uid)
@@ -890,12 +929,12 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
           {/* Dorms with Visual Bed Grid in Zone */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-display font-semibold text-lg text-[#24221F] flex items-center gap-2">
-                <Bed className="w-4 h-4 text-[#C8681A]" />
+              <h3 className="font-display font-semibold text-lg text-[#0D1C42] flex items-center gap-2">
+                <Bed className="w-4 h-4 text-[#A56514]" />
                 <span>Shared Dorms ({zoneDorms.length})</span>
               </h3>
               {allZoneBeds.length > 0 && (
-                <span className="text-[11px] text-[#736E65]">
+                <span className="text-[11px] text-[#667085]">
                   {isEmployee
                     ? 'Click bed checkboxes to select beds for a maintenance ticket'
                     : 'Click bed checkboxes to multi-select for cleaning or checkout'}
@@ -904,7 +943,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
             </div>
 
             {zoneDorms.length === 0 ? (
-              <Card className="p-6 text-center text-xs text-[#736E65] border-dashed">
+              <Card className="p-6 text-center text-xs text-[#667085] border-dashed">
                 No dormitories assigned to this zone yet.
               </Card>
             ) : (
@@ -944,10 +983,10 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
 
                   return (
                     <Card key={dorm.dorm_uid} className="p-5">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-[#F2ECE3]">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-[#F6F4F2]">
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="font-display font-bold text-base text-[#24221F]">
+                            <h4 className="font-display font-bold text-base text-[#0D1C42]">
                               {dorm.name}
                             </h4>
                             <Badge variant="lavender" size="sm">
@@ -958,12 +997,12 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                             </Badge>
                             {(dorm.status === 'maintenance' || ticketsByDorm.has(dorm.dorm_uid)) && (
                               <Badge variant="red" size="sm">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#C53B3B]" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#D64545]" />
                                 Maintenance
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-[#6C675F] font-body mt-0.5">
+                          <p className="text-xs text-[#667085] font-body mt-0.5">
                             {dorm.beds.length} Total Bunk Spots
                           </p>
                           {(() => {
@@ -975,12 +1014,12 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                             const mt = dorm.beds.filter((b) => b.status === 'maintenance').length;
                             return (
                               <p className="text-[11px] font-body mt-0.5 flex items-center gap-2 flex-wrap">
-                                <span className="font-semibold text-[#254668]">
+                                <span className="font-semibold text-[#2457A8]">
                                   {occ}/{dorm.beds.length} occupied
                                 </span>
-                                <span className="text-[#2E6038]">Available {av}</span>
-                                <span className="text-[#9A4C07]">Cleaning {cl}</span>
-                                <span className="text-[#A32A2A]">Maintenance {mt}</span>
+                                <span className="text-[#0D1C42]">Available {av}</span>
+                                <span className="text-[#A56514]">Cleaning {cl}</span>
+                                <span className="text-[#A83434]">Maintenance {mt}</span>
                               </p>
                             );
                           })()}
@@ -991,10 +1030,10 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                           <label
                             className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-[8px] border text-xs font-medium transition-colors select-none ${
                               selectableBeds.length === 0
-                                ? 'opacity-50 cursor-not-allowed bg-[#FAF8F5] border-[#DDD7CB] text-[#8C867C]'
+                                ? 'opacity-50 cursor-not-allowed bg-[#FFFFFF] border-[#D6D3D1] text-[#667085]'
                                 : allBedsInDormSelected
-                                ? 'cursor-pointer bg-[#EDF4EE] border-[#386641] text-[#244E2C]'
-                                : 'cursor-pointer bg-[#FAF8F5] border-[#DDD7CB] text-[#555047] hover:bg-[#F2ECE3]'
+                                ? 'cursor-pointer bg-[#F7E9EE] border-[#800020] text-[#0D1C42]'
+                                : 'cursor-pointer bg-[#FFFFFF] border-[#D6D3D1] text-[#667085] hover:bg-[#F6F4F2]'
                             }`}
                             title={
                               selectableBeds.length === 0
@@ -1013,7 +1052,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                                 }
                               }}
                               onChange={toggleSelectAllDormBeds}
-                              className="accent-[#386641] w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed"
+                              className="accent-[#800020] w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed"
                             />
                             Select Entire Dorm
                           </label>
@@ -1159,7 +1198,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                             }
                             className={
                               ticketsByDorm.has(dorm.dorm_uid)
-                                ? 'border-[#C53B3B] text-[#A32A2A]'
+                                ? 'border-[#D64545] text-[#A83434]'
                                 : ''
                             }
                           >
@@ -1176,11 +1215,11 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                       {/* Visual Bed Grid with Interactive Checkbox Selection */}
                       <div>
                         <div className="flex items-center justify-between mb-2.5">
-                          <span className="text-[11px] font-semibold text-[#8C867C] uppercase tracking-wider block font-body">
+                          <span className="text-[11px] font-semibold text-[#667085] uppercase tracking-wider block font-body">
                             Visual Bed Grid — Click a bed to select it
                           </span>
                           {selectedBedsInDorm.length > 0 && (
-                            <span className="text-xs font-semibold text-[#386641]">
+                            <span className="text-xs font-semibold text-[#800020]">
                               {selectedBedsInDorm.length}/{selectableBeds.length} beds selected
                             </span>
                           )}
@@ -1217,7 +1256,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                                       })
                                     }
                                     className={`p-2.5 rounded-[12px] border text-left transition-all cursor-pointer hover:shadow-xs ${
-                                      UNIT_VISUAL_TINT[unitVisualState(w)]
+                                      WASHROOM_TILE
                                     }`}
                                     title={`${w.name} — view facility details`}
                                   >
@@ -1248,7 +1287,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                                     dorm,
                                   })
                                 }
-                                className="p-2.5 rounded-[12px] border text-left bg-[#EFF6FA] border-[#CFDCEB] text-[#2D5D7B] transition-all cursor-pointer hover:shadow-xs"
+                                className="p-2.5 rounded-[12px] border text-left bg-[#EAF1FB] border-[#C3D6F0] text-[#2457A8] transition-all cursor-pointer hover:shadow-xs"
                                 title={`${dorm.washroom} — declared facility`}
                               >
                                 <div className="flex items-center justify-between text-xs font-semibold">
@@ -1286,7 +1325,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                                     : 'cursor-not-allowed opacity-75'
                                 } ${
                                   isBedSelected
-                                    ? 'ring-2 ring-[#386641] border-[#386641] shadow-xs'
+                                    ? 'ring-2 ring-[#800020] border-[#800020] shadow-xs'
                                     : ''
                                 }`}
                                 title={isBedSelectable ? undefined : 'Inactive bed — not selectable'}
@@ -1304,10 +1343,10 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                                     }}
                                     className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-all ${
                                       !isBedSelectable
-                                        ? 'cursor-not-allowed bg-[#EBE5DB] border-[#DDD7CB] text-transparent'
+                                        ? 'cursor-not-allowed bg-[#E7E5E4] border-[#D6D3D1] text-transparent'
                                         : isBedSelected
-                                        ? 'cursor-pointer bg-[#386641] border-[#386641] text-white'
-                                        : 'cursor-pointer bg-white/80 border-[#DDD7CB] text-transparent hover:border-[#386641]'
+                                        ? 'cursor-pointer bg-[#800020] border-[#800020] text-white'
+                                        : 'cursor-pointer bg-white/80 border-[#D6D3D1] text-transparent hover:border-[#800020]'
                                     }`}
                                     title={
                                       !isBedSelectable
@@ -1374,7 +1413,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                                               guest: bed.guest_name ?? null,
                                             })
                                           }
-                                          className="p-1 rounded-[6px] border transition-colors inline-flex items-center cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#386641] text-[#386641] border-[#CDE0CF] bg-[#F4F8F4] hover:bg-[#EBF3EC]"
+                                          className="p-1 rounded-[6px] border transition-colors inline-flex items-center cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#800020] text-[#800020] border-[#EAD3DB] bg-[#FFFCFA] hover:bg-[#F7E9EE]"
                                           title="Switch — move the guest to another room or bed"
                                         >
                                           <ArrowRightLeft className="w-3 h-3" />
@@ -1385,7 +1424,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                                         onClick={() =>
                                           setRequestTarget({ dorm, bed })
                                         }
-                                        className="p-1 rounded-[6px] border transition-colors inline-flex items-center cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#B45309] text-[#9A4C07] border-[#F0D5B8] bg-[#FDF6EE] hover:bg-[#FBEEDA]"
+                                        className="p-1 rounded-[6px] border transition-colors inline-flex items-center cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#A56514] text-[#A56514] border-[#F2D9AF] bg-[#FFFCFA] hover:bg-[#F2D9AF]"
                                         title="Raise a guest request for this bed (urgent priority)"
                                       >
                                         <ConciergeBell className="w-3 h-3" />
@@ -1408,7 +1447,8 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
           </div>
           </>
           )}
-          {washroomSection}
+          {unitsSection}
+          {supportsUnits && washroomSection}
             </>
           )}
         </div>

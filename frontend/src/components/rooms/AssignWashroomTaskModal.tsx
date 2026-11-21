@@ -22,9 +22,9 @@ const TASK_TYPES = ['Cleaning', 'Inspection', 'Repair', 'Restocking', 'Other'];
 const PRIORITIES: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
 
 const inputCls =
-  'w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]';
+  'w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]';
 const labelCls =
-  'block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body';
+  'block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body';
 
 export const AssignWashroomTaskModal: React.FC<AssignWashroomTaskModalProps> = ({
   washroomName,
@@ -123,8 +123,8 @@ export const AssignWashroomTaskModal: React.FC<AssignWashroomTaskModalProps> = (
                 onClick={() => setScope(o.v)}
                 className={`px-3 py-2 rounded-[10px] border text-sm font-medium transition-colors cursor-pointer ${
                   scope === o.v
-                    ? 'border-[#386641] bg-[#EBF3EC] text-[#244E2C]'
-                    : 'border-[#DDD7CB] bg-[#FAF8F5] text-[#555047] hover:border-[#B9B2A4]'
+                    ? 'border-[#800020] bg-[#F7E9EE] text-[#0D1C42]'
+                    : 'border-[#D6D3D1] bg-[#FFFFFF] text-[#667085] hover:border-[#CDC9C7]'
                 }`}
               >
                 {o.label}
@@ -137,11 +137,11 @@ export const AssignWashroomTaskModal: React.FC<AssignWashroomTaskModalProps> = (
           (bulkTargets ? (
             <div>
               <label className={labelCls}>Selected Fixtures</label>
-              <div className="px-3.5 py-2 bg-[#EBF3EC] border border-[#CBE0CF] rounded-[10px] text-sm font-medium text-[#244E2C]">
+              <div className="px-3.5 py-2 bg-[#F7E9EE] border border-[#EAD3DB] rounded-[10px] text-sm font-medium text-[#0D1C42]">
                 {bulkTargets.length} fixtures —{' '}
                 {bulkTargets.map((f) => f.label).join(', ')}
               </div>
-              <p className="text-[10px] text-[#8C867C] mt-1">
+              <p className="text-[10px] text-[#667085] mt-1">
                 One task is created for each selected fixture.
               </p>
             </div>
@@ -234,7 +234,7 @@ export const AssignWashroomTaskModal: React.FC<AssignWashroomTaskModalProps> = (
           />
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F0ECE4]">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F6F4F2]">
           <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>

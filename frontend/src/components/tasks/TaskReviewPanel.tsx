@@ -15,8 +15,8 @@ import { useRealtimeChannel, propChannel } from '../../realtime/useRealtimeChann
 import { fmtDateTimeIST } from '../../lib/datetime';
 
 const inputCls =
-  'px-3 py-2 text-sm bg-white border border-[#E2DCD0] rounded-[10px] ' +
-  'focus:outline-none focus:ring-[3px] focus:ring-[#386641]/15 focus:border-[#386641]';
+  'px-3 py-2 text-sm bg-white border border-[#E7E5E4] rounded-[10px] ' +
+  'focus:outline-none focus:ring-[3px] focus:ring-[#800020]/15 focus:border-[#800020]';
 
 function taskLabel(t: Task): string {
   return t.room_number || t.dorm_name || t.washroom_name || '—';
@@ -115,7 +115,7 @@ export const TaskReviewPanel: React.FC<Props> = ({ onOpenTask }) => {
         {[0, 1].map((i) => (
           <div
             key={i}
-            className="animate-pulse bg-white border border-[#E9E4D8] rounded-[16px] h-44"
+            className="animate-pulse bg-white border border-[#E7E5E4] rounded-[16px] h-44"
           />
         ))}
       </div>
@@ -124,9 +124,9 @@ export const TaskReviewPanel: React.FC<Props> = ({ onOpenTask }) => {
 
   if (error) {
     return (
-      <div className="bg-white border border-[#E9E4D8] rounded-[16px] p-8 flex flex-col items-center gap-3 text-center">
-        <AlertTriangle className="w-8 h-8 text-[#B4530A]" />
-        <p className="text-sm text-[#6C675F]">{error}</p>
+      <div className="bg-white border border-[#E7E5E4] rounded-[16px] p-8 flex flex-col items-center gap-3 text-center">
+        <AlertTriangle className="w-8 h-8 text-[#A56514]" />
+        <p className="text-sm text-[#667085]">{error}</p>
         <Button variant="secondary" onClick={() => load()} className="gap-2">
           <RefreshCw className="w-4 h-4" /> Retry
         </Button>
@@ -136,10 +136,10 @@ export const TaskReviewPanel: React.FC<Props> = ({ onOpenTask }) => {
 
   if (tasks.length === 0) {
     return (
-      <div className="bg-white border border-[#E9E4D8] rounded-[16px] p-10 flex flex-col items-center gap-3 text-center">
-        <CheckCircle2 className="w-9 h-9 text-[#386641]" />
-        <p className="font-semibold text-[#24221F]">Nothing awaiting review</p>
-        <p className="text-sm text-[#6C675F]">
+      <div className="bg-white border border-[#E7E5E4] rounded-[16px] p-10 flex flex-col items-center gap-3 text-center">
+        <CheckCircle2 className="w-9 h-9 text-[#16865B]" />
+        <p className="font-semibold text-[#0D1C42]">Nothing awaiting review</p>
+        <p className="text-sm text-[#667085]">
           Submitted work shows up here until it's approved or sent back.
         </p>
       </div>
@@ -162,22 +162,22 @@ export const TaskReviewPanel: React.FC<Props> = ({ onOpenTask }) => {
         return (
           <div
             key={task.task_uid}
-            className="bg-white border border-[#E9E4D8] rounded-[16px] p-5 shadow-sm"
+            className="bg-white border border-[#E7E5E4] rounded-[16px] p-5 shadow-sm"
           >
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-semibold text-[#24221F] text-[15px] truncate">
+                  <h3 className="font-semibold text-[#0D1C42] text-[15px] truncate">
                     {task.title}
                   </h3>
                   {task.ticket_number && (
-                    <span className="text-[11px] font-mono text-[#8A8478]">
+                    <span className="text-[11px] font-mono text-[#667085]">
                       {task.ticket_number}
                     </span>
                   )}
                   <Badge size="sm" variant="orange">Awaiting review</Badge>
                 </div>
-                <div className="flex items-center gap-3 mt-1.5 text-[12px] text-[#6C675F] flex-wrap">
+                <div className="flex items-center gap-3 mt-1.5 text-[12px] text-[#667085] flex-wrap">
                   <span>{taskLabel(task)}</span>
                   {task.assigned_to_name && (
                     <span>by {task.assigned_to_name}</span>
@@ -196,29 +196,29 @@ export const TaskReviewPanel: React.FC<Props> = ({ onOpenTask }) => {
                   )}
                 </div>
                 {submitNote && (
-                  <p className="mt-2 text-[13px] text-[#6C675F] italic">
+                  <p className="mt-2 text-[13px] text-[#667085] italic">
                     "{submitNote}"
                   </p>
                 )}
               </div>
               <button
                 onClick={() => onOpenTask(task.task_uid)}
-                className="self-start text-[12px] font-semibold text-[#386641] hover:underline cursor-pointer"
+                className="self-start text-[12px] font-semibold text-[#800020] hover:underline cursor-pointer"
               >
                 Full details
               </button>
             </div>
 
             {/* All evidence images in one container */}
-            <div className="mt-4 bg-[#F7F5F0] border border-[#E9E4D8] rounded-[12px] p-3">
+            <div className="mt-4 bg-[#FFFCFA] border border-[#E7E5E4] rounded-[12px] p-3">
               <div className="flex items-center gap-2 mb-2.5">
-                <ImageIcon className="w-4 h-4 text-[#6C675F]" />
-                <span className="text-[12px] font-semibold text-[#6C675F] uppercase tracking-wide">
+                <ImageIcon className="w-4 h-4 text-[#667085]" />
+                <span className="text-[12px] font-semibold text-[#667085] uppercase tracking-wide">
                   Evidence · {images.length} image{images.length === 1 ? '' : 's'}
                 </span>
               </div>
               {images.length === 0 ? (
-                <p className="text-[13px] text-[#8A8478] py-2">
+                <p className="text-[13px] text-[#667085] py-2">
                   No photos were submitted with this task.
                 </p>
               ) : (
@@ -227,7 +227,7 @@ export const TaskReviewPanel: React.FC<Props> = ({ onOpenTask }) => {
                     <button
                       key={img.image_uid || i}
                       onClick={() => setLightbox({ task, index: i })}
-                      className="shrink-0 w-24 h-24 rounded-[10px] overflow-hidden border border-[#E2DCD0] bg-white hover:border-[#386641] transition-colors cursor-pointer"
+                      className="shrink-0 w-24 h-24 rounded-[10px] overflow-hidden border border-[#E7E5E4] bg-white hover:border-[#800020] transition-colors cursor-pointer"
                     >
                       <EvidencePhoto
                         src={img.url}
@@ -277,8 +277,8 @@ export const TaskReviewPanel: React.FC<Props> = ({ onOpenTask }) => {
             </div>
 
             {rejecting && (
-              <div className="mt-3 flex items-center justify-between gap-3 bg-[#FDF0E8] border border-[#F0D9C4] rounded-[10px] px-3 py-2.5">
-                <p className="text-[13px] text-[#7C4A21]">
+              <div className="mt-3 flex items-center justify-between gap-3 bg-[#FDF3E2] border border-[#F2D9AF] rounded-[10px] px-3 py-2.5">
+                <p className="text-[13px] text-[#A56514]">
                   Send back without a reason? The assignee sees the task reopened.
                 </p>
                 <div className="flex gap-2 shrink-0">

@@ -5,7 +5,7 @@ export const Skeleton: React.FC<{ className?: string }> = ({ className }) => {
   return (
     <div
       className={cn(
-        'animate-pulse rounded-[12px] bg-[#EAE5DC]/80',
+        'animate-pulse rounded-[12px] bg-[#E7E5E4]/80',
         className
       )}
     />
@@ -14,7 +14,7 @@ export const Skeleton: React.FC<{ className?: string }> = ({ className }) => {
 
 export const CardSkeleton: React.FC = () => {
   return (
-    <div className="bg-[#FFFFFF] border border-[#EAE5DC] rounded-[16px] p-5 space-y-4">
+    <div className="bg-[#ffffff] border border-[#E7E5E4] rounded-[16px] p-5 space-y-4">
       <div className="flex items-center justify-between">
         <Skeleton className="h-5 w-1/3" />
         <Skeleton className="h-5 w-16" />

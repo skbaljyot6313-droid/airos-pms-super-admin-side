@@ -33,6 +33,19 @@ export interface HalfDayGroup {
   decided_by: string | null;
 }
 
+export interface PayrollPreviewRow {
+  employee_uid: string;
+  employee_name: string;
+  calc_method: 'monthly' | 'daily' | 'hourly' | null;
+  rate: string | null;
+  rate_label: string | null;
+  metrics: Record<string, string | number | Record<string, number>>;
+  gross: string;
+  total_deductions: string;
+  net: string;
+  anomalies: { date: string; reason: string }[];
+}
+
 export interface PayrollPeriodView {
   period_uid: string;
   period: string;
@@ -107,4 +120,10 @@ export const payrollApi = {
     apiFetch<{ items: SalaryStructure[] }>(`/payroll/employees/${employeeUid}/structures`),
   createStructure: (employeeUid: string, body: Record<string, unknown>) =>
     apiFetch<SalaryStructure>(`/payroll/employees/${employeeUid}/structures`, { method: 'POST', body }),
+  postLeaveEntries: (employeeUid: string, entries: { leave_type: string; days: number; reason?: string }[]) =>
+    apiFetch<{ items: { leave_type: string; days: number }[] }>(
+      `/payroll/employees/${employeeUid}/leave-entries`, { method: 'POST', body: { entries } }),
+  getPreview: (propertyUid: string, period: string) =>
+    apiFetch<{ items: PayrollPreviewRow[] }>(`/payroll/periods/${period}/preview`, {
+      query: { property_uid: propertyUid } }),
 };

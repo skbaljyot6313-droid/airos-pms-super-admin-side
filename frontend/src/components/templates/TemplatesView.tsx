@@ -234,13 +234,13 @@ export const TemplatesView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#24221F] tracking-tight flex items-center gap-2.5">
+          <h1 className="font-display text-2xl font-bold text-[#0D1C42] tracking-tight flex items-center gap-2.5">
             Work Templates
-            <span className="text-xs font-semibold text-[#8C867C] bg-[#F0EDE6] px-2 py-0.5 rounded-full">
+            <span className="text-xs font-semibold text-[#667085] bg-[#F6F4F2] px-2 py-0.5 rounded-full">
               {items.length}
             </span>
           </h1>
-          <p className="text-sm text-[#8C867C] mt-0.5">
+          <p className="text-sm text-[#667085] mt-0.5">
             Reusable operational definitions — the scheduler generates real work from them automatically.
           </p>
         </div>
@@ -252,31 +252,31 @@ export const TemplatesView: React.FC = () => {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2.5">
         <div className="relative flex-1 min-w-[220px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A59F95]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#98A2B3]" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search templates…"
-            className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-[#E2DCD0] rounded-[10px] focus:outline-none focus:ring-[3px] focus:ring-[#386641]/15 focus:border-[#386641]"
+            className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-[#E7E5E4] rounded-[10px] focus:outline-none focus:ring-[3px] focus:ring-[#800020]/15 focus:border-[#800020]"
           />
         </div>
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="px-3 py-2 text-sm bg-white border border-[#E2DCD0] rounded-[10px] cursor-pointer"
+          className="px-3 py-2 text-sm bg-white border border-[#E7E5E4] rounded-[10px] cursor-pointer"
         >
           <option value="">All types</option>
           {Object.entries(TYPE_LABELS).map(([v, l]) => (
             <option key={v} value={v}>{l}</option>
           ))}
         </select>
-        <div className="flex items-center gap-1 bg-[#F0EDE6] rounded-[10px] p-1">
+        <div className="flex items-center gap-1 bg-[#F6F4F2] rounded-[10px] p-1">
           {['', 'premade', 'active', 'paused', 'draft', 'archived'].map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 text-xs font-medium rounded-[8px] transition-colors cursor-pointer ${
-                statusFilter === s ? 'bg-white text-[#24221F] shadow-sm' : 'text-[#6C675F] hover:text-[#24221F]'
+                statusFilter === s ? 'bg-white text-[#0D1C42] shadow-sm' : 'text-[#667085] hover:text-[#0D1C42]'
               }`}
             >
               {s === '' ? 'All' : s[0].toUpperCase() + s.slice(1)}
@@ -293,12 +293,12 @@ export const TemplatesView: React.FC = () => {
             return (
               <div
                 key={p.key}
-                className="bg-white rounded-[14px] border border-[#EAE5DC] p-4 flex flex-col gap-3 hover:border-[#D5CFC3] hover:shadow-sm transition-all"
+                className="bg-white rounded-[14px] border border-[#E7E5E4] p-4 flex flex-col gap-3 hover:border-[#D6D3D1] hover:shadow-sm transition-all"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-[15px] text-[#24221F] truncate">{p.name}</p>
-                    <p className="text-xs text-[#8C867C] mt-0.5">
+                    <p className="font-semibold text-[15px] text-[#0D1C42] truncate">{p.name}</p>
+                    <p className="text-xs text-[#667085] mt-0.5">
                       {TYPE_LABELS[p.template_type] || p.template_type} · Premade
                     </p>
                   </div>
@@ -306,23 +306,23 @@ export const TemplatesView: React.FC = () => {
                     {installed ? 'Added' : 'Premade'}
                   </Badge>
                 </div>
-                <p className="text-xs text-[#58534C] leading-relaxed">{p.description}</p>
-                <div className="space-y-1.5 text-[12.5px] text-[#58534C]">
+                <p className="text-xs text-[#667085] leading-relaxed">{p.description}</p>
+                <div className="space-y-1.5 text-[12.5px] text-[#667085]">
                   <p className="flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-[#A59F95]" /> {p.locationLabel}
+                    <MapPin className="w-3.5 h-3.5 text-[#98A2B3]" /> {p.locationLabel}
                   </p>
                   <p className="flex items-center gap-2">
-                    <RefreshCw className="w-3.5 h-3.5 text-[#A59F95]" /> {p.scheduleLabel}
+                    <RefreshCw className="w-3.5 h-3.5 text-[#98A2B3]" /> {p.scheduleLabel}
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5 pt-2 border-t border-[#F0ECE4] mt-auto">
+                <div className="flex items-center gap-1.5 pt-2 border-t border-[#F6F4F2] mt-auto">
                   <button
                     onClick={() => void usePremade(p)}
                     disabled={installed}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-[8px] inline-flex items-center gap-1 transition-colors ${
                       installed
-                        ? 'text-[#8C867C] bg-[#F2ECE3] cursor-not-allowed'
-                        : 'text-white bg-[#386641] hover:bg-[#2E5536] cursor-pointer'
+                        ? 'text-[#667085] bg-[#F6F4F2] cursor-not-allowed'
+                        : 'text-white bg-[#800020] hover:bg-[#0D1C42] cursor-pointer'
                     }`}
                   >
                     <Plus className="w-3.5 h-3.5" /> {installed ? 'Added' : 'Add template'}
@@ -333,12 +333,12 @@ export const TemplatesView: React.FC = () => {
           })}
         </div>
       ) : loading ? (
-        <p className="text-sm text-[#8C867C] py-12 text-center">Loading templates…</p>
+        <p className="text-sm text-[#667085] py-12 text-center">Loading templates…</p>
       ) : filtered.length === 0 ? (
         <div className="py-16 text-center">
-          <LayoutTemplate className="w-10 h-10 text-[#D5CFC3] mx-auto mb-3" />
-          <p className="text-sm font-medium text-[#6C675F]">No templates yet</p>
-          <p className="text-xs text-[#8C867C] mt-1">
+          <LayoutTemplate className="w-10 h-10 text-[#D6D3D1] mx-auto mb-3" />
+          <p className="text-sm font-medium text-[#667085]">No templates yet</p>
+          <p className="text-xs text-[#667085] mt-1">
             Create a template once — the scheduler generates the actual work automatically.
           </p>
         </div>
@@ -347,12 +347,12 @@ export const TemplatesView: React.FC = () => {
           {filtered.map((t) => (
             <div
               key={t.template_uid}
-              className="bg-white rounded-[14px] border border-[#EAE5DC] p-4.5 p-4 flex flex-col gap-3 hover:border-[#D5CFC3] hover:shadow-sm transition-all"
+              className="bg-white rounded-[14px] border border-[#E7E5E4] p-4.5 p-4 flex flex-col gap-3 hover:border-[#D6D3D1] hover:shadow-sm transition-all"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold text-[15px] text-[#24221F] truncate">{t.name}</p>
-                  <p className="text-xs text-[#8C867C] mt-0.5">
+                  <p className="font-semibold text-[15px] text-[#0D1C42] truncate">{t.name}</p>
+                  <p className="text-xs text-[#667085] mt-0.5">
                     {TYPE_LABELS[t.template_type] || t.template_type}
                     {t.category ? ` · ${t.category}` : ''} · v{t.version}
                   </p>
@@ -362,60 +362,60 @@ export const TemplatesView: React.FC = () => {
                 </Badge>
               </div>
 
-              <div className="space-y-1.5 text-[12.5px] text-[#58534C]">
+              <div className="space-y-1.5 text-[12.5px] text-[#667085]">
                 <p className="flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-[#A59F95]" /> {locationLabel(t)}
+                  <MapPin className="w-3.5 h-3.5 text-[#98A2B3]" /> {locationLabel(t)}
                 </p>
                 <p className="flex items-center gap-2">
-                  <Users className="w-3.5 h-3.5 text-[#A59F95]" /> {assignmentLabel(t)}
+                  <Users className="w-3.5 h-3.5 text-[#98A2B3]" /> {assignmentLabel(t)}
                 </p>
                 <p className="flex items-center gap-2">
-                  <RefreshCw className="w-3.5 h-3.5 text-[#A59F95]" /> {scheduleLabel(t)}
+                  <RefreshCw className="w-3.5 h-3.5 text-[#98A2B3]" /> {scheduleLabel(t)}
                 </p>
                 <p className="flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-[#A59F95]" />
+                  <Clock className="w-3.5 h-3.5 text-[#98A2B3]" />
                   {t.status === 'active' ? nextRunLabel(t) : `${t.generated_count} generated`}
                 </p>
               </div>
 
-              <div className="flex items-center gap-1.5 pt-2 border-t border-[#F0ECE4] mt-auto">
+              <div className="flex items-center gap-1.5 pt-2 border-t border-[#F6F4F2] mt-auto">
                 <button
                   onClick={() => setDetail(t)}
-                  className="px-2.5 py-1.5 text-xs font-medium text-[#386641] hover:bg-[#EBF3EC] rounded-[8px] inline-flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1.5 text-xs font-medium text-[#800020] hover:bg-[#F7E9EE] rounded-[8px] inline-flex items-center gap-1 cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5" /> View
                 </button>
                 <button
                   onClick={() => { setEditTemplate(t); setWizardOpen(true); }}
-                  className="px-2.5 py-1.5 text-xs font-medium text-[#58534C] hover:bg-[#F5F2EB] rounded-[8px] inline-flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1.5 text-xs font-medium text-[#667085] hover:bg-[#FFFCFA] rounded-[8px] inline-flex items-center gap-1 cursor-pointer"
                 >
                   <Pencil className="w-3.5 h-3.5" /> Edit
                 </button>
                 <div className="flex-1" />
                 {t.status === 'active' && (
                   <button onClick={() => void act(t, 'pause')} title="Pause"
-                    className="p-1.5 text-[#8C867C] hover:text-[#B45309] hover:bg-[#FDF6EC] rounded-[8px] cursor-pointer">
+                    className="p-1.5 text-[#667085] hover:text-[#A56514] hover:bg-[#FFFCFA] rounded-[8px] cursor-pointer">
                     <Pause className="w-3.5 h-3.5" />
                   </button>
                 )}
                 {(t.status === 'paused' || t.status === 'draft') && (
                   <button onClick={() => void act(t, 'activate')} title="Activate"
-                    className="p-1.5 text-[#8C867C] hover:text-[#386641] hover:bg-[#EBF3EC] rounded-[8px] cursor-pointer">
+                    className="p-1.5 text-[#667085] hover:text-[#800020] hover:bg-[#F7E9EE] rounded-[8px] cursor-pointer">
                     <Play className="w-3.5 h-3.5" />
                   </button>
                 )}
                 <button onClick={() => void act(t, 'duplicate')} title="Duplicate"
-                  className="p-1.5 text-[#8C867C] hover:text-[#24221F] hover:bg-[#F5F2EB] rounded-[8px] cursor-pointer">
+                  className="p-1.5 text-[#667085] hover:text-[#0D1C42] hover:bg-[#FFFCFA] rounded-[8px] cursor-pointer">
                   <Copy className="w-3.5 h-3.5" />
                 </button>
                 {t.status !== 'archived' ? (
                   <button onClick={() => void act(t, 'archive')} title="Archive"
-                    className="p-1.5 text-[#8C867C] hover:text-[#B91C1C] hover:bg-[#FDE8E8] rounded-[8px] cursor-pointer">
+                    className="p-1.5 text-[#667085] hover:text-[#A83434] hover:bg-[#FAEBEB] rounded-[8px] cursor-pointer">
                     <Archive className="w-3.5 h-3.5" />
                   </button>
                 ) : (
                   <button onClick={() => void remove(t)} title="Delete"
-                    className="p-1.5 text-[#8C867C] hover:text-[#B91C1C] hover:bg-[#FDE8E8] rounded-[8px] cursor-pointer">
+                    className="p-1.5 text-[#667085] hover:text-[#A83434] hover:bg-[#FAEBEB] rounded-[8px] cursor-pointer">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}

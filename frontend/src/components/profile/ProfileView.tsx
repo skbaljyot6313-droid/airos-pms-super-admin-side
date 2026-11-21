@@ -40,38 +40,38 @@ export const ProfileView: React.FC = () => {
   };
 
   const inputCls =
-    'w-full px-3 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]';
+    'w-full px-3 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]';
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#24221F] tracking-tight">
+        <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#0D1C42] tracking-tight">
           Profile
         </h1>
-        <p className="font-body text-sm text-[#6C675F] mt-0.5">
+        <p className="font-body text-sm text-[#667085] mt-0.5">
           Your account details and operational scope
         </p>
       </div>
 
       <Card className="p-6">
         {/* Identity header */}
-        <div className="flex items-center gap-4 pb-5 border-b border-[#F2ECE3]">
+        <div className="flex items-center gap-4 pb-5 border-b border-[#F6F4F2]">
           <div
             className="w-14 h-14 rounded-full text-white flex items-center justify-center font-bold text-xl shadow-sm shrink-0"
-            style={{ backgroundColor: role === 'super_admin' ? '#24221F' : '#386641' }}
+            style={{ backgroundColor: role === 'super_admin' ? '#0D1C42' : '#800020' }}
           >
             {getInitials(currentUser?.name || 'User')}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="font-display font-bold text-xl text-[#24221F] truncate">
+              <h2 className="font-display font-bold text-xl text-[#0D1C42] truncate">
                 {currentUser?.name}
               </h2>
               <Badge variant="sage" size="sm" className="capitalize">
                 {role.replace('_', ' ')}
               </Badge>
             </div>
-            <p className="text-xs font-mono text-[#8C867C] mt-0.5">
+            <p className="text-xs font-mono text-[#667085] mt-0.5">
               @{currentUser?.username} · {currentUser?.uid}
             </p>
           </div>
@@ -93,13 +93,13 @@ export const ProfileView: React.FC = () => {
             ].map((row, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 py-2.5 border-b border-[#F5F1EA] last:border-0"
+                className="flex items-center gap-3 py-2.5 border-b border-[#F6F4F2] last:border-0"
               >
-                <span className="text-[#8C867C]">{row.icon}</span>
-                <span className="text-xs font-semibold text-[#736E65] uppercase tracking-wider w-44 shrink-0">
+                <span className="text-[#667085]">{row.icon}</span>
+                <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider w-44 shrink-0">
                   {row.label}
                 </span>
-                <span className="text-sm text-[#24221F] font-medium truncate">{row.value}</span>
+                <span className="text-sm text-[#0D1C42] font-medium truncate">{row.value}</span>
               </div>
             ))}
 
@@ -123,7 +123,7 @@ export const ProfileView: React.FC = () => {
         ) : (
           <form onSubmit={handleSave} className="pt-5 space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
                 Name
               </label>
               <input
@@ -135,7 +135,7 @@ export const ProfileView: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
                 Phone
               </label>
               <input
@@ -146,7 +146,7 @@ export const ProfileView: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1">
                 Email
               </label>
               <input

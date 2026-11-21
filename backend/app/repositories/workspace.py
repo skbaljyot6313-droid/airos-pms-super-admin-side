@@ -17,7 +17,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.employee import Employee
 from app.models.property import Property
-from app.models.structure import Area, Dorm, Room, Washroom, Zone
+from app.models.structure import Area, Dorm, Room, Section, Washroom, Zone
 from app.models.task import Task
 from app.models.user import User, UserRole
 
@@ -101,6 +101,13 @@ class WorkspaceRepository:
             q = q.where(Property.id == user.property_id)
         res = await self.session.execute(q)
         return res.scalar_one_or_none()
+
+    async def list_sections(self, user: User, *, property_id=None, page=1, limit=None) -> dict:
+        q = _company_scope(select(Section), Section, user)
+        if property_id:
+            q = q.where(Section.property_id == property_id)
+        q = q.order_by(Section.name, Section.id)
+        return await _paged(self.session, q, page, limit)
 
     async def list_areas(self, user: User, *, property_id=None, page=1, limit=None) -> dict:
         q = _company_scope(select(Area), Area, user)

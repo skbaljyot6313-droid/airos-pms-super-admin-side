@@ -92,7 +92,7 @@ export const LeavesPanel: React.FC = () => {
 
   if (!isStaff) {
     return (
-      <Card className="p-6 text-sm text-[#66706A]">
+      <Card className="p-6 text-sm text-[#800020]">
         Leave decisions are restricted to supervisory staff.
       </Card>
     );
@@ -104,26 +104,26 @@ export const LeavesPanel: React.FC = () => {
 
   return (
     <Card className="p-0 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#EDEAE2]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#F6F4F2]">
         <div className="flex items-center gap-2">
-          <CalendarOff className="w-4 h-4 text-[#2F6B45]" />
-          <h3 className="font-display font-semibold text-sm text-[#17221B]">
+          <CalendarOff className="w-4 h-4 text-[#800020]" />
+          <h3 className="font-display font-semibold text-sm text-[#0D1C42]">
             Leave Requests
           </h3>
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-[#FFF3E4] text-[#C98232]">
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-[#FDF3E2] text-[#A56514]">
             {pending.length} pending
           </span>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowDecided((v) => !v)}
-            className="text-[11px] font-semibold text-[#66706A] hover:text-[#17221B] cursor-pointer"
+            className="text-[11px] font-semibold text-[#800020] hover:text-[#0D1C42] cursor-pointer"
           >
             {showDecided ? 'Show pending' : `History (${decided.length})`}
           </button>
           <button
             onClick={() => void load()}
-            className="p-1.5 rounded-[6px] text-[#66706A] hover:text-[#17221B] hover:bg-[#F1EEE7] cursor-pointer"
+            className="p-1.5 rounded-[6px] text-[#800020] hover:text-[#0D1C42] hover:bg-[#F6F4F2] cursor-pointer"
             title="Refresh"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -132,7 +132,7 @@ export const LeavesPanel: React.FC = () => {
       </div>
 
       {actionError && (
-        <div className="mx-4 mt-3 bg-[#FDE8E8] border border-[#F2C9C9] rounded-[8px] px-3 py-2 text-[11px] text-[#A82828]">
+        <div className="mx-4 mt-3 bg-[#FAEBEB] border border-[#F0C8C8] rounded-[8px] px-3 py-2 text-[11px] text-[#A83434]">
           {actionError}
         </div>
       )}
@@ -144,25 +144,25 @@ export const LeavesPanel: React.FC = () => {
         </div>
       ) : status === 'error' ? (
         <div className="p-6 text-center">
-          <p className="text-xs text-[#B33A3A]">{error}</p>
+          <p className="text-xs text-[#A83434]">{error}</p>
           <Button variant="ghost" onClick={() => void load()} className="mt-2">
             Retry
           </Button>
         </div>
       ) : visible.length === 0 ? (
-        <div className="p-8 text-center text-xs text-[#8A918C]">
+        <div className="p-8 text-center text-xs text-[#800020]">
           {showDecided
             ? 'No decided requests yet.'
             : 'No pending leave requests.'}
         </div>
       ) : (
-        <div className="divide-y divide-[#F4F1EA]">
+        <div className="divide-y divide-[#F6F4F2]">
           {visible.map((r) => (
             <div key={r.request_uid} className="px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-xs font-semibold text-[#17221B]">
+                    <p className="text-xs font-semibold text-[#0D1C42]">
                       {r.employee_name}
                     </p>
                     <Badge
@@ -172,7 +172,7 @@ export const LeavesPanel: React.FC = () => {
                       {r.status}
                     </Badge>
                   </div>
-                  <p className="text-[11px] text-[#66706A] mt-0.5">
+                  <p className="text-[11px] text-[#800020] mt-0.5">
                     {r.request_type === 'leave'
                       ? LEAVE_TYPE_LABELS[r.leave_type ?? ''] ?? 'Leave'
                       : 'Week Off'}
@@ -182,12 +182,12 @@ export const LeavesPanel: React.FC = () => {
                     {r.requested_days} day{r.requested_days === 1 ? '' : 's'}
                   </p>
                   {r.reason && (
-                    <p className="text-[11px] text-[#8A918C] mt-0.5 italic">
+                    <p className="text-[11px] text-[#800020] mt-0.5 italic">
                       “{r.reason}”
                     </p>
                   )}
                   {r.review_comment && (
-                    <p className="text-[11px] text-[#8A918C] mt-0.5">
+                    <p className="text-[11px] text-[#800020] mt-0.5">
                       {r.reviewed_by}: “{r.review_comment}”
                     </p>
                   )}
@@ -199,7 +199,7 @@ export const LeavesPanel: React.FC = () => {
                       variant="primary"
                       onClick={() => void decide(r, true)}
                       disabled={deciding !== null}
-                      className="gap-1 !rounded-[7px] !px-2.5 !py-1.5 text-[11px] !bg-[#2F6B45] hover:!bg-[#245538]"
+                      className="gap-1 !rounded-[7px] !px-2.5 !py-1.5 text-[11px] !bg-[#800020] hover:!bg-[#0D1C42]"
                     >
                       <Check className="w-3.5 h-3.5" /> Approve
                     </Button>
@@ -207,7 +207,7 @@ export const LeavesPanel: React.FC = () => {
                       variant="ghost"
                       onClick={() => void decide(r, false)}
                       disabled={deciding !== null}
-                      className="gap-1 !rounded-[7px] !px-2.5 !py-1.5 text-[11px] !text-[#A82828] hover:!bg-[#FDE8E8]"
+                      className="gap-1 !rounded-[7px] !px-2.5 !py-1.5 text-[11px] !text-[#A83434] hover:!bg-[#FAEBEB]"
                     >
                       <X className="w-3.5 h-3.5" /> Reject
                     </Button>
@@ -217,7 +217,7 @@ export const LeavesPanel: React.FC = () => {
                           commentFor === r.request_uid ? null : r.request_uid
                         )
                       }
-                      className="text-[10px] text-[#66706A] underline cursor-pointer"
+                      className="text-[10px] text-[#800020] underline cursor-pointer"
                     >
                       note
                     </button>
@@ -229,7 +229,7 @@ export const LeavesPanel: React.FC = () => {
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Optional review note…"
-                  className="mt-2 w-full bg-[#FAF8F5] border border-[#DDD7CB] rounded-[8px] px-2.5 py-1.5 text-xs focus:outline-none"
+                  className="mt-2 w-full bg-[#FFFFFF] border border-[#D6D3D1] rounded-[8px] px-2.5 py-1.5 text-xs focus:outline-none"
                 />
               )}
             </div>

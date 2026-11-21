@@ -78,6 +78,19 @@ async def get_property(
     return ws.property_out(prop)
 
 
+@router.get("/sections")
+async def list_sections(
+    property_uid: str | None = Query(default=None),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    res = await WorkspaceRepository(session).list_sections(
+        user, property_id=_uid(property_uid)
+    )
+    res["items"] = [ws.section_out(x) for x in res["items"]]
+    return res
+
+
 @router.get("/areas")
 async def list_areas(
     property_uid: str | None = Query(default=None),

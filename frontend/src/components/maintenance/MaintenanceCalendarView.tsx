@@ -63,7 +63,7 @@ export const MaintenanceCalendarView: React.FC = () => {
         const finished = day.closed + day.resolved;
         return (
           <div className="mt-1.5 space-y-1">
-            <span className="block text-[11px] font-semibold text-[#48443D]">
+            <span className="block text-[11px] font-semibold text-[#0D1C42]">
               {day.raised > 0 && `${day.raised} raised`}
               {day.raised > 0 && day.carried > 0 && ' · '}
               {day.carried > 0 && `${day.carried} carried`}
@@ -71,14 +71,14 @@ export const MaintenanceCalendarView: React.FC = () => {
             <span className="flex items-center gap-1">
               {finished > 0 && (
                 <span
-                  className="h-1.5 rounded-full bg-[#386641]"
+                  className="h-1.5 rounded-full bg-[#800020]"
                   style={{ width: `${Math.max(6, finished * 6)}px` }}
                   title={`${finished} resolved/closed`}
                 />
               )}
               {day.cancelled > 0 && (
                 <span
-                  className="h-1.5 rounded-full bg-[#C53B3B]"
+                  className="h-1.5 rounded-full bg-[#D64545]"
                   style={{ width: `${Math.max(6, day.cancelled * 6)}px` }}
                   title={`${day.cancelled} cancelled`}
                 />
@@ -90,10 +90,10 @@ export const MaintenanceCalendarView: React.FC = () => {
       legend={
         <>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1.5 rounded-full bg-[#386641]" /> Resolved / closed
+            <span className="w-2.5 h-1.5 rounded-full bg-[#16865B]" /> Resolved / closed
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1.5 rounded-full bg-[#C53B3B]" /> Cancelled
+            <span className="w-2.5 h-1.5 rounded-full bg-[#D64545]" /> Cancelled
           </span>
           <span className="ml-auto">carried = raised earlier, still open</span>
         </>

@@ -52,7 +52,7 @@ const washroomStatusPresentation = (washroom: Washroom) => {
 };
 
 const sectionLabel =
-  'text-[10px] font-semibold text-[#8C867C] uppercase tracking-wider font-body';
+  'text-[10px] font-semibold text-[#667085] uppercase tracking-wider font-body';
 
 const isActiveTask = (status: string) =>
   !['completed', 'cancelled', 'closed'].includes(status);
@@ -136,14 +136,14 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
 
   if (currentPropertyWashrooms.length === 0) {
     return (
-      <div className="rounded-[14px] border border-dashed border-[#DDD7CB] bg-[#FAF8F5] p-12 text-center">
-        <div className="w-12 h-12 rounded-[12px] bg-white border border-[#D7E7F1] text-[#2D5D7B] flex items-center justify-center mx-auto mb-3">
+      <div className="rounded-[14px] border border-dashed border-[#D6D3D1] bg-[#FFFFFF] p-12 text-center">
+        <div className="w-12 h-12 rounded-[12px] bg-white border border-[#C3D6F0] text-[#2457A8] flex items-center justify-center mx-auto mb-3">
           <Bath className="w-6 h-6" />
         </div>
-        <p className="font-semibold text-sm text-[#24221F]">
+        <p className="font-semibold text-sm text-[#0D1C42]">
           No washrooms configured
         </p>
-        <p className="text-xs text-[#8C867C] mt-1 mb-4 max-w-xs mx-auto">
+        <p className="text-xs text-[#667085] mt-1 mb-4 max-w-xs mx-auto">
           Create a washroom to start managing fixtures, maintenance and tasks.
         </p>
         <Button variant="primary" size="sm" onClick={onCreate}>
@@ -158,7 +158,7 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
     <div className="space-y-4">
       {/* Compact filter toolbar — attachment type + zone */}
       <div className="flex items-center gap-x-5 gap-y-1.5 flex-wrap">
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#736E65] shrink-0">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#667085] shrink-0">
           <SlidersHorizontal className="w-3 h-3" />
           Filters
         </span>
@@ -174,16 +174,16 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                 onClick={() => setAttachmentFilter(opt.value)}
                 title={opt.hint}
                 aria-pressed={active}
-                className={`px-2 py-0.5 rounded-[8px] text-[11px] font-semibold border transition-colors cursor-pointer inline-flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-[#386641] ${
+                className={`px-2 py-0.5 rounded-[8px] text-[11px] font-semibold border transition-colors cursor-pointer inline-flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-[#800020] ${
                   active
-                    ? 'bg-[#386641] text-white border-[#386641]'
-                    : 'bg-white text-[#555047] border-[#E3DCD0] hover:border-[#C6BEB0] hover:bg-[#FAF8F5]'
+                    ? 'bg-[#800020] text-white border-[#800020]'
+                    : 'bg-white text-[#667085] border-[#E7E5E4] hover:border-[#CDC9C7] hover:bg-[#FFFFFF]'
                 }`}
               >
                 {opt.label}
                 <span
                   className={`text-[10px] font-bold ${
-                    active ? 'text-white/75' : 'text-[#8C867C]'
+                    active ? 'text-white/75' : 'text-[#667085]'
                   }`}
                 >
                   {attachmentCounts[opt.value]}
@@ -206,10 +206,10 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                 type="button"
                 onClick={() => onZoneFilterChange(z.zone_uid)}
                 aria-pressed={active}
-                className={`px-2 py-0.5 rounded-[8px] text-[11px] font-semibold border transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#2D5D7B] ${
+                className={`px-2 py-0.5 rounded-[8px] text-[11px] font-semibold border transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#2457A8] ${
                   active
-                    ? 'bg-[#2D5D7B] text-white border-[#2D5D7B]'
-                    : 'bg-white text-[#555047] border-[#E3DCD0] hover:border-[#C6BEB0] hover:bg-[#FAF8F5]'
+                    ? 'bg-[#2457A8] text-white border-[#2457A8]'
+                    : 'bg-white text-[#667085] border-[#E7E5E4] hover:border-[#CDC9C7] hover:bg-[#FFFFFF]'
                 }`}
               >
                 {z.name}
@@ -226,12 +226,12 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                 setAttachmentFilter('all');
                 onZoneFilterChange('all');
               }}
-              className="text-[11px] font-medium text-[#8C867C] hover:text-[#555047] transition-colors cursor-pointer focus:outline-none focus:underline"
+              className="text-[11px] font-medium text-[#667085] hover:text-[#667085] transition-colors cursor-pointer focus:outline-none focus:underline"
             >
               Clear filters
             </button>
           )}
-          <span className="text-[11px] text-[#8C867C]">
+          <span className="text-[11px] text-[#667085]">
             {filteredWashrooms.length} of {currentPropertyWashrooms.length}{' '}
             shown
           </span>
@@ -239,9 +239,9 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
       </div>
 
       {filteredWashrooms.length === 0 ? (
-        <div className="rounded-[14px] border border-dashed border-[#DDD7CB] bg-[#FAF8F5] p-10 text-center">
-          <p className="font-semibold text-sm text-[#24221F]">No washrooms found</p>
-          <p className="text-xs text-[#8C867C] mt-1">
+        <div className="rounded-[14px] border border-dashed border-[#D6D3D1] bg-[#FFFFFF] p-10 text-center">
+          <p className="font-semibold text-sm text-[#0D1C42]">No washrooms found</p>
+          <p className="text-xs text-[#667085] mt-1">
             Adjust the attachment, zone or status filters to see more.
           </p>
         </div>
@@ -277,21 +277,21 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                     onViewDetails(washroom);
                   }
                 }}
-                className="rounded-[14px] border border-[#EAE5DC] bg-white flex flex-col overflow-hidden transition-all duration-150 hover:border-[#C6BEB0] hover:shadow-md cursor-pointer"
+                className="rounded-[14px] border border-[#E7E5E4] bg-white flex flex-col overflow-hidden transition-all duration-150 hover:border-[#CDC9C7] hover:shadow-md cursor-pointer"
                 title={`${washroom.name} — view details`}
               >
                 {/* Facility header */}
                 <div className="px-4 pt-4 pb-3 group">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-10 h-10 rounded-[10px] bg-[#EFF6FA] border border-[#D7E7F1] text-[#2D5D7B] flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-[10px] bg-[#EAF1FB] border border-[#C3D6F0] text-[#2457A8] flex items-center justify-center shrink-0">
                         <Bath className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-display font-bold text-base text-[#24221F] truncate group-hover:text-[#386641] transition-colors">
+                        <h3 className="font-display font-bold text-base text-[#0D1C42] truncate group-hover:text-[#800020] transition-colors">
                           {washroom.name}
                         </h3>
-                        <p className="text-xs text-[#6C675F] truncate">
+                        <p className="text-xs text-[#667085] truncate">
                           {typeLabel}
                           {dorm ? ` · ${dorm.name}` : ''}
                           {zone ? ` · ${zone.name}` : ''}
@@ -304,7 +304,7 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                         e.stopPropagation();
                         onDelete(washroom);
                       }}
-                      className="text-[#999388] hover:text-[#C53B3B] p-1 rounded-[6px] transition-colors cursor-pointer shrink-0"
+                      className="text-[#667085] hover:text-[#D64545] p-1 rounded-[6px] transition-colors cursor-pointer shrink-0"
                       title="Delete washroom"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -316,13 +316,13 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                       {status.label}
                     </span>
                     {activeTickets.length > 0 && (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#A32A2A]">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#A83434]">
                         <Wrench className="w-3 h-3" />
                         {activeTickets.length} active
                       </span>
                     )}
                     {openTasks > 0 && (
-                      <span className="text-xs font-medium text-[#555047]">
+                      <span className="text-xs font-medium text-[#667085]">
                         {openTasks} open task{openTasks === 1 ? '' : 's'}
                       </span>
                     )}
@@ -330,10 +330,10 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                 </div>
 
                 {/* Facility inventory — real fixture rows */}
-                <div className="px-4 py-3 border-t border-[#F2ECE3]">
+                <div className="px-4 py-3 border-t border-[#F6F4F2]">
                   <span className={sectionLabel}>Facilities</span>
                   {groups.length === 0 ? (
-                    <p className="text-xs text-[#8C867C] mt-1.5">
+                    <p className="text-xs text-[#667085] mt-1.5">
                       No fixtures configured
                     </p>
                   ) : (
@@ -343,13 +343,13 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                         const Icon = meta.icon;
                         return (
                           <div key={g.kind} className="text-center min-w-[36px]">
-                            <div className="flex items-center justify-center gap-1.5 text-[#555047]">
+                            <div className="flex items-center justify-center gap-1.5 text-[#667085]">
                               <Icon className="w-3.5 h-3.5" />
-                              <span className="text-base font-bold text-[#24221F]">
+                              <span className="text-base font-bold text-[#0D1C42]">
                                 {String(g.fixtures.length).padStart(2, '0')}
                               </span>
                             </div>
-                            <span className="block text-[10px] font-medium text-[#8C867C] mt-0.5">
+                            <span className="block text-[10px] font-medium text-[#667085] mt-0.5">
                               {meta.plural}
                             </span>
                           </div>
@@ -361,19 +361,19 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
 
                 {/* Fixture status breakdown — real statuses */}
                 {fixtureSummary.total > 0 && (
-                  <div className="px-4 py-2.5 border-t border-[#F2ECE3] flex items-center gap-4 flex-wrap">
+                  <div className="px-4 py-2.5 border-t border-[#F6F4F2] flex items-center gap-4 flex-wrap">
                     <span className={sectionLabel}>Facility Status</span>
                     {(['operational', 'maintenance', 'inactive'] as const).map(
                       (s) => (
                         <span
                           key={s}
-                          className="inline-flex items-center gap-1.5 text-[11px] text-[#555047]"
+                          className="inline-flex items-center gap-1.5 text-[11px] text-[#667085]"
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${FIXTURE_STATUS_DOT[s]}`}
                           />
                           {FIXTURE_STATUS_LABEL[s]}
-                          <span className="font-bold text-[#24221F]">
+                          <span className="font-bold text-[#0D1C42]">
                             {
                               {
                                 operational: fixtureSummary.operational,
@@ -389,14 +389,14 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                 )}
 
                 {/* Zone / dorm metadata — compact */}
-                <div className="px-4 py-2.5 border-t border-[#F2ECE3] flex items-center justify-between gap-3">
+                <div className="px-4 py-2.5 border-t border-[#F6F4F2] flex items-center justify-between gap-3">
                   {dorm ? (
                     <div className="min-w-0">
                       <span className={sectionLabel}>Attached</span>
-                      <p className="text-xs font-medium text-[#24221F] truncate">
+                      <p className="text-xs font-medium text-[#0D1C42] truncate">
                         {dorm.name}
                         {zone && (
-                          <span className="text-[#8C867C] font-normal"> · {zone.name}</span>
+                          <span className="text-[#667085] font-normal"> · {zone.name}</span>
                         )}
                       </p>
                     </div>
@@ -404,7 +404,7 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                     <div className="min-w-0 flex-1">
                       <span className={sectionLabel}>Zone</span>
                       <div className="flex items-center gap-2">
-                        <p className="text-xs font-medium text-[#24221F] truncate">
+                        <p className="text-xs font-medium text-[#0D1C42] truncate">
                           {zone?.name || 'Unallocated'}
                         </p>
                         <select
@@ -416,7 +416,7 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                               e.target.value || null
                             )
                           }
-                          className="text-[10px] font-semibold text-[#386641] bg-transparent border border-transparent hover:border-[#DDD7CB] rounded-[6px] px-1.5 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#386641]"
+                          className="text-[10px] font-semibold text-[#800020] bg-transparent border border-transparent hover:border-[#D6D3D1] rounded-[6px] px-1.5 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#800020]"
                           title="Change zone"
                         >
                           <option value="">Unallocated</option>
@@ -433,13 +433,13 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
 
                 {/* Actions — clicks here don't open the detail view */}
                 <div
-                  className="mt-auto px-4 py-3 border-t border-[#F2ECE3] bg-[#FAF8F5] flex items-center gap-2"
+                  className="mt-auto px-4 py-3 border-t border-[#F6F4F2] bg-[#FFFFFF] flex items-center gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
                     type="button"
                     onClick={() => onViewDetails(washroom)}
-                    className="flex-1 px-2.5 py-1.5 rounded-[8px] text-xs font-semibold text-[#386641] hover:bg-[#EBF3EC] transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
+                    className="flex-1 px-2.5 py-1.5 rounded-[8px] text-xs font-semibold text-[#800020] hover:bg-[#F7E9EE] transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
                   >
                     View Details
                     <ArrowRight className="w-3 h-3" />
@@ -449,7 +449,7 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                     onClick={() =>
                       onMaintenance(washroom, activeTickets[0] || null)
                     }
-                    className="flex-1 px-2.5 py-1.5 rounded-[8px] text-xs font-semibold text-[#A32A2A] hover:bg-[#FDE8E8] transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
+                    className="flex-1 px-2.5 py-1.5 rounded-[8px] text-xs font-semibold text-[#A83434] hover:bg-[#FAEBEB] transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
                   >
                     <Wrench className="w-3 h-3" />
                     {activeTickets.length > 0
@@ -459,7 +459,7 @@ export const WashroomsView: React.FC<WashroomsViewProps> = ({
                   <button
                     type="button"
                     onClick={() => onEdit(washroom)}
-                    className="px-2.5 py-1.5 rounded-[8px] text-xs font-semibold text-[#555047] hover:bg-[#F2ECE3] transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
+                    className="px-2.5 py-1.5 rounded-[8px] text-xs font-semibold text-[#667085] hover:bg-[#F6F4F2] transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
                   >
                     <Pencil className="w-3 h-3" />
                     Edit

@@ -12,7 +12,7 @@ from sqlalchemy import inspect as sa_inspect
 from app.core.storage import storage_key_from_url
 from app.models.employee import Employee
 from app.models.property import Property
-from app.models.structure import Area, Bed, Dorm, Room, Washroom, Zone
+from app.models.structure import Area, Bed, Dorm, Room, Section, Washroom, Zone
 from app.models.task import (
     Task,
     TaskCompletionImage,
@@ -52,10 +52,22 @@ def property_out(p: Property) -> dict:
     }
 
 
+def section_out(s: Section) -> dict:
+    return {
+        "section_uid": str(s.id),
+        "property_uid": str(s.property_id),
+        "name": s.name,
+        "code": s.code,
+        "description": s.description,
+        "created_at": s.created_at,
+    }
+
+
 def area_out(a: Area) -> dict:
     return {
         "area_uid": str(a.id),
         "property_uid": str(a.property_id),
+        "section_uid": str(a.section_id) if a.section_id else None,
         "name": a.name,
         "code": a.code,
         "level_number": a.level_number,
@@ -74,6 +86,12 @@ def zone_out(z: Zone) -> dict:
         "zone_type": z.zone_type,
         "floor": z.floor,
         "description": z.description,
+        "custom_units": [
+            {"name": u["name"], "qty": u.get("qty", 1)}
+            if isinstance(u, dict)
+            else {"name": str(u), "qty": 1}
+            for u in (z.custom_units or [])
+        ],
         "created_at": z.created_at,
     }
 
@@ -471,6 +489,7 @@ def task_out(t: Task) -> dict:
         "series_id": str(t.series_id) if t.series_id else None,
         "scheduled_for": t.scheduled_for,
         "expires_at": t.expires_at,
+        "department_id": str(t.department_id) if t.department_id else None,
         "template_id": str(t.template_id) if t.template_id else None,
         "abandoned_at": t.abandoned_at,
         "abandoned_reason": t.abandoned_reason,
@@ -495,7 +514,8 @@ def task_out(t: Task) -> dict:
         "completed_at": t.completed_at.isoformat() if t.completed_at else None,
         "created_at": t.created_at,
         # Detail-only: template checklist + evidence rules resolved by
-        # TaskService.get_task; absent/null on list payloads.
-        "checklist": getattr(t, "_checklist", None),
+        # TaskService.get_task; absent/null on list payloads unless the
+        # task carries its own manager-authored checklist.
+        "checklist": getattr(t, "_checklist", None) or t.checklist,
         "verification": getattr(t, "_verification", None),
     }

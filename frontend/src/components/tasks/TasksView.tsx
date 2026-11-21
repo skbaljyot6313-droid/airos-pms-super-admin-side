@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { CalendarCheck, CalendarDays, ClipboardCheck, History, LayoutTemplate, OctagonX, Plus, Sunrise, Wrench } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -24,6 +24,15 @@ import { Task } from '../../types';
  *   Task History  = "what actual task instances have been generated"
  *     (the tasks table — nothing appears here before it exists as a task)
  */
+type TasksTab = 'today' | 'abandoned' | 'review' | 'maintenance' | 'templates' | 'history' | 'calendar';
+
+const tabFromParams = (sp: URLSearchParams): TasksTab => {
+  const v = sp.get('tab');
+  if (v === 'maintenance' || sp.get('ticket')) return 'maintenance';
+  if (v === 'review' || v === 'templates' || v === 'abandoned' || v === 'history' || v === 'calendar') return v;
+  return 'today';
+};
+
 export const TasksView: React.FC = () => {
   const {
     currentPropertyTasks, currentUser, canDo, deleteTask, activePropertyUid,
@@ -31,16 +40,16 @@ export const TasksView: React.FC = () => {
   } = useApp();
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [tab, setTab] = useState<'today' | 'abandoned' | 'review' | 'maintenance' | 'templates' | 'history' | 'calendar'>(
-    () =>
-      searchParams.get('tab') === 'maintenance' || searchParams.get('ticket')
-        ? 'maintenance'
-        : searchParams.get('tab') === 'review'
-          ? 'review'
-          : searchParams.get('tab') === 'templates'
-            ? 'templates'
-            : 'today'
-  );
+  const [tab, setTab] = useState<TasksTab>(() => tabFromParams(searchParams));
+
+  // The sidebar and other links change ?tab= while this component stays
+  // mounted — keep the active tab in sync with the URL.
+  useEffect(() => {
+    setTab((prev) => {
+      const next = tabFromParams(searchParams);
+      return prev === next ? prev : next;
+    });
+  }, [searchParams]);
   const isStaff = currentUser?.role === 'super_admin' || currentUser?.role === 'property_manager';
   const [selectedTaskUid, setSelectedTaskUid] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -61,10 +70,10 @@ export const TasksView: React.FC = () => {
           <div className="mb-2">
             <BackButton to={`/property/${activePropertyUid}/overview`} />
           </div>
-          <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#24221F] tracking-tight">
+          <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#0D1C42] tracking-tight">
             Tasks
           </h1>
-          <p className="font-body text-sm text-[#6C675F] mt-1">
+          <p className="font-body text-sm text-[#667085] mt-1">
             Today's operational schedule and generated work history
           </p>
         </div>
@@ -97,7 +106,7 @@ export const TasksView: React.FC = () => {
       </div>
 
       {/* Section nav — Today's schedule vs pending review vs history */}
-      <div className="flex items-center gap-1 bg-[#F0EDE6] rounded-[12px] p-1 w-fit">
+      <div className="flex items-center gap-1 bg-[#F6F4F2] rounded-[12px] p-1 w-fit border border-[#E7E5E4]">
         {([
           { v: 'today' as const, l: "Today's Tasks", icon: CalendarCheck },
           { v: 'abandoned' as const, l: "Today's Abandoned", icon: OctagonX },
@@ -121,8 +130,8 @@ export const TasksView: React.FC = () => {
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-[9px] text-[13px] font-semibold transition-all cursor-pointer ${
                 tab === t.v
-                  ? 'bg-white text-[#24221F] shadow-sm'
-                  : 'text-[#6C675F] hover:text-[#24221F]'
+                  ? 'bg-[#800020] text-white shadow-sm'
+                  : 'text-[#667085] hover:text-[#0D1C42] hover:bg-white/60'
               }`}
             >
               <Icon className="w-4 h-4" />

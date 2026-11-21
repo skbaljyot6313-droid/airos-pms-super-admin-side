@@ -13,6 +13,7 @@ import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Washroom, WashroomResourceType } from '../../types';
+import { zoneSupportsUnits } from '../../lib/zoneUtils';
 
 export const WASHROOM_TYPES: { value: WashroomResourceType; label: string }[] = [
   { value: 'male', label: 'Male' },
@@ -183,28 +184,28 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-center gap-3 p-3 rounded-[12px] bg-[#EFF6FA] border border-[#D7E7F1]">
-          <div className="w-10 h-10 rounded-[10px] bg-white text-[#2D5D7B] flex items-center justify-center border border-[#C9DEE9]">
+        <div className="flex items-center gap-3 p-3 rounded-[12px] bg-[#EAF1FB] border border-[#C3D6F0]">
+          <div className="w-10 h-10 rounded-[10px] bg-white text-[#2457A8] flex items-center justify-center border border-[#C3D6F0]">
             <Bath className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-[#24221F]">Washroom Resource</p>
-            <p className="text-xs text-[#6C675F]">
+            <p className="text-sm font-semibold text-[#0D1C42]">Washroom Resource</p>
+            <p className="text-xs text-[#667085]">
               Washrooms can be zoned, allocated for work, and receive maintenance.
             </p>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+          <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
             Washroom Name{derivedName ? '' : ' / Number *'}
           </label>
           {derivedName ? (
             <>
-              <div className="px-3.5 py-2 bg-[#EBF3EC] border border-[#CBE0CF] rounded-[10px] text-sm font-semibold text-[#244E2C]">
+              <div className="px-3.5 py-2 bg-[#F7E9EE] border border-[#EAD3DB] rounded-[10px] text-sm font-semibold text-[#0D1C42]">
                 {derivedName}
               </div>
-              <p className="text-[10px] text-[#8C867C] mt-1">
+              <p className="text-[10px] text-[#667085] mt-1">
                 Automatically generated from the dorm name — updates
                 automatically if the dorm is renamed.
               </p>
@@ -217,14 +218,14 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. W-001 or Male Washroom - Ground Floor"
-                className={`w-full px-3.5 py-2 bg-[#FAF8F5] border rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 ${
+                className={`w-full px-3.5 py-2 bg-[#FFFFFF] border rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 ${
                   nameTaken
-                    ? 'border-[#E5A3A3] focus:ring-[#C53B3B]'
-                    : 'border-[#DDD7CB] focus:ring-[#386641]'
+                    ? 'border-[#B34A68] focus:ring-[#D64545]'
+                    : 'border-[#D6D3D1] focus:ring-[#800020]'
                 }`}
               />
               {nameTaken && (
-                <p className="text-[11px] text-[#A82828] font-body mt-1 flex items-center gap-1">
+                <p className="text-[11px] text-[#A83434] font-body mt-1 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3 shrink-0" />
                   A washroom named "{name.trim()}" already exists in this property.
                 </p>
@@ -235,13 +236,13 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div>
-            <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+            <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
               Washroom Type *
             </label>
             <select
               value={washroomType}
               onChange={(e) => setWashroomType(e.target.value as WashroomResourceType)}
-              className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+              className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
             >
               {WASHROOM_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -254,28 +255,28 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
           <div>
             {attachedDorm ? (
               <>
-                <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+                <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
                   Attached To
                 </label>
-                <div className="px-3.5 py-2 bg-[#EBF3EC] border border-[#CBE0CF] rounded-[10px] text-sm font-medium text-[#244E2C]">
+                <div className="px-3.5 py-2 bg-[#F7E9EE] border border-[#EAD3DB] rounded-[10px] text-sm font-medium text-[#0D1C42]">
                   {attachedDorm.name}
-                  <span className="block text-[10px] text-[#5F7F65] font-normal">
+                  <span className="block text-[10px] text-[#800020] font-normal">
                     Zone inherits from the dorm · independent configuration
                   </span>
                 </div>
               </>
             ) : (
               <>
-                <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-1 font-body">
+                <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-1 font-body">
                   Assign to Zone
                 </label>
                 <select
                   value={zoneUid}
                   onChange={(e) => setZoneUid(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+                  className="w-full px-3.5 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
                 >
                   <option value="">(Unallocated)</option>
-                  {currentPropertyZones.map((z) => (
+                  {currentPropertyZones.filter((z) => zoneSupportsUnits(z)).map((z) => (
                     <option key={z.zone_uid} value={z.zone_uid}>
                       {z.name}
                     </option>
@@ -287,7 +288,7 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
         </div>
 
         <div>
-          <p className="text-[10px] font-semibold text-[#8C867C] uppercase tracking-wider mb-2 font-body">
+          <p className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider mb-2 font-body">
             Fixture Inventory
           </p>
           <div className="space-y-2">
@@ -304,10 +305,10 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
             ).map(({ label, icon: Icon, value, setter }) => (
               <div
                 key={label}
-                className="flex items-center justify-between rounded-[10px] border border-[#EAE5DC] bg-[#FAF8F5] px-3 py-1.5"
+                className="flex items-center justify-between rounded-[10px] border border-[#E7E5E4] bg-[#FFFFFF] px-3 py-1.5"
               >
-                <span className="flex items-center gap-2 text-sm font-medium text-[#24221F]">
-                  <Icon className="w-4 h-4 text-[#6C675F]" />
+                <span className="flex items-center gap-2 text-sm font-medium text-[#0D1C42]">
+                  <Icon className="w-4 h-4 text-[#667085]" />
                   {label}
                 </span>
                 <div className="flex items-center gap-1.5">
@@ -315,18 +316,18 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
                     type="button"
                     onClick={() => setter(Math.max(0, value - 1))}
                     disabled={value <= 0}
-                    className="w-7 h-7 rounded-[7px] border border-[#DDD7CB] bg-white text-[#555047] hover:border-[#386641] hover:text-[#386641] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
+                    className="w-7 h-7 rounded-[7px] border border-[#D6D3D1] bg-white text-[#667085] hover:border-[#800020] hover:text-[#800020] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="w-8 text-center text-sm font-bold text-[#24221F]">
+                  <span className="w-8 text-center text-sm font-bold text-[#0D1C42]">
                     {value}
                   </span>
                   <button
                     type="button"
                     onClick={() => setter(Math.min(200, value + 1))}
                     disabled={value >= 200}
-                    className="w-7 h-7 rounded-[7px] border border-[#DDD7CB] bg-white text-[#555047] hover:border-[#386641] hover:text-[#386641] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
+                    className="w-7 h-7 rounded-[7px] border border-[#D6D3D1] bg-white text-[#667085] hover:border-[#800020] hover:text-[#800020] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -338,9 +339,9 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
             {Object.entries(customFixtures).map(([label, n]) => (
               <div
                 key={label}
-                className="flex items-center justify-between rounded-[10px] border border-[#EAE5DC] bg-[#FAF8F5] px-3 py-1.5"
+                className="flex items-center justify-between rounded-[10px] border border-[#E7E5E4] bg-[#FFFFFF] px-3 py-1.5"
               >
-                <span className="text-sm font-medium text-[#24221F] truncate">
+                <span className="text-sm font-medium text-[#0D1C42] truncate">
                   {label}
                 </span>
                 <div className="flex items-center gap-1.5">
@@ -354,11 +355,11 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
                         return next;
                       })
                     }
-                    className="w-7 h-7 rounded-[7px] border border-[#DDD7CB] bg-white text-[#555047] hover:border-[#386641] hover:text-[#386641] transition-colors cursor-pointer flex items-center justify-center"
+                    className="w-7 h-7 rounded-[7px] border border-[#D6D3D1] bg-white text-[#667085] hover:border-[#800020] hover:text-[#800020] transition-colors cursor-pointer flex items-center justify-center"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="w-8 text-center text-sm font-bold text-[#24221F]">
+                  <span className="w-8 text-center text-sm font-bold text-[#0D1C42]">
                     {n}
                   </span>
                   <button
@@ -369,7 +370,7 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
                         [label]: Math.min(200, n + 1),
                       }))
                     }
-                    className="w-7 h-7 rounded-[7px] border border-[#DDD7CB] bg-white text-[#555047] hover:border-[#386641] hover:text-[#386641] transition-colors cursor-pointer flex items-center justify-center"
+                    className="w-7 h-7 rounded-[7px] border border-[#D6D3D1] bg-white text-[#667085] hover:border-[#800020] hover:text-[#800020] transition-colors cursor-pointer flex items-center justify-center"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -382,7 +383,7 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
                         return next;
                       })
                     }
-                    className="w-7 h-7 rounded-[7px] text-[#A59F95] hover:text-[#C53B3B] hover:bg-[#FDE8E8] transition-colors cursor-pointer flex items-center justify-center"
+                    className="w-7 h-7 rounded-[7px] text-[#98A2B3] hover:text-[#D64545] hover:bg-[#FAEBEB] transition-colors cursor-pointer flex items-center justify-center"
                     title={`Remove ${label}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -398,7 +399,7 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
                 value={newFixtureLabel}
                 onChange={(e) => setNewFixtureLabel(e.target.value)}
                 placeholder="Custom fixture, e.g. Hand Dryer"
-                className="flex-1 px-3 py-1.5 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm text-[#24221F] focus:outline-none focus:ring-2 focus:ring-[#386641]"
+                className="flex-1 px-3 py-1.5 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
               />
               <button
                 type="button"
@@ -409,7 +410,7 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
                   setCustomFixtures((prev) => ({ ...prev, [l]: prev[l] || 1 }));
                   setNewFixtureLabel('');
                 }}
-                className="px-2.5 py-1.5 rounded-[8px] text-xs font-semibold bg-[#EBF3EC] text-[#244E2C] hover:bg-[#DCEBDE] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer inline-flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-[8px] text-xs font-semibold bg-[#F7E9EE] text-[#0D1C42] hover:bg-[#EAD3DB] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer inline-flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Fixture Type
@@ -418,7 +419,7 @@ export const WashroomModal: React.FC<WashroomModalProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F0ECE4]">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F6F4F2]">
           <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>

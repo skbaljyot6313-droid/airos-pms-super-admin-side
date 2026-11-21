@@ -23,7 +23,7 @@ export function ActivityTimeline({ events, grouped, propertyIds, onOpenTask }: P
   }, [events, grouped]);
   return <div role="region" aria-label="Activity timeline" className="pb-4">
     {days.map(([key, groups]) => <section key={key}>
-      <h2 className="sticky top-0 z-10 border-y border-[#EFEFE7] bg-[#FAFAF7] px-5 py-2 text-[11px] font-semibold uppercase tracking-wider text-[#6C675F]">{timelineDateLabel(groups[0].events[0].occurred_at)}</h2>
+      <h2 className="sticky top-0 z-10 border-y border-[#C3D6F0] bg-[#FFFFFF] px-5 py-2 text-[11px] font-semibold uppercase tracking-wider text-[#667085]">{timelineDateLabel(groups[0].events[0].occurred_at)}</h2>
       <ol aria-label={`Events on ${key}`}>
         {groups.map((group) => <ActivityRow key={group.id} events={group.events}
           workspaceAvailable={!!group.events[0].property_uid && propertyIds.includes(group.events[0].property_uid)} onOpenTask={onOpenTask} />)}

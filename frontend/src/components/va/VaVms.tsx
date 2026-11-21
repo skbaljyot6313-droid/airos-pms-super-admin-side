@@ -58,7 +58,7 @@ const STATUS_DOT: Record<VaCamera['connection_status'], string> = {
   online: 'bg-emerald-500',
   offline: 'bg-red-500',
   error: 'bg-amber-500',
-  unknown: 'bg-[#B7B0A4]',
+  unknown: 'bg-[#CDC9C7]',
 };
 
 /** One grid cell — owns its session + player lifecycle independently. */
@@ -225,7 +225,7 @@ const CameraTile: React.FC<{
   }, [camera.camera_uid, effectiveQuality]);
 
   return (
-    <div className="group relative bg-[#17150F] rounded-lg overflow-hidden border border-[#3A362E] aspect-video">
+    <div className="group relative bg-[#0D1C42] rounded-lg overflow-hidden border border-[#0D1C42] aspect-video">
       <video
         ref={videoRef}
         autoPlay
@@ -234,7 +234,7 @@ const CameraTile: React.FC<{
         className="w-full h-full object-contain"
       />
       {state !== 'live' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#8C867C]">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#667085]">
           {state === 'connecting' ? (
             <>
               <Loader2 className="w-6 h-6 animate-spin" />
@@ -246,7 +246,7 @@ const CameraTile: React.FC<{
               <span className="text-[12px]">{errMsg || 'Stream unavailable'}</span>
               <button
                 onClick={connect}
-                className="mt-1 flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#2B2820] text-[11px] text-[#D8D2C6] hover:bg-[#38342A]"
+                className="mt-1 flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#0D1C42] text-[11px] text-[#D6D3D1] hover:bg-[#0D1C42]"
               >
                 <RefreshCw className="w-3 h-3" /> Retry
               </button>
@@ -356,8 +356,8 @@ export const VaVms: React.FC<{ propertyUid: string }> = ({ propertyUid }) => {
       }}
       className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[12.5px] transition-colors ${
         sel === key
-          ? 'bg-[#E7EFE7] text-[#386641] font-semibold'
-          : 'text-[#58534C] hover:bg-[#EFECE5]'
+          ? 'bg-[#F7E9EE] text-[#800020] font-semibold'
+          : 'text-[#667085] hover:bg-[#F6F4F2]'
       }`}
     >
       <span className="truncate">{label}</span>
@@ -365,7 +365,7 @@ export const VaVms: React.FC<{ propertyUid: string }> = ({ propertyUid }) => {
         {online > 0 && (
           <span className="text-emerald-600 font-medium">{online}</span>
         )}
-        <span className="text-[#A39D92]">{count}</span>
+        <span className="text-[#98A2B3]">{count}</span>
       </span>
     </button>
   );
@@ -373,8 +373,8 @@ export const VaVms: React.FC<{ propertyUid: string }> = ({ propertyUid }) => {
   return (
     <div className="flex-1 flex min-h-0">
       {/* Sidebar */}
-      <aside className="w-52 flex-none border-r border-[#EAE5DC] bg-[#FBFAF7] p-3 flex flex-col gap-1 overflow-y-auto">
-        <div className="text-[10.5px] font-semibold tracking-wide text-[#A39D92] uppercase px-3 pb-1">
+      <aside className="w-52 flex-none border-r border-[#E7E5E4] bg-[#FFFFFF] p-3 flex flex-col gap-1 overflow-y-auto">
+        <div className="text-[10.5px] font-semibold tracking-wide text-[#98A2B3] uppercase px-3 pb-1">
           Cameras
         </div>
         {sectionBtn(
@@ -383,7 +383,7 @@ export const VaVms: React.FC<{ propertyUid: string }> = ({ propertyUid }) => {
           cameras.length,
           cameras.filter((c) => c.connection_status === 'online').length
         )}
-        <div className="text-[10.5px] font-semibold tracking-wide text-[#A39D92] uppercase px-3 pt-3 pb-1">
+        <div className="text-[10.5px] font-semibold tracking-wide text-[#98A2B3] uppercase px-3 pt-3 pb-1">
           Areas &amp; zones
         </div>
         {areas.map((a) => {
@@ -436,17 +436,17 @@ export const VaVms: React.FC<{ propertyUid: string }> = ({ propertyUid }) => {
       <div className="flex-1 flex flex-col min-w-0 p-4">
         {/* Toolbar */}
         <div className="flex items-center gap-2 pb-3">
-          <span className="flex items-center gap-1.5 text-[12px] font-semibold text-[#386641]">
+          <span className="flex items-center gap-1.5 text-[12px] font-semibold text-[#800020]">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             LIVE
           </span>
-          <span className="text-[12px] text-[#8C867C]">
+          <span className="text-[12px] text-[#667085]">
             {filtered.length} camera{filtered.length === 1 ? '' : 's'} ·{' '}
             {onlineCount} online
           </span>
           <div className="flex-1" />
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A39D92]" />
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
             <input
               value={search}
               onChange={(e) => {
@@ -454,7 +454,7 @@ export const VaVms: React.FC<{ propertyUid: string }> = ({ propertyUid }) => {
                 setPage(0);
               }}
               placeholder="Search cameras…"
-              className="pl-8 pr-3 py-1.5 rounded-lg border border-[#EAE5DC] bg-white text-[12.5px] w-44 outline-none focus:border-[#386641]"
+              className="pl-8 pr-3 py-1.5 rounded-lg border border-[#E7E5E4] bg-white text-[12.5px] w-44 outline-none focus:border-[#800020]"
             />
           </div>
           {([1, 4, 9, 16] as GridSize[]).map((n) => (
@@ -467,8 +467,8 @@ export const VaVms: React.FC<{ propertyUid: string }> = ({ propertyUid }) => {
               title={`${Math.sqrt(n)}×${Math.sqrt(n)}`}
               className={`p-2 rounded-lg border text-[11px] font-medium ${
                 grid === n
-                  ? 'border-[#386641] bg-[#E7EFE7] text-[#386641]'
-                  : 'border-[#EAE5DC] text-[#8C867C] hover:text-[#58534C]'
+                  ? 'border-[#800020] bg-[#F7E9EE] text-[#800020]'
+                  : 'border-[#E7E5E4] text-[#667085] hover:text-[#667085]'
               }`}
             >
               {n === 1 ? <Video className="w-4 h-4" /> : n === 4 ? <Grid2x2 className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
@@ -477,7 +477,7 @@ export const VaVms: React.FC<{ propertyUid: string }> = ({ propertyUid }) => {
           <button
             onClick={load}
             title="Refresh"
-            className="p-2 rounded-lg border border-[#EAE5DC] text-[#8C867C] hover:text-[#58534C]"
+            className="p-2 rounded-lg border border-[#E7E5E4] text-[#667085] hover:text-[#667085]"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -485,11 +485,11 @@ export const VaVms: React.FC<{ propertyUid: string }> = ({ propertyUid }) => {
 
         {/* Grid */}
         {loading && cameras.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-[#A39D92]">
+          <div className="flex-1 flex items-center justify-center text-[#98A2B3]">
             <Loader2 className="w-6 h-6 animate-spin" />
           </div>
         ) : visible.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-2 text-[#A39D92]">
+          <div className="flex-1 flex flex-col items-center justify-center gap-2 text-[#98A2B3]">
             <Cctv className="w-8 h-8" />
             <span className="text-[13px]">
               No cameras here — add them in Camera Settings.
@@ -518,7 +518,7 @@ export const VaVms: React.FC<{ propertyUid: string }> = ({ propertyUid }) => {
                 key={i}
                 onClick={() => setPage(i)}
                 className={`w-2 h-2 rounded-full ${
-                  i === pageClamped ? 'bg-[#386641]' : 'bg-[#D8D2C6]'
+                  i === pageClamped ? 'bg-[#800020]' : 'bg-[#D6D3D1]'
                 }`}
               />
             ))}

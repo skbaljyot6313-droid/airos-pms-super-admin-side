@@ -9,8 +9,8 @@ import { useApp } from '../../context/AppContext';
 /* ================================================================== */
 /* Tokens                                                              */
 /* ================================================================== */
-const G = '#123C32', G2 = '#0C2C24', LIME = '#C7F36B', IVORY = '#F7F7F2',
-      INK = '#17211E', SAGE = '#E5EEE7', CORAL = '#FF8965', MUT = '#5C6B64';
+const G = '#0D1C42', G2 = '#0D1C42', LIME = '#EAD3DB', IVORY = '#FFFCFA',
+      INK = '#0D1C42', SAGE = '#F7E9EE', CORAL = '#B34A68', MUT = '#800020';
 
 /* ================================================================== */
 /* Motion primitives                                                   */
@@ -121,7 +121,7 @@ const Header: React.FC = () => {
       </Link>
       <nav aria-label="Primary" className="mx-auto hidden items-center gap-1 md:flex">
         {NAV.map(([l, h]) => <a key={h} href={h}
-          className="rounded-md px-3 py-1.5 text-[13px] font-medium text-[#5C6B64] transition-colors hover:bg-black/[0.04] hover:text-[#17211E]">{l}</a>)}
+          className="rounded-md px-3 py-1.5 text-[13px] font-medium text-[#800020] transition-colors hover:bg-black/[0.04] hover:text-[#0D1C42]">{l}</a>)}
       </nav>
       <div className="ml-auto flex items-center gap-2 md:ml-0">
         <Link to="/login" className="rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-colors hover:bg-black/[0.04]"
@@ -199,13 +199,13 @@ const Hero: React.FC = () => (
             <div className="mt-1.5 flex items-end justify-between">
               <p className="text-[22px] font-bold tabular-nums" style={{ color: INK }}>126</p>
               <p className="pb-1 text-[9.5px]" style={{ color: MUT }}>tasks routed</p></div>
-            <span className="mt-2 block h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: '#F0F2EC' }}>
+            <span className="mt-2 block h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: '#F6F4F2' }}>
               <span className="lp-fill block h-full w-[75%] rounded-full" style={{ backgroundColor: G }} /></span>
-            <p className="mt-1.5 text-[9.5px] font-medium" style={{ color: '#169B72' }}>94% on track</p>
+            <p className="mt-1.5 text-[9.5px] font-medium" style={{ color: '#800020' }}>94% on track</p>
           </HeroFloat>
           {/* completion chip */}
           <HeroFloat className="absolute right-5 top-6 flex items-center gap-1.5 !rounded-full px-3.5 py-2" delay="0.8s">
-            <CheckCircle2 size={14} style={{ color: '#169B72' }} />
+            <CheckCircle2 size={14} style={{ color: '#16865B' }} />
             <span className="whitespace-nowrap text-[11px] font-semibold" style={{ color: INK }}>Room 204 ready · verified</span>
           </HeroFloat>
           {/* employee chip */}
@@ -213,7 +213,7 @@ const Hero: React.FC = () => (
             <Avatar name="Priya Mehta" size={26} />
             <div className="text-left"><p className="text-[10.5px] font-semibold" style={{ color: INK }}>Priya Mehta</p>
               <p className="text-[9px]" style={{ color: MUT }}>Front desk · on duty</p></div>
-            <Dot c="#169B72" pulse />
+            <Dot c="#800020" pulse />
           </HeroFloat>
         </div>
       </Reveal>
@@ -234,19 +234,19 @@ const PILLARS: [string, string, React.ReactNode, string][] = [
 ];
 
 const Pillars: React.FC = () => (
-  <section id="product" className="px-5 py-20 sm:px-8" style={{ backgroundColor: '#FFFFFF' }}>
+  <section id="product" className="px-5 py-20 sm:px-8" style={{ backgroundColor: '#ffffff' }}>
     <div className="mx-auto max-w-[1320px]">
       <Reveal className="max-w-[720px]">
         <Eyebrow>Why AiROS</Eyebrow>
         <H2>Everything connected.<br />Nothing overlooked.</H2>
       </Reveal>
-      <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border md:grid-cols-3" style={{ borderColor: '#E8EAE2', backgroundColor: '#E8EAE2' }}>
+      <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border md:grid-cols-3" style={{ borderColor: '#C3D6F0', backgroundColor: '#C3D6F0' }}>
         {PILLARS.map(([n, t, icon, d], i) => (
           <Reveal key={n} delay={i * 80}>
-            <div className="group h-full p-8 transition-colors duration-200 hover:bg-[#FBFCF8]" style={{ backgroundColor: '#FFFFFF' }}>
+            <div className="group h-full p-8 transition-colors duration-200 hover:bg-[#FFFFFF]" style={{ backgroundColor: '#ffffff' }}>
               <div className="flex items-center justify-between">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: SAGE, color: G }}>{icon}</span>
-                <span className="text-[26px] font-bold" style={{ color: '#DCE3DD' }}>{n}</span>
+                <span className="text-[26px] font-bold" style={{ color: '#EAD3DB' }}>{n}</span>
               </div>
               <h3 className="mt-6 text-[17px] font-semibold" style={{ color: INK }}>{t}</h3>
               <p className="mt-2 text-[13.5px] leading-relaxed" style={{ color: MUT }}>{d}</p>
@@ -316,7 +316,7 @@ const Hospitality: React.FC = () => (
               <div className="mt-2 flex items-center gap-4 text-[11px]" style={{ color: MUT }}>
                 <span><b className="tabular-nums" style={{ color: INK }}>42</b> rooms</span>
                 <span><b className="tabular-nums" style={{ color: INK }}>18</b> team members</span>
-                <span className="flex items-center gap-1" style={{ color: '#169B72' }}><Dot c="#169B72" />Active</span>
+                <span className="flex items-center gap-1" style={{ color: '#800020' }}><Dot c="#800020" />Active</span>
               </div>
             </div>
           </div>
@@ -334,13 +334,13 @@ const Hospitality: React.FC = () => (
 /* §5 Automated work allocation — wide animated workflow               */
 /* ================================================================== */
 const STAGES: [string, string, string, string][] = [
-  ['Created', 'Room preparation required', 'System · check-out trigger', '#D99532'],
-  ['Assigned', 'Rahul Sharma — Housekeeping', 'Round-robin · Zone C', '#6686A0'],
-  ['In progress', 'Room cleaning underway', 'Checklist · 6 of 9 items', '#6686A0'],
-  ['Completed', 'Verified & room ready', 'Approved by supervisor', '#169B72']];
+  ['Created', 'Room preparation required', 'System · check-out trigger', '#A56514'],
+  ['Assigned', 'Rahul Sharma — Housekeeping', 'Round-robin · Zone C', '#3478D4'],
+  ['In progress', 'Room cleaning underway', 'Checklist · 6 of 9 items', '#3478D4'],
+  ['Completed', 'Verified & room ready', 'Approved by supervisor', '#16865B']];
 
 const Workflow: React.FC = () => (
-  <section id="workflow" className="px-5 py-24 sm:px-8" style={{ backgroundColor: '#FFFFFF' }}>
+  <section id="workflow" className="px-5 py-24 sm:px-8" style={{ backgroundColor: '#ffffff' }}>
     <div className="mx-auto max-w-[1320px]">
       <Reveal className="max-w-[760px]">
         <Eyebrow>Automated work allocation</Eyebrow>
@@ -352,19 +352,19 @@ const Workflow: React.FC = () => (
       <div className="mt-14 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
         {/* live task card + 4-stage flow */}
         <Reveal>
-          <div className="rounded-2xl border p-6 sm:p-8" style={{ borderColor: '#E8EAE2', backgroundColor: '#FBFCF8' }}>
+          <div className="rounded-2xl border p-6 sm:p-8" style={{ borderColor: '#C3D6F0', backgroundColor: '#FFFFFF' }}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <Avatar name="Rahul Sharma" size={34} />
                 <div><p className="text-[15px] font-semibold" style={{ color: INK }}>Prepare Room 204</p>
                   <p className="text-[11px]" style={{ color: MUT }}>Rahul Sharma · Housekeeping · Zone C</p></div>
               </div>
-              <span className="rounded-full px-2.5 py-1 text-[10px] font-semibold" style={{ backgroundColor: '#FFF1E6', color: CORAL }}>High priority</span>
+              <span className="rounded-full px-2.5 py-1 text-[10px] font-semibold" style={{ backgroundColor: '#FDF3E2', color: CORAL }}>High priority</span>
             </div>
             {/* connected stages */}
             <div className="relative mt-9">
-              <div className="absolute left-[5%] right-[5%] top-[15px] h-[3px] rounded-full" style={{ backgroundColor: '#E3E8E1' }} />
-              <div className="lp-grow-x absolute left-[5%] top-[15px] h-[3px] rounded-full" style={{ width: '90%', background: `linear-gradient(90deg, #D99532, #6686A0, #169B72)` }} />
+              <div className="absolute left-[5%] right-[5%] top-[15px] h-[3px] rounded-full" style={{ backgroundColor: '#EAD3DB' }} />
+              <div className="lp-grow-x absolute left-[5%] top-[15px] h-[3px] rounded-full" style={{ width: '90%', background: `linear-gradient(90deg, #A56514, #3478D4, #800020)` }} />
               <ol className="relative grid grid-cols-4">
                 {STAGES.map(([t, d, s, c], i) => (
                   <Reveal key={t} delay={i * 150}>
@@ -376,7 +376,7 @@ const Workflow: React.FC = () => (
                       </span>
                       <p className="mt-2.5 text-[12px] font-semibold" style={{ color: INK }}>{t}</p>
                       <p className="mx-auto mt-1 max-w-[150px] text-[10.5px] leading-snug" style={{ color: MUT }}>{d}</p>
-                      <p className="mt-0.5 text-[9.5px]" style={{ color: '#98A2B3' }}>{s}</p>
+                      <p className="mt-0.5 text-[9.5px]" style={{ color: '#7FA8CE' }}>{s}</p>
                     </li>
                   </Reveal>))}
               </ol>
@@ -388,7 +388,7 @@ const Workflow: React.FC = () => (
           <div className="h-full rounded-2xl p-6 text-white sm:p-7" style={{ backgroundColor: G }}>
             <p className="text-[10px] font-semibold uppercase tracking-[0.1em]" style={{ color: 'rgba(199,243,107,0.8)' }}>Operational summary</p>
             <div className="mt-5 space-y-4">
-              {[['Tasks assigned', '24', 'w-full', LIME], ['In progress', '08', 'w-1/3', '#9EC9E2'], ['Completed', '16', 'w-2/3', '#8EDCB9']].map(([l, v, w, c]) => (
+              {[['Tasks assigned', '24', 'w-full', LIME], ['In progress', '08', 'w-1/3', '#7FA8CE'], ['Completed', '16', 'w-2/3', '#EAD3DB']].map(([l, v, w, c]) => (
                 <div key={l as string}>
                   <div className="flex items-baseline justify-between">
                     <span className="text-[12px] text-white/70">{l}</span>
@@ -437,7 +437,7 @@ const Workforce: React.FC = () => {
           <div className="rounded-2xl bg-white p-6 shadow-[0_20px_50px_-24px_rgba(18,60,50,0.25)] sm:p-8">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[['Employees active', '42', ''], ['Tasks assigned', '126', ''], ['Completed today', '94', ''], ['Pending review', '08', '']].map(([l, v]) => (
-                <div key={l} className="rounded-xl border px-3.5 py-3" style={{ borderColor: '#ECEEE6' }}>
+                <div key={l} className="rounded-xl border px-3.5 py-3" style={{ borderColor: '#C3D6F0' }}>
                   <p className="text-[22px] font-bold tabular-nums" style={{ color: INK }}>{v}</p>
                   <p className="text-[9.5px] uppercase tracking-wide" style={{ color: MUT }}>{l}</p></div>))}
             </div>
@@ -449,8 +449,8 @@ const Workforce: React.FC = () => {
                   <div key={d}>
                     <div className="flex justify-between text-[10.5px]" style={{ color: MUT }}>
                       <span>{d}</span><span className="tabular-nums"><b style={{ color: INK }}>{done}</b> / {alloc} done</span></div>
-                    <span className="relative mt-1 block h-2 overflow-hidden rounded-full" style={{ backgroundColor: '#EEF0E9' }}>
-                      <span className="lp-fill absolute inset-y-0 left-0 rounded-full" style={{ width: `${alloc}%`, backgroundColor: '#C9D4CC' }} />
+                    <span className="relative mt-1 block h-2 overflow-hidden rounded-full" style={{ backgroundColor: '#F7E9EE' }}>
+                      <span className="lp-fill absolute inset-y-0 left-0 rounded-full" style={{ width: `${alloc}%`, backgroundColor: '#EAD3DB' }} />
                       <span className="lp-fill absolute inset-y-0 left-0 rounded-full" style={{ width: `${done}%`, backgroundColor: G, animationDelay: '.15s' }} />
                     </span>
                   </div>))}
@@ -460,12 +460,12 @@ const Workforce: React.FC = () => {
             <div className="mt-8">
               <div className="flex items-baseline justify-between">
                 <p className="text-[12px] font-semibold" style={{ color: INK }}>Completion trend · 12 weeks</p>
-                <p className="text-[10.5px] font-medium" style={{ color: '#169B72' }}>▲ 94% this week</p></div>
+                <p className="text-[10.5px] font-medium" style={{ color: '#800020' }}>▲ 94% this week</p></div>
               <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 h-[110px] w-full" role="img" aria-label="Task completion trend rising to 94%">
                 <defs><linearGradient id="lpArea" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={G} stopOpacity="0.22" /><stop offset="100%" stopColor={G} stopOpacity="0" />
                 </linearGradient></defs>
-                {[0, 1, 2].map((i) => <line key={i} x1="0" x2={W} y1={H * (i + 1) / 4} y2={H * (i + 1) / 4} stroke="#EEF0E9" />)}
+                {[0, 1, 2].map((i) => <line key={i} x1="0" x2={W} y1={H * (i + 1) / 4} y2={H * (i + 1) / 4} stroke="#F7E9EE" />)}
                 <polygon points={`0,${H} ${pts} ${W},${H}`} fill="url(#lpArea)" />
                 <polyline points={pts} fill="none" stroke={G} strokeWidth="2.5" strokeLinejoin="round" className="lp-dash" />
                 <circle cx={W} cy={H - 0.94 * H} r="4" fill={LIME} stroke={G} strokeWidth="2" />
@@ -477,24 +477,24 @@ const Workforce: React.FC = () => {
         <Reveal delay={120}>
           <div className="flex h-full flex-col rounded-2xl bg-white p-6 shadow-[0_20px_50px_-24px_rgba(18,60,50,0.25)] sm:p-7">
             <p className="text-[13px] font-semibold" style={{ color: INK }}>Team activity · today</p>
-            <ul className="mt-4 flex-1 divide-y" style={{ borderColor: '#F0F2EC' }}>
+            <ul className="mt-4 flex-1 divide-y" style={{ borderColor: '#F6F4F2' }}>
               {TEAM.map(([n, dept, alloc, done, st]) => (
                 <li key={n} className="flex items-center gap-3 py-3">
                   <Avatar name={n} size={32} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13px] font-medium" style={{ color: INK }}>{n}</p>
                     <p className="text-[10px]" style={{ color: MUT }}>{dept}</p>
-                    <span className="mt-1.5 block h-1 w-full max-w-[120px] overflow-hidden rounded-full" style={{ backgroundColor: '#F0F2EC' }}>
+                    <span className="mt-1.5 block h-1 w-full max-w-[120px] overflow-hidden rounded-full" style={{ backgroundColor: '#F6F4F2' }}>
                       <span className="lp-fill block h-full rounded-full" style={{ width: `${done / alloc * 100}%`, backgroundColor: G }} /></span>
                   </div>
                   <div className="text-right">
                     <p className="text-[13px] font-semibold tabular-nums" style={{ color: INK }}>{done}/{alloc}</p>
-                    <p className="flex items-center justify-end gap-1 text-[9px]" style={{ color: st === 'On duty' ? '#169B72' : '#D99532' }}>
-                      <Dot c={st === 'On duty' ? '#169B72' : '#D99532'} />{st}</p>
+                    <p className="flex items-center justify-end gap-1 text-[9px]" style={{ color: st === 'On duty' ? '#16865B' : '#A56514' }}>
+                      <Dot c={st === 'On duty' ? '#16865B' : '#A56514'} />{st}</p>
                   </div>
                 </li>))}
             </ul>
-            <p className="mt-4 rounded-lg px-3 py-2 text-[10.5px]" style={{ backgroundColor: '#F6F8F2', color: MUT }}>
+            <p className="mt-4 rounded-lg px-3 py-2 text-[10.5px]" style={{ backgroundColor: '#FFFCFA', color: MUT }}>
               Coordination and workload visibility — not surveillance.</p>
           </div>
         </Reveal>
@@ -513,7 +513,7 @@ const PROPS2: [string, string, string, string, number, number][] = [
   ['Palm Lane Apartments', 'Pune · Koregaon Park', 'serviced apartment', PHOTO.apartment, 38, 5]];
 
 const Portfolio: React.FC = () => (
-  <section id="properties" className="px-5 py-24 sm:px-8" style={{ backgroundColor: '#FFFFFF' }}>
+  <section id="properties" className="px-5 py-24 sm:px-8" style={{ backgroundColor: '#ffffff' }}>
     <div className="mx-auto max-w-[1320px]">
       <Reveal className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -521,7 +521,7 @@ const Portfolio: React.FC = () => (
           <H2>One view across<br />every property.</H2>
         </div>
         {/* floating portfolio summary */}
-        <div className="flex gap-6 rounded-2xl border px-6 py-4" style={{ borderColor: '#E8EAE2', backgroundColor: '#FBFCF8' }}>
+        <div className="flex gap-6 rounded-2xl border px-6 py-4" style={{ borderColor: '#C3D6F0', backgroundColor: '#FFFFFF' }}>
           {[['Properties', '08'], ['Rooms', '346'], ['Active teams', '42'], ['Ongoing tasks', '126']].map(([l, v]) => (
             <div key={l} className="text-center">
               <p className="text-[20px] font-bold tabular-nums" style={{ color: G }}>{v}</p>
@@ -556,14 +556,14 @@ const Portfolio: React.FC = () => (
             <Reveal key={name} delay={i * 90}>
               <div className="group relative flex h-[140px] overflow-hidden rounded-2xl">
                 <Img src={img} alt={`${name} — ${kind}`} cls="w-[38%]" />
-                <div className="flex flex-1 flex-col justify-between border border-l-0 p-4" style={{ borderColor: '#ECEEE6', backgroundColor: '#FBFCF8' }}>
+                <div className="flex flex-1 flex-col justify-between border border-l-0 p-4" style={{ borderColor: '#C3D6F0', backgroundColor: '#FFFFFF' }}>
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-[14px] font-semibold" style={{ color: INK }}>{name}</p>
                       <p className="mt-0.5 flex items-center gap-1 text-[10.5px]" style={{ color: MUT }}><MapPin size={9} />{loc}</p>
                     </div>
                     <span className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold"
-                      style={{ backgroundColor: SAGE, color: '#169B72' }}><Dot c="#169B72" />Live</span>
+                      style={{ backgroundColor: SAGE, color: '#800020' }}><Dot c="#800020" />Live</span>
                   </div>
                   <p className="text-[11px]" style={{ color: MUT }}>
                     <b className="tabular-nums" style={{ color: INK }}>{rooms}</b> rooms · <b className="tabular-nums" style={{ color: INK }}>{staff}</b> staff</p>
@@ -624,14 +624,14 @@ const Bento: React.FC = () => (
           </div>
         </Reveal>
         <Reveal delay={80} className="md:col-span-3">
-          <div className="group h-full rounded-2xl border bg-white p-7 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-16px_rgba(18,60,50,0.22)]" style={{ borderColor: '#E8EAE2' }}>
+          <div className="group h-full rounded-2xl border bg-white p-7 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-16px_rgba(18,60,50,0.22)]" style={{ borderColor: '#C3D6F0' }}>
             <span className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: SAGE, color: G }}><Building2 size={18} /></span>
             <h3 className="mt-4 text-[16px] font-semibold" style={{ color: INK }}>Multi-property management</h3>
             <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: MUT }}>Entire portfolios — rooms, floors, zones and washrooms — in one structured view.</p>
             {/* mini property rows */}
             <div className="mt-5 space-y-2">
-              {[['Harbourview', 'Op', '#169B72'], ['Meridian', 'Op', '#169B72'], ['Aster Court', 'Setup', '#D99532']].map(([n, s, c]) => (
-                <div key={n} className="flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: '#F0F2EC' }}>
+              {[['Harbourview', 'Op', '#800020'], ['Meridian', 'Op', '#800020'], ['Aster Court', 'Setup', '#A56514']].map(([n, s, c]) => (
+                <div key={n} className="flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: '#F6F4F2' }}>
                   <Building2 size={12} style={{ color: G }} />
                   <span className="text-[11px] font-medium" style={{ color: INK }}>{n}</span>
                   <span className="ml-auto flex items-center gap-1 text-[9.5px]" style={{ color: c }}><Dot c={c} />{s}</span>
@@ -645,7 +645,7 @@ const Bento: React.FC = () => (
           [<ClipboardList size={17} />, 'Task tracking & review', 'Submissions, approvals, redos and photo evidence.', 'md:col-span-2'],
         ].map(([icon, t, d, cls], i) => (
           <Reveal key={t as string} delay={i * 70} className={cls as string}>
-            <div className="h-full rounded-2xl border bg-white p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-16px_rgba(18,60,50,0.2)]" style={{ borderColor: '#E8EAE2' }}>
+            <div className="h-full rounded-2xl border bg-white p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-16px_rgba(18,60,50,0.2)]" style={{ borderColor: '#C3D6F0' }}>
               <span className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: SAGE, color: G }}>{icon}</span>
               <h3 className="mt-3.5 text-[14.5px] font-semibold" style={{ color: INK }}>{t}</h3>
               <p className="mt-1 text-[12.5px] leading-relaxed" style={{ color: MUT }}>{d}</p>
@@ -654,7 +654,7 @@ const Bento: React.FC = () => (
         <Reveal delay={120} className="md:col-span-4">
           <div className="flex h-full items-center justify-between gap-6 rounded-2xl p-7" style={{ backgroundColor: SAGE }}>
             <div>
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: '#FFFFFF', color: G }}><TrendingUp size={18} /></span>
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: '#ffffff', color: G }}><TrendingUp size={18} /></span>
               <h3 className="mt-4 text-[16px] font-semibold" style={{ color: INK }}>Operational analytics</h3>
               <p className="mt-1.5 max-w-[38ch] text-[13px] leading-relaxed" style={{ color: MUT }}>
                 Workload, completion, attendance and shift adherence — measurable operations, end to end.</p>
@@ -666,7 +666,7 @@ const Bento: React.FC = () => (
           </div>
         </Reveal>
         <Reveal delay={180} className="md:col-span-2">
-          <div className="h-full rounded-2xl border bg-white p-6" style={{ borderColor: '#E8EAE2' }}>
+          <div className="h-full rounded-2xl border bg-white p-6" style={{ borderColor: '#C3D6F0' }}>
             <span className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: SAGE, color: G }}><Search size={17} /></span>
             <h3 className="mt-3.5 text-[14.5px] font-semibold" style={{ color: INK }}>Centralized management</h3>
             <p className="mt-1 text-[12.5px] leading-relaxed" style={{ color: MUT }}>Every property, person and task — one workspace.</p>
@@ -702,7 +702,7 @@ const Brand: React.FC = () => (
         </div>
         <div className="lp-float absolute right-0 top-24 w-[180px] rounded-xl bg-white p-3.5 shadow-[0_18px_44px_-14px_rgba(0,0,0,0.4)]" style={{ animationDelay: '1s' }}>
           <p className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: MUT }}>Team availability</p>
-          {[['Rahul S.', '#169B72'], ['Priya M.', '#D99532']].map(([n, c]) => (
+          {[['Rahul S.', '#800020'], ['Priya M.', '#A56514']].map(([n, c]) => (
             <div key={n} className="mt-2 flex items-center gap-2">
               <Avatar name={n} size={18} /><span className="text-[9.5px] font-medium" style={{ color: INK }}>{n}</span>
               <Dot c={c} /></div>))}
@@ -713,7 +713,7 @@ const Brand: React.FC = () => (
             {[40, 55, 48, 68, 82, 94].map((h, i) => (
               <span key={i} className="flex-1 rounded-t" style={{ height: `${h * 0.5}px`, backgroundColor: i === 5 ? LIME : G }} />))}
           </div>
-          <p className="mt-1.5 text-[10px] font-semibold" style={{ color: '#169B72' }}>94% done</p>
+          <p className="mt-1.5 text-[10px] font-semibold" style={{ color: '#16865B' }}>94% done</p>
         </div>
       </Reveal>
     </div>
@@ -729,7 +729,7 @@ const Cta: React.FC = () => (
           Discover a more connected way to manage properties, coordinate teams and keep work moving.</p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link to="/signup" className="inline-flex items-center gap-2 rounded-lg px-7 py-3.5 text-[14px] font-bold transition-transform duration-150 hover:-translate-y-0.5"
-            style={{ backgroundColor: G, color: '#FFFFFF' }}>Get Started <ArrowUpRight size={15} /></Link>
+            style={{ backgroundColor: G, color: '#ffffff' }}>Get Started <ArrowUpRight size={15} /></Link>
           <Link to="/login" className="inline-flex items-center gap-2 rounded-lg border px-7 py-3.5 text-[14px] font-semibold transition-colors hover:bg-white"
             style={{ borderColor: 'rgba(18,60,50,0.22)', color: INK }}>Login</Link>
         </div>
@@ -744,7 +744,7 @@ const FOOT: [string, [string, string][]][] = [
   ['Account', [['Login', '/login'], ['Get Started', '/signup'], ['Privacy Policy', '#'], ['Terms & Conditions', '#']]]];
 
 const Footer: React.FC = () => (
-  <footer className="border-t px-5 py-14 sm:px-8" style={{ backgroundColor: '#FFFFFF', borderColor: '#ECEEE6' }}>
+  <footer className="border-t px-5 py-14 sm:px-8" style={{ backgroundColor: '#ffffff', borderColor: '#C3D6F0' }}>
     <div className="mx-auto grid max-w-[1320px] gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
       <div>
         <div className="flex items-center gap-2.5">
@@ -760,13 +760,13 @@ const Footer: React.FC = () => (
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: INK }}>{title}</p>
           <ul className="mt-4 space-y-2.5">
             {links.map(([l, h]) => <li key={l}>
-              {h.startsWith('/') ? <Link to={h} className="text-[13px] transition-colors hover:text-[#123C32]" style={{ color: MUT }}>{l}</Link>
-                : <a href={h} className="text-[13px] transition-colors hover:text-[#123C32]" style={{ color: MUT }}>{l}</a>}
+              {h.startsWith('/') ? <Link to={h} className="text-[13px] transition-colors hover:text-[#0D1C42]" style={{ color: MUT }}>{l}</Link>
+                : <a href={h} className="text-[13px] transition-colors hover:text-[#0D1C42]" style={{ color: MUT }}>{l}</a>}
             </li>)}
           </ul>
         </nav>))}
     </div>
-    <div className="mx-auto mt-12 flex max-w-[1320px] items-center justify-between border-t pt-6 text-[11px]" style={{ borderColor: '#ECEEE6', color: MUT }}>
+    <div className="mx-auto mt-12 flex max-w-[1320px] items-center justify-between border-t pt-6 text-[11px]" style={{ borderColor: '#C3D6F0', color: MUT }}>
       <span>© 2026 AiROS PMS</span>
       <span>Built for modern property operations.</span>
     </div>

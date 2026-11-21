@@ -90,29 +90,29 @@ export const SwitchGuestModal: React.FC<SwitchGuestModalProps> = ({
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-center gap-3 p-3 rounded-[12px] bg-[#F4F5FF] border border-[#DCEBDE]">
-          <div className="w-10 h-10 rounded-[10px] bg-white text-[#386641] flex items-center justify-center border border-[#CFE4D1]">
+        <div className="flex items-center gap-3 p-3 rounded-[12px] bg-[#EAF1FB] border border-[#EAD3DB]">
+          <div className="w-10 h-10 rounded-[10px] bg-white text-[#800020] flex items-center justify-center border border-[#EAD3DB]">
             <ArrowRightLeft className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-[#24221F]">
+            <p className="text-sm font-semibold text-[#0D1C42]">
               {source?.guest || 'Guest'} — currently in {source?.label}
             </p>
-            <p className="text-xs text-[#6C675F]">
+            <p className="text-xs text-[#667085]">
               The stay record moves with the guest; no checkout is lost.
             </p>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider mb-2 font-body">
+          <label className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider mb-2 font-body">
             Move to
           </label>
           <select
             value={target}
             onChange={(e) => setTarget(e.target.value)}
             disabled={!hasTargets}
-            className="w-full bg-[#FAF8F5] border border-[#DDD7CB] rounded-[8px] px-3 py-2 text-sm text-[#24221F] focus:outline-none focus:ring-1 focus:ring-[#386641] disabled:opacity-60"
+            className="w-full bg-[#FFFFFF] border border-[#D6D3D1] rounded-[8px] px-3 py-2 text-sm text-[#0D1C42] focus:outline-none focus:ring-1 focus:ring-[#800020] disabled:opacity-60"
           >
             <option value="">
               {hasTargets
@@ -143,16 +143,16 @@ export const SwitchGuestModal: React.FC<SwitchGuestModalProps> = ({
         {/* Does the vacated unit need cleaning? — drives whether the
             checkout pipeline spawns the housekeeping task or releases
             the unit straight to Available. */}
-        <label className="flex items-start gap-3 p-3 rounded-[10px] border border-[#DDD7CB] bg-[#FAF8F5] cursor-pointer">
+        <label className="flex items-start gap-3 p-3 rounded-[10px] border border-[#D6D3D1] bg-[#FFFFFF] cursor-pointer">
           <input
             type="checkbox"
             checked={cleanVacated}
             onChange={(e) => setCleanVacated(e.target.checked)}
-            className="mt-0.5 w-4 h-4 rounded border-[#C8C1B4] text-[#386641] focus:ring-[#386641]"
+            className="mt-0.5 w-4 h-4 rounded border-[#CDC9C7] text-[#800020] focus:ring-[#800020]"
           />
-          <span className="text-xs text-[#45413B]">
-            <span className="flex items-center gap-1.5 font-semibold text-[#24221F]">
-              <Sparkles className="w-3.5 h-3.5 text-[#386641]" />
+          <span className="text-xs text-[#0D1C42]">
+            <span className="flex items-center gap-1.5 font-semibold text-[#0D1C42]">
+              <Sparkles className="w-3.5 h-3.5 text-[#800020]" />
               The vacated unit needs cleaning
             </span>
             Unchecked releases {source?.kind === 'bed' ? 'the bed' : 'the room'}{' '}

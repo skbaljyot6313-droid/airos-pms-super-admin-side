@@ -33,7 +33,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
       <div className="flex items-center justify-between mb-1.5">
         <label
           htmlFor={id}
-          className="block text-xs font-semibold text-[#45413B] uppercase tracking-wider font-body"
+          className="block text-xs font-semibold text-[#0D1C42] uppercase tracking-wider font-body"
         >
           {label}
         </label>
@@ -50,8 +50,8 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
           autoComplete={autoComplete}
           aria-invalid={!!error}
           aria-describedby={error ? `${id}-error` : undefined}
-          className={`w-full px-3.5 py-2.5 pr-11 bg-[#FAF8F5] border rounded-[10px] text-sm text-[#24221F] placeholder:text-[#9F998F] focus:outline-none focus:ring-2 focus:ring-[#386641]/25 focus:border-[#386641] ${
-            error ? 'border-[#D96C6C]' : 'border-[#DDD7CB]'
+          className={`w-full px-3.5 py-2.5 pr-11 bg-[#FFFFFF] border rounded-[10px] text-sm text-[#0D1C42] placeholder:text-[#98A2B3] focus:outline-none focus:ring-2 focus:ring-[#800020]/25 focus:border-[#800020] ${
+            error ? 'border-[#D64545]' : 'border-[#D6D3D1]'
           }`}
         />
         <button
@@ -59,13 +59,13 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? 'Hide password' : 'Show password'}
           aria-pressed={visible}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C867C] hover:text-[#24221F] transition-colors cursor-pointer"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#667085] hover:text-[#0D1C42] transition-colors cursor-pointer"
         >
           {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
       </div>
       {error && (
-        <p id={`${id}-error`} className="text-[11px] text-[#A32A2A] font-medium mt-1">
+        <p id={`${id}-error`} className="text-[11px] text-[#A83434] font-medium mt-1">
           {error}
         </p>
       )}

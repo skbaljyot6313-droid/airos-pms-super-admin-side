@@ -5,11 +5,29 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.template import ChecklistItem
+
 
 def _uid(v):
     if v is None or isinstance(v, uuid.UUID):
         return v
     return uuid.UUID(str(v))
+
+
+# ---------------------------------------------------------------------------
+# Sections
+# ---------------------------------------------------------------------------
+
+class SectionCreateRequest(BaseModel):
+    property_uid: uuid.UUID
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+
+
+class SectionUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
+    status: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -20,12 +38,14 @@ class AreaCreateRequest(BaseModel):
     property_uid: uuid.UUID
     name: str = Field(min_length=1, max_length=255)
     level_number: int = 0
+    section_uid: uuid.UUID | None = None
     description: str | None = None
 
 
 class AreaUpdateRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     level_number: int | None = None
+    section_uid: uuid.UUID | None = None
     description: str | None = None
     status: str | None = None
 
@@ -34,6 +54,13 @@ class AreaUpdateRequest(BaseModel):
 # Zones
 # ---------------------------------------------------------------------------
 
+class ZoneCustomUnit(BaseModel):
+    """One free-text unit entry on a non-stay zone — name + quantity."""
+
+    name: str = Field(min_length=1, max_length=120)
+    qty: int = Field(default=1, ge=1, le=9999)
+
+
 class ZoneCreateRequest(BaseModel):
     property_uid: uuid.UUID
     name: str = Field(min_length=1, max_length=255)
@@ -41,6 +68,7 @@ class ZoneCreateRequest(BaseModel):
     area_uid: uuid.UUID | None = None
     zone_type: str | None = None
     description: str | None = None
+    custom_units: list[ZoneCustomUnit | str] | None = None
 
 
 class ZoneUpdateRequest(BaseModel):
@@ -50,6 +78,7 @@ class ZoneUpdateRequest(BaseModel):
     zone_type: str | None = None
     description: str | None = None
     status: str | None = None
+    custom_units: list[ZoneCustomUnit | str] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -350,6 +379,10 @@ class TaskCreateRequest(BaseModel):
     is_guest_request: bool = False
     due_date: str | None = None
     due_time: str | None = None
+    # Scheduled occurrence instant (ISO 8601, tz-aware) — when the work is
+    # planned to start; distinct from due_date which is the deadline.
+    scheduled_for: str | None = None
+    expires_at: str | None = None
     start_time: str | None = None  # HH:MM — when the recurrence schedule begins
     recurrence_start_date: str | None = None   # first day the schedule runs
     recurrence_end_date: str | None = None     # None = runs forever
@@ -357,6 +390,11 @@ class TaskCreateRequest(BaseModel):
     recurrence: str | None = None
     recurrence_interval_days: int | None = None
     automation_rule: AutomationRuleIn | None = None
+    # Department-head allocation — department attribution plus a
+    # manager-authored checklist and multi-employee fan-out.
+    department_uid: uuid.UUID | None = None
+    checklist: list[ChecklistItem] | None = None
+    employee_uids: list[uuid.UUID] | None = None  # assign to several employees
 
 
 class TaskUpdateRequest(BaseModel):  # noqa: D401 - partial update payload
@@ -381,6 +419,9 @@ class TaskUpdateRequest(BaseModel):  # noqa: D401 - partial update payload
     recurrence: str | None = None
     recurrence_interval_days: int | None = None
     automation_rule: AutomationRuleIn | None = None
+    scheduled_for: str | None = None
+    expires_at: str | None = None
+    checklist: list[ChecklistItem] | None = None
 
 
 class TaskActionRequest(BaseModel):

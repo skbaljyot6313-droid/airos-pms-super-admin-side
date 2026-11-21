@@ -22,7 +22,7 @@ export const BackButton: React.FC<{
         if (idx > 0) navigate(-1);
         else navigate(to);
       }}
-      className="flex items-center gap-1.5 text-[13px] font-semibold text-[#6C675F] hover:text-[#24221F] transition-colors cursor-pointer"
+      className="flex items-center gap-1.5 text-[13px] font-semibold text-[#667085] hover:text-[#0D1C42] transition-colors cursor-pointer"
     >
       <ArrowLeft className="w-4 h-4" /> {label}
     </button>

@@ -27,6 +27,7 @@ import {
   BedStatusBadge,
   unitVisualState,
   UNIT_VISUAL_TINT,
+  WASHROOM_TILE,
 } from '../ui/Badge';
 import { CreateRoomModal } from './CreateRoomModal';
 import { BulkCreateRoomsModal } from './BulkCreateRoomsModal';
@@ -326,7 +327,7 @@ export const RoomsDormsView: React.FC = () => {
             <BackButton to={`/property/${activeProperty?.property_uid}/overview`} />
           </div>
           <div className="flex items-center gap-2">
-            <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#24221F] tracking-tight">
+            <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#0D1C42] tracking-tight">
               Accommodations Management
             </h1>
             <Badge variant="sage" size="md">
@@ -339,9 +340,9 @@ export const RoomsDormsView: React.FC = () => {
                 : `${currentPropertyZones.length} Zones`}
             </Badge>
           </div>
-          <p className="font-body text-sm text-[#6C675F] mt-1">
+          <p className="font-body text-sm text-[#667085] mt-1">
             Private suites, shared dormitories, and physical bed inventory in{' '}
-            <strong className="text-[#24221F] font-semibold">{activeProperty?.name}</strong>
+            <strong className="text-[#0D1C42] font-semibold">{activeProperty?.name}</strong>
           </p>
         </div>
 
@@ -441,14 +442,14 @@ export const RoomsDormsView: React.FC = () => {
       </div>
 
       {/* Segmented Control / Tabs: Rooms vs Dorms */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1 border-b border-[#EAE5DC]">
-        <div className="inline-flex p-1 rounded-[12px] bg-[#EBE5DB] border border-[#DDD7CB]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1 border-b border-[#E7E5E4]">
+        <div className="inline-flex p-1 rounded-[12px] bg-[#E7E5E4] border border-[#D6D3D1]">
           <button
             onClick={() => setActiveTab('rooms')}
             className={`px-4 py-1.5 rounded-[9px] text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'rooms'
-                ? 'bg-white text-[#24221F] shadow-xs'
-                : 'text-[#6C675F] hover:text-[#24221F]'
+                ? 'bg-white text-[#0D1C42] shadow-xs'
+                : 'text-[#667085] hover:text-[#0D1C42]'
             }`}
           >
             <Building2 className="w-3.5 h-3.5" />
@@ -458,8 +459,8 @@ export const RoomsDormsView: React.FC = () => {
             onClick={() => setActiveTab('dorms')}
             className={`px-4 py-1.5 rounded-[9px] text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'dorms'
-                ? 'bg-white text-[#24221F] shadow-xs'
-                : 'text-[#6C675F] hover:text-[#24221F]'
+                ? 'bg-white text-[#0D1C42] shadow-xs'
+                : 'text-[#667085] hover:text-[#0D1C42]'
             }`}
           >
             <Bed className="w-3.5 h-3.5" />
@@ -469,8 +470,8 @@ export const RoomsDormsView: React.FC = () => {
             onClick={() => setActiveTab('washrooms')}
             className={`px-4 py-1.5 rounded-[9px] text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'washrooms'
-                ? 'bg-white text-[#24221F] shadow-xs'
-                : 'text-[#6C675F] hover:text-[#24221F]'
+                ? 'bg-white text-[#0D1C42] shadow-xs'
+                : 'text-[#667085] hover:text-[#0D1C42]'
             }`}
           >
             <Bath className="w-3.5 h-3.5" />
@@ -480,8 +481,8 @@ export const RoomsDormsView: React.FC = () => {
             onClick={() => setActiveTab('zones')}
             className={`px-4 py-1.5 rounded-[9px] text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-2 ${
               activeTab === 'zones'
-                ? 'bg-white text-[#24221F] shadow-xs'
-                : 'text-[#6C675F] hover:text-[#24221F]'
+                ? 'bg-white text-[#0D1C42] shadow-xs'
+                : 'text-[#667085] hover:text-[#0D1C42]'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -492,13 +493,13 @@ export const RoomsDormsView: React.FC = () => {
         {/* Filter Controls — hidden on the visual zones board */}
         {activeTab !== 'zones' && (
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 text-xs text-[#736E65]">
+          <div className="flex items-center gap-1.5 text-xs text-[#667085]">
             <Filter className="w-3.5 h-3.5" />
             <span>Zone:</span>
             <select
               value={selectedZoneFilter}
               onChange={(e) => setSelectedZoneFilter(e.target.value)}
-              className="bg-[#FAF8F5] border border-[#DDD7CB] rounded-[8px] px-2 py-1 text-xs text-[#24221F] focus:outline-none"
+              className="bg-[#FFFFFF] border border-[#D6D3D1] rounded-[8px] px-2 py-1 text-xs text-[#0D1C42] focus:outline-none"
             >
               <option value="all">All Zones</option>
               <option value="unallocated">Unallocated</option>
@@ -511,12 +512,12 @@ export const RoomsDormsView: React.FC = () => {
           </div>
 
           {(activeTab === 'rooms' || activeTab === 'washrooms') && (
-            <div className="flex items-center gap-1.5 text-xs text-[#736E65]">
+            <div className="flex items-center gap-1.5 text-xs text-[#667085]">
               <span>Status:</span>
               <select
                 value={selectedStatusFilter}
                 onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                className="bg-[#FAF8F5] border border-[#DDD7CB] rounded-[8px] px-2 py-1 text-xs text-[#24221F] focus:outline-none"
+                className="bg-[#FFFFFF] border border-[#D6D3D1] rounded-[8px] px-2 py-1 text-xs text-[#0D1C42] focus:outline-none"
               >
                 <option value="all">All Statuses</option>
                 <option value="available">Available</option>
@@ -580,7 +581,7 @@ export const RoomsDormsView: React.FC = () => {
           {/* Multi-select toolbar — check cards to batch-assign/status/delete */}
           {filteredRooms.length > 0 && (
             <div className="mb-3 flex items-center gap-2 flex-wrap">
-              <label className="flex items-center gap-1.5 text-xs font-medium text-[#555047] cursor-pointer select-none">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-[#667085] cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={allFilteredSelected}
@@ -591,7 +592,7 @@ export const RoomsDormsView: React.FC = () => {
                     }
                   }}
                   onChange={toggleAllFilteredRooms}
-                  className="accent-[#386641] w-3.5 h-3.5 cursor-pointer"
+                  className="accent-[#800020] w-3.5 h-3.5 cursor-pointer"
                   title={
                     allFilteredSelected
                       ? 'Deselect all rooms'
@@ -605,8 +606,8 @@ export const RoomsDormsView: React.FC = () => {
 
               {selectedRoomObjs.length > 0 ? (
                 <>
-                  <span className="text-[#D8D2C7]">|</span>
-                  <span className="text-xs font-semibold text-[#24221F]">
+                  <span className="text-[#D6D3D1]">|</span>
+                  <span className="text-xs font-semibold text-[#0D1C42]">
                     {selectedRoomObjs.length} selected
                   </span>
 
@@ -618,7 +619,7 @@ export const RoomsDormsView: React.FC = () => {
                       if (v === '__skip__') return;
                       void assignSelectedToZone(v || null);
                     }}
-                    className="bg-[#FAF8F5] border border-[#DDD7CB] rounded-[8px] px-2 py-1 text-xs text-[#24221F] focus:outline-none cursor-pointer"
+                    className="bg-[#FFFFFF] border border-[#D6D3D1] rounded-[8px] px-2 py-1 text-xs text-[#0D1C42] focus:outline-none cursor-pointer"
                     title="Move selected rooms to a zone"
                   >
                     <option value="__skip__">Assign to zone…</option>
@@ -633,7 +634,7 @@ export const RoomsDormsView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => runRoomAction('cleaning')}
-                    className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FEF3E8] text-[#8C3F03] hover:bg-[#FBE8D2] transition-colors cursor-pointer"
+                    className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FDF3E2] text-[#A56514] hover:bg-[#F2D9AF] transition-colors cursor-pointer"
                     title="Queue selected rooms for housekeeping"
                   >
                     Send to cleaning
@@ -641,7 +642,7 @@ export const RoomsDormsView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => runRoomAction('available')}
-                    className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#EBF3EC] text-[#244E2C] hover:bg-[#DCEBDE] transition-colors cursor-pointer"
+                    className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#F7E9EE] text-[#0D1C42] hover:bg-[#EAD3DB] transition-colors cursor-pointer"
                     title="Release selected rooms to Available — closes occupancy and blocking work"
                   >
                     Available
@@ -654,7 +655,7 @@ export const RoomsDormsView: React.FC = () => {
                       );
                       clearRoomSelection();
                     }}
-                    className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FDE8E8] text-[#A32A2A] hover:bg-[#FBDCDC] transition-colors cursor-pointer"
+                    className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FAEBEB] text-[#A83434] hover:bg-[#F0C8C8] transition-colors cursor-pointer"
                     title="Raise a maintenance ticket per selected room"
                   >
                     Maintenance
@@ -662,7 +663,7 @@ export const RoomsDormsView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setBulkDeleteRoomsOpen(true)}
-                    className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FDE8E8] text-[#A32A2A] hover:bg-[#FBDCDC] transition-colors cursor-pointer inline-flex items-center gap-1"
+                    className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FAEBEB] text-[#A83434] hover:bg-[#F0C8C8] transition-colors cursor-pointer inline-flex items-center gap-1"
                     title="Permanently delete selected rooms"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -671,14 +672,14 @@ export const RoomsDormsView: React.FC = () => {
                   <button
                     type="button"
                     onClick={clearRoomSelection}
-                    className="px-2 py-1 rounded-[7px] text-[11px] font-semibold text-[#8C867C] hover:text-[#24221F] transition-colors cursor-pointer"
+                    className="px-2 py-1 rounded-[7px] text-[11px] font-semibold text-[#667085] hover:text-[#0D1C42] transition-colors cursor-pointer"
                     title="Clear selection"
                   >
                     Clear
                   </button>
                 </>
               ) : (
-                <span className="text-[11px] text-[#8C867C]">
+                <span className="text-[11px] text-[#667085]">
                   Click room checkboxes to select them for batch zone assignment, cleaning or deletion
                 </span>
               )}
@@ -686,9 +687,9 @@ export const RoomsDormsView: React.FC = () => {
           )}
           {filteredRooms.length === 0 ? (
             <Card className="p-12 text-center border-dashed">
-              <Building2 className="w-8 h-8 text-[#A59F95] mx-auto mb-2" />
-              <p className="font-semibold text-sm text-[#24221F]">No rooms match your filter</p>
-              <p className="text-xs text-[#6C675F] mt-1 mb-4">
+              <Building2 className="w-8 h-8 text-[#98A2B3] mx-auto mb-2" />
+              <p className="font-semibold text-sm text-[#0D1C42]">No rooms match your filter</p>
+              <p className="text-xs text-[#667085] mt-1 mb-4">
                 Try switching the zone or status filter, or create new rooms.
               </p>
               <Button variant="primary" size="sm" onClick={() => setSingleRoomModalOpen(true)}>
@@ -705,10 +706,10 @@ export const RoomsDormsView: React.FC = () => {
                 return (
                   <Card
                     key={room.room_uid}
-                    className={`p-4 flex flex-col justify-between hover:border-[#D0C8BB] ${
+                    className={`p-4 flex flex-col justify-between hover:border-[#CDC9C7] ${
                       UNIT_VISUAL_TINT[unitVisualState(room)]
                     } ${
-                      isSelected ? 'ring-2 ring-[#386641] ring-offset-1 ring-offset-white' : ''
+                      isSelected ? 'ring-2 ring-[#800020] ring-offset-1 ring-offset-white' : ''
                     }`}
                   >
                     <div>
@@ -719,28 +720,28 @@ export const RoomsDormsView: React.FC = () => {
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => toggleRoomSelected(room.room_uid)}
-                            className="accent-[#386641] w-4 h-4 cursor-pointer shrink-0"
+                            className="accent-[#800020] w-4 h-4 cursor-pointer shrink-0"
                             title={`Select room ${room.room_number}`}
                             aria-label={`Select room ${room.room_number}`}
                           />
-                          <span className="font-display font-bold text-xl text-[#24221F]">
+                          <span className="font-display font-bold text-xl text-[#0D1C42]">
                             {room.room_number}
                           </span>
-                          <span className="text-[11px] font-mono text-[#8C867C] px-1.5 py-0.5 rounded bg-[#FAF8F5] border border-[#EAE5DC]">
+                          <span className="text-[11px] font-mono text-[#667085] px-1.5 py-0.5 rounded bg-[#FFFFFF] border border-[#E7E5E4]">
                             {room.room_uid}
                           </span>
                         </div>
                         <div className="flex items-center">
                           <button
                             onClick={() => setEditingRoom(room)}
-                            className="text-[#999388] hover:text-[#386641] p-1 rounded-[6px] transition-colors cursor-pointer"
+                            className="text-[#667085] hover:text-[#800020] p-1 rounded-[6px] transition-colors cursor-pointer"
                             title="Edit room details"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setRoomToDelete(room)}
-                            className="text-[#999388] hover:text-[#C53B3B] p-1 rounded-[6px] transition-colors cursor-pointer"
+                            className="text-[#667085] hover:text-[#D64545] p-1 rounded-[6px] transition-colors cursor-pointer"
                             title="Delete room"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -749,22 +750,22 @@ export const RoomsDormsView: React.FC = () => {
                       </div>
 
                       {/* Type and Physical Specs */}
-                      <div className="flex items-center justify-between text-xs text-[#555047] mb-3">
-                        <span className="font-medium text-[#24221F]">{room.type}</span>
+                      <div className="flex items-center justify-between text-xs text-[#667085] mb-3">
+                        <span className="font-medium text-[#0D1C42]">{room.type}</span>
                         <span>{room.area_sqft} sq ft · {room.bed_count} Bed</span>
                       </div>
 
                       {/* Current Guest info — occupancy axis, not status */}
                       {(room.is_occupied ?? room.status === 'occupied') && (
-                        <div className="mb-3 p-2 rounded-[8px] bg-[#EEF2F6] border border-[#CFDCEB] text-xs text-[#1E3A56] flex items-center justify-between">
+                        <div className="mb-3 p-2 rounded-[8px] bg-[#EAF1FB] border border-[#C3D6F0] text-xs text-[#2457A8] flex items-center justify-between">
                           <span className="font-medium">Guest: {room.current_guest || 'Active Guest'}</span>
-                          <span className="text-[10px] text-[#305A82]">In-House</span>
+                          <span className="text-[10px] text-[#2457A8]">In-House</span>
                         </div>
                       )}
 
                       {/* Cleaning Note if present */}
                       {room.cleaning_note && (
-                        <div className="mb-3 p-2 rounded-[8px] bg-[#FEF3E8] border border-[#FCD9BD] text-xs text-[#8C3F03]">
+                        <div className="mb-3 p-2 rounded-[8px] bg-[#FDF3E2] border border-[#F2D9AF] text-xs text-[#A56514]">
                           <span className="font-medium">Note:</span> {room.cleaning_note}
                         </div>
                       )}
@@ -773,9 +774,9 @@ export const RoomsDormsView: React.FC = () => {
 
                     {/* Occupancy toggle + workflow actions — commands only;
                         ResourceStateService stays the authority */}
-                    <div className="pt-3 border-t border-[#F2ECE3]">
+                    <div className="pt-3 border-t border-[#F6F4F2]">
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-semibold text-[#8C867C] uppercase tracking-wider font-body">
+                        <span className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider font-body">
                           Operational Status
                         </span>
                         <RoomStatusBadge status={room.status} />
@@ -815,11 +816,11 @@ export const RoomsDormsView: React.FC = () => {
                                 })
                               )
                             }
-                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors focus:outline-none focus:ring-1 focus:ring-[#386641] ${
+                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors focus:outline-none focus:ring-1 focus:ring-[#800020] ${
                               isCleanable(room) &&
                               !busyUnits.has(`room:${room.room_uid}`)
-                                ? 'text-[#386641] border-[#CDE0CF] bg-[#F4F8F4] hover:bg-[#EBF3EC] cursor-pointer'
-                                : 'text-[#C4BDB1] border-[#EDE8DD] bg-[#FAF8F5] cursor-not-allowed'
+                                ? 'text-[#800020] border-[#EAD3DB] bg-[#FFFCFA] hover:bg-[#F7E9EE] cursor-pointer'
+                                : 'text-[#CDC9C7] border-[#E7E5E4] bg-[#FFFFFF] cursor-not-allowed'
                             }`}
                             title={
                               room.status === 'cleaning'
@@ -847,11 +848,11 @@ export const RoomsDormsView: React.FC = () => {
                                 room.current_guest ?? null
                               )
                             }
-                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors focus:outline-none focus:ring-1 focus:ring-[#9A4C07] ${
+                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors focus:outline-none focus:ring-1 focus:ring-[#A56514] ${
                               (room.is_occupied ?? room.status === 'occupied') &&
                               !busyUnits.has(`room:${room.room_uid}`)
-                                ? 'text-[#9A4C07] border-[#F0D5B8] bg-[#FDF6EE] hover:bg-[#FBEEDA] cursor-pointer'
-                                : 'text-[#C4BDB1] border-[#EDE8DD] bg-[#FAF8F5] cursor-not-allowed'
+                                ? 'text-[#A56514] border-[#F2D9AF] bg-[#FFFCFA] hover:bg-[#F2D9AF] cursor-pointer'
+                                : 'text-[#CDC9C7] border-[#E7E5E4] bg-[#FFFFFF] cursor-not-allowed'
                             }`}
                             title={
                               room.is_occupied ?? room.status === 'occupied'
@@ -875,11 +876,11 @@ export const RoomsDormsView: React.FC = () => {
                                 guest: room.current_guest ?? null,
                               })
                             }
-                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-[#386641] ${
+                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-[#800020] ${
                               (room.is_occupied ?? room.status === 'occupied') &&
                               !busyUnits.has(`room:${room.room_uid}`)
-                                ? 'text-[#386641] border-[#CDE0CF] bg-[#F4F8F4] hover:bg-[#EBF3EC] cursor-pointer'
-                                : 'text-[#C4BDB1] border-[#EDE8DD] bg-[#FAF8F5] cursor-not-allowed'
+                                ? 'text-[#800020] border-[#EAD3DB] bg-[#FFFCFA] hover:bg-[#F7E9EE] cursor-pointer'
+                                : 'text-[#CDC9C7] border-[#E7E5E4] bg-[#FFFFFF] cursor-not-allowed'
                             }`}
                             title={
                               room.is_occupied ?? room.status === 'occupied'
@@ -893,7 +894,7 @@ export const RoomsDormsView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setRequestTarget({ room })}
-                            className="px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#B45309] text-[#9A4C07] border-[#F0D5B8] bg-[#FDF6EE] hover:bg-[#FBEEDA]"
+                            className="px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#A56514] text-[#A56514] border-[#F2D9AF] bg-[#FFFCFA] hover:bg-[#F2D9AF]"
                             title="Raise a guest request — towel, extra mattress, etc. (urgent priority)"
                           >
                             <ConciergeBell className="w-3 h-3" />
@@ -902,10 +903,10 @@ export const RoomsDormsView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setMaintenanceRoom(room)}
-                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#A32A2A] ${
+                            className={`px-2 py-1 rounded-[7px] text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#A83434] ${
                               activeTicketForRoom(room.room_uid)
-                                ? 'text-[#A32A2A] border-[#F0C7C7] bg-[#FDF1F1] hover:bg-[#FBE4E4]'
-                                : 'text-[#555047] border-[#E3DCD0] bg-white hover:bg-[#FAF8F5]'
+                                ? 'text-[#A83434] border-[#F0C8C8] bg-[#FAEBEB] hover:bg-[#FAEBEB]'
+                                : 'text-[#667085] border-[#E7E5E4] bg-white hover:bg-[#FFFFFF]'
                             }`}
                             title={
                               activeTicketForRoom(room.room_uid)
@@ -932,9 +933,9 @@ export const RoomsDormsView: React.FC = () => {
         <div>
           {filteredDorms.length === 0 ? (
             <Card className="p-12 text-center border-dashed">
-              <Bed className="w-8 h-8 text-[#A59F95] mx-auto mb-2" />
-              <p className="font-semibold text-sm text-[#24221F]">No dormitories found</p>
-              <p className="text-xs text-[#6C675F] mt-1 mb-4">
+              <Bed className="w-8 h-8 text-[#98A2B3] mx-auto mb-2" />
+              <p className="font-semibold text-sm text-[#0D1C42]">No dormitories found</p>
+              <p className="text-xs text-[#667085] mt-1 mb-4">
                 Add your first shared dorm with auto-generated bunk beds.
               </p>
               <Button variant="primary" size="sm" onClick={() => setCreateDormModalOpen(true)}>
@@ -1005,7 +1006,7 @@ export const RoomsDormsView: React.FC = () => {
                 return (
                   <Card key={dorm.dorm_uid} className="p-5">
                     {/* Dorm Header Bar */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#F2ECE3]">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#F6F4F2]">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <input
@@ -1019,7 +1020,7 @@ export const RoomsDormsView: React.FC = () => {
                               }
                             }}
                             onChange={toggleAllBeds}
-                            className="accent-[#386641] w-4 h-4 cursor-pointer shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="accent-[#800020] w-4 h-4 cursor-pointer shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
                             title={
                               selectableBeds.length === 0
                                 ? 'No active beds in this dorm'
@@ -1029,7 +1030,7 @@ export const RoomsDormsView: React.FC = () => {
                             }
                             aria-label={`Select all beds in ${dorm.name}`}
                           />
-                          <h3 className="font-display font-bold text-xl text-[#24221F]">
+                          <h3 className="font-display font-bold text-xl text-[#0D1C42]">
                             {dorm.name}
                           </h3>
                           <Badge variant="lavender" size="sm">
@@ -1049,11 +1050,11 @@ export const RoomsDormsView: React.FC = () => {
                               Maintenance
                             </Badge>
                           )}
-                          <span className="text-xs font-mono text-[#8C867C] px-1.5 py-0.5 rounded bg-[#FAF8F5] border border-[#EAE5DC]">
+                          <span className="text-xs font-mono text-[#667085] px-1.5 py-0.5 rounded bg-[#FFFFFF] border border-[#E7E5E4]">
                             {dorm.dorm_uid}
                           </span>
                         </div>
-                        <p className="text-xs text-[#6C675F] font-body mt-1">
+                        <p className="text-xs text-[#667085] font-body mt-1">
                           {dorm.beds.length} Total Bunks · {dorm.area_sqft} sq ft · {dorm.floor || 'Floor'} · Washroom: {washroomAvailable ? dorm.washroom : 'Not Available'}
                           {dorm.description && ` · ${dorm.description}`}
                         </p>
@@ -1062,14 +1063,14 @@ export const RoomsDormsView: React.FC = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <button
                           onClick={() => setEditingDorm(dorm)}
-                          className="p-1.5 text-[#A59F95] hover:text-[#386641] hover:bg-[#EBF3EC] rounded-[8px] transition-colors cursor-pointer ml-1"
+                          className="p-1.5 text-[#98A2B3] hover:text-[#800020] hover:bg-[#F7E9EE] rounded-[8px] transition-colors cursor-pointer ml-1"
                           title="Edit dorm details"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDormToDelete(dorm)}
-                          className="p-1.5 text-[#A59F95] hover:text-[#C53B3B] hover:bg-[#FDE8E8] rounded-[8px] transition-colors cursor-pointer ml-1"
+                          className="p-1.5 text-[#98A2B3] hover:text-[#D64545] hover:bg-[#FAEBEB] rounded-[8px] transition-colors cursor-pointer ml-1"
                           title="Delete dorm and its beds"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1078,27 +1079,27 @@ export const RoomsDormsView: React.FC = () => {
                     </div>
 
                     {/* Real-time Beds Stats Bar */}
-                    <div className="py-3 flex items-center justify-between text-xs text-[#6C675F] font-body flex-wrap gap-2">
+                    <div className="py-3 flex items-center justify-between text-xs text-[#667085] font-body flex-wrap gap-2">
                       <div className="flex items-center gap-3">
-                        <span className="inline-flex items-center gap-1 font-medium text-[#2E6038]">
-                          <span className="w-2 h-2 rounded-full bg-[#386641]" />
+                        <span className="inline-flex items-center gap-1 font-medium text-[#0D1C42]">
+                          <span className="w-2 h-2 rounded-full bg-[#800020]" />
                           <span>{availableCount} Available</span>
                         </span>
-                        <span className="inline-flex items-center gap-1 font-medium text-[#254668]">
-                          <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+                        <span className="inline-flex items-center gap-1 font-medium text-[#2457A8]">
+                          <span className="w-2 h-2 rounded-full bg-[#3478D4]" />
                           <span>{occupiedCount} Occupied</span>
                         </span>
-                        <span className="inline-flex items-center gap-1 font-medium text-[#9A4C07]">
-                          <span className="w-2 h-2 rounded-full bg-[#D97706]" />
+                        <span className="inline-flex items-center gap-1 font-medium text-[#A56514]">
+                          <span className="w-2 h-2 rounded-full bg-[#A56514]" />
                           <span>{cleaningCount} Cleaning</span>
                         </span>
-                        <span className="inline-flex items-center gap-1 font-medium text-[#A32A2A]">
-                          <span className="w-2 h-2 rounded-full bg-[#C53B3B]" />
+                        <span className="inline-flex items-center gap-1 font-medium text-[#A83434]">
+                          <span className="w-2 h-2 rounded-full bg-[#D64545]" />
                           <span>{maintenanceCount} Maintenance</span>
                         </span>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <label className="flex items-center gap-1.5 cursor-pointer font-medium text-[#555047] select-none">
+                        <label className="flex items-center gap-1.5 cursor-pointer font-medium text-[#667085] select-none">
                           <input
                             type="checkbox"
                             checked={allBedsSelected}
@@ -1110,14 +1111,14 @@ export const RoomsDormsView: React.FC = () => {
                               }
                             }}
                             onChange={toggleAllBeds}
-                            className="accent-[#386641] w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed"
+                            className="accent-[#800020] w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed"
                           />
                           All beds
                         </label>
                         {selectedInDorm.length > 0 ? (
                           <>
-                            <span className="text-[#D8D2C7]">|</span>
-                            <span className="font-semibold text-[#24221F]">
+                            <span className="text-[#D6D3D1]">|</span>
+                            <span className="font-semibold text-[#0D1C42]">
                               {allBedsSelected
                                 ? 'Whole dorm selected'
                                 : `${selectedInDorm.length} selected`}
@@ -1125,7 +1126,7 @@ export const RoomsDormsView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => runBedAction('cleaning')}
-                              className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FEF3E8] text-[#8C3F03] hover:bg-[#FBE8D2] transition-colors cursor-pointer"
+                              className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FDF3E2] text-[#A56514] hover:bg-[#F2D9AF] transition-colors cursor-pointer"
                               title="Queue selected beds for housekeeping"
                             >
                               Send to cleaning
@@ -1133,7 +1134,7 @@ export const RoomsDormsView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => runBedAction('available')}
-                              className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#EBF3EC] text-[#244E2C] hover:bg-[#DCEBDE] transition-colors cursor-pointer"
+                              className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#F7E9EE] text-[#0D1C42] hover:bg-[#EAD3DB] transition-colors cursor-pointer"
                               title="Release selected beds to Available — closes blocking cleaning/maintenance work"
                             >
                               Available
@@ -1141,7 +1142,7 @@ export const RoomsDormsView: React.FC = () => {
                             <button
                               type="button"
                               onClick={openBedMaintenance}
-                              className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FDE8E8] text-[#A32A2A] hover:bg-[#FBDCDC] transition-colors cursor-pointer"
+                              className="px-2 py-1 rounded-[7px] text-[11px] font-semibold bg-[#FAEBEB] text-[#A83434] hover:bg-[#F0C8C8] transition-colors cursor-pointer"
                               title={
                                 allBedsSelected
                                   ? 'Raise one maintenance ticket for the whole dorm'
@@ -1159,14 +1160,14 @@ export const RoomsDormsView: React.FC = () => {
                                   return next;
                                 })
                               }
-                              className="px-2 py-1 rounded-[7px] text-[11px] font-semibold text-[#8C867C] hover:text-[#24221F] transition-colors cursor-pointer"
+                              className="px-2 py-1 rounded-[7px] text-[11px] font-semibold text-[#667085] hover:text-[#0D1C42] transition-colors cursor-pointer"
                               title="Clear selection"
                             >
                               Clear
                             </button>
                           </>
                         ) : (
-                          <span className="text-[11px] text-[#8C867C]">
+                          <span className="text-[11px] text-[#667085]">
                             Click beds to select them for batch cleaning, checkout or maintenance
                           </span>
                         )}
@@ -1200,8 +1201,8 @@ export const RoomsDormsView: React.FC = () => {
                                     zone: zone ?? null,
                                   })
                                 }
-                                className={`p-3 rounded-[12px] border text-left transition-all duration-150 cursor-pointer hover:shadow-md hover:-translate-y-0.5 hover:border-[#9DBDD4] ${
-                                  UNIT_VISUAL_TINT[unitVisualState(w)]
+                                className={`p-3 rounded-[12px] border text-left transition-all duration-150 cursor-pointer hover:shadow-md hover:-translate-y-0.5 hover:border-[#7FA8CE] ${
+                                  WASHROOM_TILE
                                 }`}
                                 title={`${w.name} — view facility details`}
                               >
@@ -1238,7 +1239,7 @@ export const RoomsDormsView: React.FC = () => {
                                 zone: zone ?? null,
                               })
                             }
-                            className="p-3 rounded-[12px] border text-left bg-[#EFF6FA] border-[#CFDCEB] text-[#2D5D7B] transition-all duration-150 cursor-pointer hover:shadow-md hover:-translate-y-0.5 hover:border-[#9DBDD4]"
+                            className="p-3 rounded-[12px] border text-left bg-[#EAF1FB] border-[#C3D6F0] text-[#2457A8] transition-all duration-150 cursor-pointer hover:shadow-md hover:-translate-y-0.5 hover:border-[#7FA8CE]"
                             title={`${dorm.washroom} — declared facility`}
                           >
                             <div className="flex items-center justify-between text-xs font-bold">
@@ -1275,7 +1276,7 @@ export const RoomsDormsView: React.FC = () => {
                               isBedSelectable ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'
                             } ${
                               isSelected
-                                ? 'ring-2 ring-[#386641] ring-offset-1 ring-offset-white'
+                                ? 'ring-2 ring-[#800020] ring-offset-1 ring-offset-white'
                                 : isBedSelectable
                                 ? 'hover:shadow-xs'
                                 : ''
@@ -1293,7 +1294,7 @@ export const RoomsDormsView: React.FC = () => {
                                 <span
                                   className={`w-3.5 h-3.5 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
                                     isSelected
-                                      ? 'bg-[#386641] border-[#386641] text-white'
+                                      ? 'bg-[#800020] border-[#800020] text-white'
                                       : 'border-current/40 bg-white/60'
                                   }`}
                                 >
@@ -1355,7 +1356,7 @@ export const RoomsDormsView: React.FC = () => {
                                       guest: bed.guest_name ?? null,
                                     })
                                   }
-                                  className="p-1 rounded-[6px] border transition-colors inline-flex items-center cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#386641] text-[#386641] border-[#CDE0CF] bg-[#F4F8F4] hover:bg-[#EBF3EC]"
+                                  className="p-1 rounded-[6px] border transition-colors inline-flex items-center cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#800020] text-[#800020] border-[#EAD3DB] bg-[#FFFCFA] hover:bg-[#F7E9EE]"
                                   title="Switch — move the guest to another room or bed"
                                 >
                                   <ArrowRightLeft className="w-3 h-3" />
@@ -1364,7 +1365,7 @@ export const RoomsDormsView: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setRequestTarget({ dorm, bed })}
-                                className="p-1 rounded-[6px] border transition-colors inline-flex items-center cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#B45309] text-[#9A4C07] border-[#F0D5B8] bg-[#FDF6EE] hover:bg-[#FBEEDA]"
+                                className="p-1 rounded-[6px] border transition-colors inline-flex items-center cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#A56514] text-[#A56514] border-[#F2D9AF] bg-[#FFFCFA] hover:bg-[#F2D9AF]"
                                 title="Raise a guest request for this bed (urgent priority)"
                               >
                                 <ConciergeBell className="w-3 h-3" />

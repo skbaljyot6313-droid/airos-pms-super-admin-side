@@ -3,6 +3,7 @@ export * as companiesApi from './companies';
 export * as propertiesApi from './properties';
 export * as areasApi from './areas';
 export * as zonesApi from './zones';
+export * as sectionsApi from './sections';
 export * as roomsApi from './rooms';
 export * as dormsApi from './dorms';
 export * as washroomsApi from './washrooms';

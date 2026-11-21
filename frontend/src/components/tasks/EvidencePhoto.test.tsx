@@ -91,7 +91,7 @@ describe('evidence viewer interaction', () => {
     await screen.findByAltText('Completion evidence 2');
     fireEvent.click(screen.getByRole('button', { name: 'View image 1' }));
     await screen.findByAltText('Completion evidence 1');
-    expect(screen.getByRole('button', { name: 'View image 1' }).className).toContain('border-[#9FBF88]');
+    expect(screen.getByRole('button', { name: 'View image 1' }).className).toContain('border-[#800020]');
   });
 
   it('supports keyboard controls and distinguishes backdrop from image clicks', async () => {

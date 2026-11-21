@@ -18,7 +18,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-body font-medium rounded-[12px] transition-colors focus:outline-none focus:ring-2 focus:ring-[#3E6B48]/30 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer select-none';
+    'inline-flex items-center justify-center font-body font-medium rounded-[12px] transition-colors focus:outline-none focus:ring-2 focus:ring-[#800020]/30 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer select-none';
 
   const sizeStyles = {
     sm: 'text-xs px-3 py-1.5 gap-1.5',
@@ -28,17 +28,17 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantStyles = {
     primary:
-      'bg-[#386641] hover:bg-[#2F5736] text-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] active:scale-[0.99]',
+      'bg-[#800020] hover:bg-[#0D1C42] text-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] active:scale-[0.99]',
     sage:
-      'bg-[#EBF3EC] hover:bg-[#DDEBDE] text-[#2B5433] border border-[#CFE4D1] active:scale-[0.99]',
+      'bg-[#F7E9EE] hover:bg-[#EAD3DB] text-[#0D1C42] border border-[#EAD3DB] active:scale-[0.99]',
     secondary:
-      'bg-[#F2EEE7] hover:bg-[#E7E1D7] text-[#2D2A26] border border-[#DDD7CB]',
+      'bg-[#F6F4F2] hover:bg-[#E7E5E4] text-[#0D1C42] border border-[#D6D3D1]',
     outline:
-      'bg-transparent hover:bg-[#F6F3ED] text-[#332F2A] border border-[#DDD7CB]',
+      'bg-transparent hover:bg-[#FFFCFA] text-[#0D1C42] border border-[#D6D3D1]',
     destructive:
-      'bg-[#C53B3B] hover:bg-[#AF3232] text-white shadow-[0_1px_2px_rgba(0,0,0,0.06)]',
+      'bg-[#D64545] hover:bg-[#A83434] text-white shadow-[0_1px_2px_rgba(0,0,0,0.06)]',
     ghost:
-      'bg-transparent hover:bg-[#F2EEE7] text-[#4A453E] border-transparent',
+      'bg-transparent hover:bg-[#F6F4F2] text-[#0D1C42] border-transparent',
   };
 
   return (

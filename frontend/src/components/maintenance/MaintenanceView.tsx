@@ -40,20 +40,20 @@ import { MaintenanceCalendarView } from './MaintenanceCalendarView';
 import { BackButton } from '../ui/BackButton';
 
 const PRIORITY_STYLES: Record<string, string> = {
-  low: 'bg-[#F4F0E8] text-[#6C675F]',
-  medium: 'bg-[#EAF1FB] text-[#2C4A7C]',
-  high: 'bg-[#FDF0E5] text-[#9A4C07]',
-  critical: 'bg-[#FBEBEB] text-[#A32A2A]',
+  low: 'bg-[#F6F4F2] text-[#667085]',
+  medium: 'bg-[#EAF1FB] text-[#2457A8]',
+  high: 'bg-[#FDF3E2] text-[#A56514]',
+  critical: 'bg-[#FAEBEB] text-[#A83434]',
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  open: 'bg-[#FDF0E5] text-[#9A4C07]',
-  assigned: 'bg-[#EAF1FB] text-[#2C4A7C]',
-  in_progress: 'bg-[#FDF0E5] text-[#B45309]',
-  on_hold: 'bg-[#F4F0E8] text-[#6C675F]',
-  resolved: 'bg-[#EBF3EC] text-[#386641]',
-  closed: 'bg-[#EDEAE4] text-[#555047]',
-  cancelled: 'bg-[#EDEAE4] text-[#8C867C]',
+  open: 'bg-[#FDF3E2] text-[#A56514]',
+  assigned: 'bg-[#EAF1FB] text-[#2457A8]',
+  in_progress: 'bg-[#FDF3E2] text-[#A56514]',
+  on_hold: 'bg-[#F6F4F2] text-[#667085]',
+  resolved: 'bg-[#E6F4EE] text-[#16865B]',
+  closed: 'bg-[#F6F4F2] text-[#667085]',
+  cancelled: 'bg-[#F6F4F2] text-[#667085]',
 };
 
 export const PriorityPill: React.FC<{ priority: string }> = ({ priority }) => (
@@ -175,39 +175,39 @@ export const TicketDrawer: React.FC<{
             <PriorityPill priority={ticket.priority} />
             <Badge variant="neutral" size="sm">{typeLabel(ticket.maintenance_type)}</Badge>
           </div>
-          <h3 className="font-display font-bold text-lg text-[#24221F] mt-2">
+          <h3 className="font-display font-bold text-lg text-[#0D1C42] mt-2">
             {ticket.issue}
           </h3>
-          <p className="text-xs text-[#736E65] mt-0.5">
+          <p className="text-xs text-[#667085] mt-0.5">
             {ticket.location_label || ticket.room_number || '—'} · {activeProperty?.name}
           </p>
           {ticket.description && (
-            <p className="text-sm text-[#555047] mt-2 leading-relaxed">{ticket.description}</p>
+            <p className="text-sm text-[#667085] mt-2 leading-relaxed">{ticket.description}</p>
           )}
         </div>
 
         {/* Meta grid */}
         <div className="grid grid-cols-2 gap-3 text-xs">
-          <div className="p-3 rounded-[10px] bg-[#FAF8F5] border border-[#EDE8DF]">
-            <p className="text-[#8C867C] uppercase tracking-wider text-[10px] font-semibold">Reported By</p>
-            <p className="text-[#24221F] font-medium mt-0.5">{ticket.reported_by_name || '—'}</p>
+          <div className="p-3 rounded-[10px] bg-[#FFFFFF] border border-[#F6F4F2]">
+            <p className="text-[#667085] uppercase tracking-wider text-[10px] font-semibold">Reported By</p>
+            <p className="text-[#0D1C42] font-medium mt-0.5">{ticket.reported_by_name || '—'}</p>
           </div>
-          <div className="p-3 rounded-[10px] bg-[#FAF8F5] border border-[#EDE8DF]">
-            <p className="text-[#8C867C] uppercase tracking-wider text-[10px] font-semibold">Reported At</p>
-            <p className="text-[#24221F] font-medium mt-0.5">{formatEventTime(ticket.created_at || '')}</p>
+          <div className="p-3 rounded-[10px] bg-[#FFFFFF] border border-[#F6F4F2]">
+            <p className="text-[#667085] uppercase tracking-wider text-[10px] font-semibold">Reported At</p>
+            <p className="text-[#0D1C42] font-medium mt-0.5">{formatEventTime(ticket.created_at || '')}</p>
           </div>
-          <div className="p-3 rounded-[10px] bg-[#FAF8F5] border border-[#EDE8DF]">
-            <p className="text-[#8C867C] uppercase tracking-wider text-[10px] font-semibold">Due Date</p>
-            <p className="text-[#24221F] font-medium mt-0.5">{ticket.due_date || '—'}</p>
+          <div className="p-3 rounded-[10px] bg-[#FFFFFF] border border-[#F6F4F2]">
+            <p className="text-[#667085] uppercase tracking-wider text-[10px] font-semibold">Due Date</p>
+            <p className="text-[#0D1C42] font-medium mt-0.5">{ticket.due_date || '—'}</p>
           </div>
-          <div className="p-3 rounded-[10px] bg-[#FAF8F5] border border-[#EDE8DF]">
-            <p className="text-[#8C867C] uppercase tracking-wider text-[10px] font-semibold">Resolved</p>
-            <p className="text-[#24221F] font-medium mt-0.5">{ticket.resolved_at ? formatEventTime(ticket.resolved_at) : '—'}</p>
+          <div className="p-3 rounded-[10px] bg-[#FFFFFF] border border-[#F6F4F2]">
+            <p className="text-[#667085] uppercase tracking-wider text-[10px] font-semibold">Resolved</p>
+            <p className="text-[#0D1C42] font-medium mt-0.5">{ticket.resolved_at ? formatEventTime(ticket.resolved_at) : '—'}</p>
           </div>
         </div>
 
         {ticket.resolution_notes && (
-          <div className="p-3 rounded-[10px] bg-[#EBF3EC] border border-[#CFE4D1] text-sm text-[#244E2C]">
+          <div className="p-3 rounded-[10px] bg-[#F7E9EE] border border-[#EAD3DB] text-sm text-[#0D1C42]">
             <p className="text-[10px] uppercase tracking-wider font-bold mb-0.5">Resolution</p>
             {ticket.resolution_notes}
           </div>
@@ -220,12 +220,12 @@ export const TicketDrawer: React.FC<{
         {/* Assignment */}
         {canAssign && (
           <div>
-            <p className="text-[10px] font-semibold text-[#8C867C] uppercase tracking-wider mb-1.5">
+            <p className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider mb-1.5">
               Assign To
             </p>
             {/* How this assignee was chosen — auto round-robin vs manual */}
             {ticket.allocation_method && (
-              <p className="text-[11px] text-[#8C867C] mb-1.5">
+              <p className="text-[11px] text-[#667085] mb-1.5">
                 {ticket.allocation_method === 'round_robin'
                   ? `Auto-assigned via zone round-robin${ticket.allocation_batch_id ? '' : ''}`
                   : ticket.allocation_method === 'reassign'
@@ -240,7 +240,7 @@ export const TicketDrawer: React.FC<{
               <select
                 value={assignee}
                 onChange={(e) => setAssignee(e.target.value)}
-                className="flex-1 px-3 py-2 bg-[#FAF8F5] border border-[#DDD7CB] rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-[#386641]/25"
+                className="flex-1 px-3 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-[#800020]/25"
               >
                 <option value="">Unassigned</option>
                 {currentPropertyEmployees
@@ -286,7 +286,7 @@ export const TicketDrawer: React.FC<{
               <Button
                 variant="outline" size="sm"
                 onClick={() => setDisapproveMode(true)}
-                className="text-[#A32A2A] border-[#F0C4C4] hover:bg-[#FDE8E8]"
+                className="text-[#A83434] border-[#F0C8C8] hover:bg-[#FAEBEB]"
               >
                 <X className="w-3.5 h-3.5 mr-1" /> Disapprove
               </Button>
@@ -296,8 +296,8 @@ export const TicketDrawer: React.FC<{
 
         {/* Disapprove form — reason required, returns ticket for rework */}
         {disapproveMode && (
-          <div className="p-3.5 rounded-[12px] border border-[#F0C4C4] bg-[#FDF6F6] space-y-3">
-            <p className="text-xs font-semibold text-[#8A2B2B] uppercase tracking-wider">
+          <div className="p-3.5 rounded-[12px] border border-[#F0C8C8] bg-[#FAEBEB] space-y-3">
+            <p className="text-xs font-semibold text-[#7C2730] uppercase tracking-wider">
               Disapprove Resolution
             </p>
             <textarea
@@ -305,7 +305,7 @@ export const TicketDrawer: React.FC<{
               value={disapproveReason}
               onChange={(e) => setDisapproveReason(e.target.value)}
               placeholder="e.g. Leak persists — please rework the joint."
-              className="w-full px-3 py-2 bg-white border border-[#DDD7CB] rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-[#C53B3B]/25"
+              className="w-full px-3 py-2 bg-white border border-[#D6D3D1] rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-[#D64545]/25"
             />
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setDisapproveMode(false)}>Cancel</Button>
@@ -326,8 +326,8 @@ export const TicketDrawer: React.FC<{
 
         {/* Resolve form */}
         {resolveMode && (
-          <div className="p-3.5 rounded-[12px] border border-[#CFE4D1] bg-[#F7FBF7] space-y-3">
-            <p className="text-xs font-semibold text-[#244E2C] uppercase tracking-wider">
+          <div className="p-3.5 rounded-[12px] border border-[#EAD3DB] bg-[#FFFFFF] space-y-3">
+            <p className="text-xs font-semibold text-[#0D1C42] uppercase tracking-wider">
               Resolution
             </p>
             <textarea
@@ -335,7 +335,7 @@ export const TicketDrawer: React.FC<{
               value={resolveNotes}
               onChange={(e) => setResolveNotes(e.target.value)}
               placeholder="e.g. Tap replaced and leakage tested."
-              className="w-full px-3 py-2 bg-white border border-[#DDD7CB] rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-[#386641]/25"
+              className="w-full px-3 py-2 bg-white border border-[#D6D3D1] rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-[#800020]/25"
             />
             <input
               ref={fileRef}
@@ -352,20 +352,20 @@ export const TicketDrawer: React.FC<{
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-dashed border-[#C7C0B3] text-xs font-semibold text-[#555047] hover:border-[#386641] cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-dashed border-[#CDC9C7] text-xs font-semibold text-[#667085] hover:border-[#800020] cursor-pointer"
               >
                 <Camera className="w-3.5 h-3.5" /> Resolution Photo
               </button>
               {evidence.items.map((p) => (
                 <div key={p.id} className={`relative w-12 h-12 rounded-[8px] overflow-hidden border ${
-                  p.status === 'error' ? 'border-[#C53B3B]' : 'border-[#DDD7CB]'
+                  p.status === 'error' ? 'border-[#D64545]' : 'border-[#D6D3D1]'
                 }`}>
                   <img src={p.previewUrl} alt="" className={`w-full h-full object-cover ${p.status === 'ready' ? '' : 'opacity-60'}`} />
                   {p.status === 'error' ? (
                     <button
                       type="button"
                       onClick={() => evidence.retry(p.id)}
-                      className="absolute inset-0 text-[9px] font-bold text-[#C53B3B] bg-white/75 cursor-pointer"
+                      className="absolute inset-0 text-[9px] font-bold text-[#D64545] bg-white/75 cursor-pointer"
                       title={p.error || 'Upload failed — tap to retry'}
                     >
                       retry
@@ -396,12 +396,12 @@ export const TicketDrawer: React.FC<{
 
         {/* Delete — staff only; deleting releases the unit lock server-side */}
         {isStaff && (
-          <div className="pt-3 border-t border-[#F2ECE3]">
+          <div className="pt-3 border-t border-[#F6F4F2]">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setDeleteConfirm(true)}
-              className="text-[#A32A2A] border-[#F0C4C4] hover:bg-[#FDE8E8]"
+              className="text-[#A83434] border-[#F0C8C8] hover:bg-[#FAEBEB]"
             >
               <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete Ticket
             </Button>
@@ -410,10 +410,10 @@ export const TicketDrawer: React.FC<{
 
         {/* Timeline */}
         <div>
-          <p className="text-[10px] font-semibold text-[#8C867C] uppercase tracking-wider mb-2.5">
+          <p className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider mb-2.5">
             Activity Timeline
           </p>
-          <div className="space-y-0 relative before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-[#E5E0D6]">
+          <div className="space-y-0 relative before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-[#E7E5E4]">
             {(() => {
               // Map each upload to the event it belongs to: report photos
               // sit on "created"; a resolution round's photos sit on the
@@ -442,15 +442,15 @@ export const TicketDrawer: React.FC<{
                 const photos = attachmentsFor(e);
                 return (
               <div key={e.event_uid} className="flex gap-3 py-2 relative">
-                <span className="w-[15px] h-[15px] rounded-full bg-[#EBF3EC] border-2 border-[#386641] shrink-0 mt-0.5 relative z-10" />
+                <span className="w-[15px] h-[15px] rounded-full bg-[#F7E9EE] border-2 border-[#800020] shrink-0 mt-0.5 relative z-10" />
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-[#24221F]">
+                  <p className="text-xs font-semibold text-[#0D1C42]">
                     {ACTION_LABELS[e.action] || e.action}
-                    {e.actor_name && <span className="font-normal text-[#8C867C]"> · {e.actor_name}</span>}
+                    {e.actor_name && <span className="font-normal text-[#667085]"> · {e.actor_name}</span>}
                   </p>
-                  <p className="text-[10px] text-[#8C867C]">{formatEventTime(e.at)}</p>
+                  <p className="text-[10px] text-[#667085]">{formatEventTime(e.at)}</p>
                   {e.comment && (
-                    <p className="text-xs text-[#555047] mt-0.5">{e.comment}</p>
+                    <p className="text-xs text-[#667085] mt-0.5">{e.comment}</p>
                   )}
                   {photos.length > 0 && (
                     <div className="flex gap-1.5 flex-wrap mt-1.5">
@@ -462,7 +462,7 @@ export const TicketDrawer: React.FC<{
                                ? 'Report evidence'
                                : `Resolution evidence — attempt ${a.attempt ?? 1}`
                            }
-                           className="block w-14 h-14 rounded-[8px] overflow-hidden border border-[#DDD7CB] hover:border-[#386641] transition-colors cursor-zoom-in">
+                           className="block w-14 h-14 rounded-[8px] overflow-hidden border border-[#D6D3D1] hover:border-[#800020] transition-colors cursor-zoom-in">
                           <img src={mediaUrl(a.url)} alt={a.file_name || ''} className="w-full h-full object-cover" />
                         </button>
                       ))}
@@ -479,15 +479,15 @@ export const TicketDrawer: React.FC<{
         {/* Room maintenance history */}
         {roomHistory.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold text-[#8C867C] uppercase tracking-wider mb-2">
+            <p className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider mb-2">
               {ticket.location_label || ticket.room_number} — Maintenance History
             </p>
             <div className="space-y-1.5">
               {roomHistory.map((t) => (
-                <div key={t.ticket_uid} className="flex items-center justify-between p-2.5 rounded-[10px] bg-[#FAF8F5] border border-[#EDE8DF] text-xs">
+                <div key={t.ticket_uid} className="flex items-center justify-between p-2.5 rounded-[10px] bg-[#FFFFFF] border border-[#F6F4F2] text-xs">
                   <div className="min-w-0">
                     <span className="font-mono font-semibold">{t.ticket_number}</span>
-                    <span className="text-[#8C867C]"> · {typeLabel(t.maintenance_type)} · {t.issue}</span>
+                    <span className="text-[#667085]"> · {typeLabel(t.maintenance_type)} · {t.issue}</span>
                   </div>
                   <MaintStatusPill status={t.status} />
                 </div>
@@ -574,20 +574,20 @@ export const MaintenanceView: React.FC<{ embedded?: boolean }> = ({ embedded = f
             <BackButton to={`/property/${activePropertyUid}/overview`} />
           </div>
           <div className="flex items-center gap-2">
-            <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#24221F] tracking-tight">
+            <h1 className="font-display font-bold text-2xl sm:text-[28px] text-[#0D1C42] tracking-tight">
               Maintenance
             </h1>
             <Badge variant="sage" size="md">{tickets.length} Tickets</Badge>
           </div>
-          <p className="font-body text-sm text-[#6C675F] mt-1">
+          <p className="font-body text-sm text-[#667085] mt-1">
             Ticket-based maintenance workflow for{' '}
-            <strong className="text-[#24221F] font-semibold">{activeProperty?.name}</strong>
+            <strong className="text-[#0D1C42] font-semibold">{activeProperty?.name}</strong>
           </p>
         </div>
       )}
 
       {/* Section nav — live workflow vs terminal record */}
-      <div className="flex items-center gap-1 bg-[#F0EDE6] rounded-[12px] p-1 w-fit">
+      <div className="flex items-center gap-1 bg-[#F6F4F2] rounded-[12px] p-1 w-fit">
         {([
           { v: 'live' as const, l: 'Current Live', icon: Activity },
           { v: 'history' as const, l: 'History', icon: History },
@@ -602,8 +602,8 @@ export const MaintenanceView: React.FC<{ embedded?: boolean }> = ({ embedded = f
               onClick={() => setView(t.v)}
               className={`flex items-center gap-2 px-4 py-2 rounded-[9px] text-[13px] font-semibold transition-all cursor-pointer ${
                 view === t.v
-                  ? 'bg-white text-[#24221F] shadow-sm'
-                  : 'text-[#6C675F] hover:text-[#24221F]'
+                  ? 'bg-white text-[#0D1C42] shadow-sm'
+                  : 'text-[#667085] hover:text-[#0D1C42]'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -619,22 +619,22 @@ export const MaintenanceView: React.FC<{ embedded?: boolean }> = ({ embedded = f
         <>
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-1.5 text-xs text-[#736E65]">
+        <div className="flex items-center gap-1.5 text-xs text-[#667085]">
           <Search className="w-3.5 h-3.5" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search ticket, room, issue…"
-            className="bg-[#FAF8F5] border border-[#DDD7CB] rounded-[8px] px-2.5 py-1.5 text-xs text-[#24221F] focus:outline-none w-56"
+            className="bg-[#FFFFFF] border border-[#D6D3D1] rounded-[8px] px-2.5 py-1.5 text-xs text-[#0D1C42] focus:outline-none w-56"
           />
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-[#736E65]">
+        <div className="flex items-center gap-1.5 text-xs text-[#667085]">
           <Filter className="w-3.5 h-3.5" />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-[#FAF8F5] border border-[#DDD7CB] rounded-[8px] px-2 py-1.5 text-xs focus:outline-none"
+            className="bg-[#FFFFFF] border border-[#D6D3D1] rounded-[8px] px-2 py-1.5 text-xs focus:outline-none"
           >
             <option value="all">All Statuses</option>
             {Object.entries(MAINTENANCE_STATUS_LABELS).map(([v, l]) => (
@@ -647,13 +647,13 @@ export const MaintenanceView: React.FC<{ embedded?: boolean }> = ({ embedded = f
       {/* Ticket list */}
       {filtered.length === 0 ? (
         <Card className="p-12 text-center border-dashed">
-          <div className="w-12 h-12 rounded-full bg-[#FDF0E5] text-[#9A4C07] flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-full bg-[#FDF3E2] text-[#A56514] flex items-center justify-center mx-auto mb-3">
             <Wrench className="w-6 h-6" />
           </div>
-          <h3 className="font-display font-semibold text-lg text-[#24221F]">
+          <h3 className="font-display font-semibold text-lg text-[#0D1C42]">
             {view === 'live' ? 'No live maintenance tickets' : 'No history yet'}
           </h3>
-          <p className="font-body text-sm text-[#6C675F] max-w-md mx-auto mt-1">
+          <p className="font-body text-sm text-[#667085] max-w-md mx-auto mt-1">
             {view === 'live'
               ? 'Flag a room for maintenance from the Rooms page — the ticket appears here.'
               : 'Completed and cancelled tickets are archived here.'}
@@ -671,23 +671,23 @@ export const MaintenanceView: React.FC<{ embedded?: boolean }> = ({ embedded = f
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${
-                    t.priority === 'critical' ? 'bg-[#FBEBEB] text-[#A32A2A]' : 'bg-[#FDF0E5] text-[#9A4C07]'
+                    t.priority === 'critical' ? 'bg-[#FAEBEB] text-[#A83434]' : 'bg-[#FDF3E2] text-[#A56514]'
                   }`}>
                     <Wrench className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-bold text-sm text-[#24221F]">{t.ticket_number}</span>
+                      <span className="font-mono font-bold text-sm text-[#0D1C42]">{t.ticket_number}</span>
                       <MaintStatusPill status={t.status} />
                       <PriorityPill priority={t.priority} />
                     </div>
-                    <p className="text-xs text-[#555047] mt-0.5 truncate">
-                      {t.issue} <span className="text-[#8C867C]">· {typeLabel(t.maintenance_type)}</span>
+                    <p className="text-xs text-[#667085] mt-0.5 truncate">
+                      {t.issue} <span className="text-[#667085]">· {typeLabel(t.maintenance_type)}</span>
                     </p>
                   </div>
                 </div>
-                <div className="text-right text-[11px] text-[#8C867C] shrink-0">
-                  <p className="font-semibold text-[#555047]">{t.location_label || t.room_number || '—'}</p>
+                <div className="text-right text-[11px] text-[#667085] shrink-0">
+                  <p className="font-semibold text-[#667085]">{t.location_label || t.room_number || '—'}</p>
                   <p>{t.assigned_to_name ? `→ ${t.assigned_to_name}` : 'Unassigned'}</p>
                 </div>
               </div>

@@ -4,7 +4,7 @@ import { fmtDateTimeIST, fmtDateIST, fmtTimeIST } from '../../../lib/datetime';
 import { Button } from '../../ui/Button';
 import { card } from '../analysis/kit';
 
-const NAVY = '#365D78', GREEN = '#169B72', AMBER = '#D99532', BLUE = '#6686A0', RED = '#D76565', MUTED = '#98A2B3', BORDER = '#E9EDF2', TRACK = '#EEF1F5';
+const NAVY = '#2457A8', GREEN = '#800020', AMBER = '#A56514', BLUE = '#3478D4', RED = '#D64545', MUTED = '#7FA8CE', BORDER = '#EAF1FB', TRACK = '#EAF1FB';
 
 type Dir = 'all' | 'received' | 'away';
 type Kind = 'all' | 'task' | 'maintenance';
@@ -87,14 +87,14 @@ function Stepper({ lifecycle }: { lifecycle: Lifecycle }) {
         <span className="flex h-2 w-2 flex-none rounded-full"
           style={s.state === 'done' ? { backgroundColor: s.color }
             : s.state === 'current' ? { border: `2px solid ${s.color}` }
-            : { border: '2px solid #D8DEE6' }} />
+            : { border: '2px solid #C3D6F0' }} />
       </React.Fragment>)}
     </div>
     <div className="mt-1.5 flex">
       {stages.map((s) => <div key={s.label} className="flex-1 first:text-left text-center last:text-right">
         <p className="text-[9px] font-medium leading-tight"
-          style={{ color: s.state === 'done' ? s.color : s.state === 'current' ? s.color : '#C9D0DA' }}>{s.label}</p>
-        {s.actor && s.state !== 'pending' && <p className="text-[9px] leading-tight text-[#98A2B3]">{s.actor}</p>}
+          style={{ color: s.state === 'done' ? s.color : s.state === 'current' ? s.color : '#C3D6F0' }}>{s.label}</p>
+        {s.actor && s.state !== 'pending' && <p className="text-[9px] leading-tight text-[#7FA8CE]">{s.actor}</p>}
       </div>)}
     </div>
     <p className="mt-1 text-right">
@@ -128,26 +128,26 @@ export function AllocationTimeline({ employeeId, propertyId, bounds }: {
 
   const pill = (active: boolean) =>
     `rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-150 ${
-      active ? 'border-[#365D78] bg-[#365D78] text-white' : 'border-[#E9EDF2] text-[#697586] hover:border-[#C9D0DA] hover:text-[#17212B]'}`;
+      active ? 'border-[#2457A8] bg-[#2457A8] text-white' : 'border-[#EAF1FB] text-[#2457A8] hover:border-[#C3D6F0] hover:text-[#2457A8]'}`;
 
   return <section aria-label="Allocation history" className={card}>
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E9EDF2] p-5">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EAF1FB] p-5">
       <div>
-        <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-[#17212B]">Allocation History</h2>
-        <p className="mt-0.5 text-xs text-[#98A2B3]">Complete chronological record of task assignments and transfers · newest first</p>
+        <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-[#2457A8]">Allocation History</h2>
+        <p className="mt-0.5 text-xs text-[#7FA8CE]">Complete chronological record of task assignments and transfers · newest first</p>
       </div>
       <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Allocation filters">
         {([['all', 'All'], ['task', 'Tasks'], ['maintenance', 'Maintenance']] as [Kind, string][]).map(([k, l]) => (
           <button key={k} aria-pressed={kind === k} onClick={() => setKind(k)} className={pill(kind === k)}>{l}</button>))}
-        <span className="mx-1 h-4 w-px bg-[#E9EDF2]" />
+        <span className="mx-1 h-4 w-px bg-[#EAF1FB]" />
         {([['all', 'All direction'], ['received', 'Assigned to employee'], ['away', 'Reassigned away']] as [Dir, string][]).map(([k, l]) => (
           <button key={k} aria-pressed={dir === k} onClick={() => setDir(k)} className={pill(dir === k)}>{l}</button>))}
       </div>
     </div>
-    {loading ? <div role="status" className="space-y-3 p-6">{[0, 1, 2].map((n) => <div key={n} className="h-16 animate-pulse rounded-lg bg-[#F1F3F6]" />)}</div>
-      : error ? <div role="alert" className="p-8 text-center"><p className="text-[13px] text-[#697586]">Unable to load allocation history.</p><div className="mt-3"><Button size="sm" variant="outline" onClick={() => setRetry((v) => v + 1)}>Retry</Button></div></div>
-      : !data?.items.length ? <p className="p-10 text-center text-[13px] text-[#98A2B3]">No allocation records for these filters.</p>
-      : <ol className="relative ml-6 space-y-0 border-l border-[#EEF1F5] px-0">
+    {loading ? <div role="status" className="space-y-3 p-6">{[0, 1, 2].map((n) => <div key={n} className="h-16 animate-pulse rounded-lg bg-[#FFFCFA]" />)}</div>
+      : error ? <div role="alert" className="p-8 text-center"><p className="text-[13px] text-[#2457A8]">Unable to load allocation history.</p><div className="mt-3"><Button size="sm" variant="outline" onClick={() => setRetry((v) => v + 1)}>Retry</Button></div></div>
+      : !data?.items.length ? <p className="p-10 text-center text-[13px] text-[#7FA8CE]">No allocation records for these filters.</p>
+      : <ol className="relative ml-6 space-y-0 border-l border-[#EAF1FB] px-0">
         {data.items.map((r) => {
           const away = r.previous_employee_uid === employeeId;
           const isMaint = r.ticket_kind === 'maintenance';
@@ -155,22 +155,22 @@ export function AllocationTimeline({ employeeId, propertyId, bounds }: {
           const who = away
             ? `Reassigned away${r.employee_name ? ` → ${r.employee_name}` : ''}`
             : `${r.previous_employee_name ? `Reassigned: ${r.previous_employee_name} → ` : 'Assigned to '}${r.employee_name || 'unknown'}`;
-          return <li key={String(r.record_uid)} className="relative border-b border-[#F1F3F6] px-6 py-4 transition-colors duration-150 last:border-0 hover:bg-[#FAFBFC]">
+          return <li key={String(r.record_uid)} className="relative border-b border-[#FFFCFA] px-6 py-4 transition-colors duration-150 last:border-0 hover:bg-[#FFFFFF]">
             <span className="absolute -left-[9px] top-6 h-2.5 w-2.5 rounded-full border-2 border-white" style={{ backgroundColor: dot }} />
             <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
               {/* LEFT — timestamp */}
               <div className="w-24 flex-none pt-0.5">
-                <p className="text-xs font-semibold text-[#17212B]">{r.created_at ? fmtDateIST(String(r.created_at)) : '—'}</p>
-                <p className="text-[11px] text-[#98A2B3]">{r.created_at ? fmtTimeIST(String(r.created_at)) : 'Time not recorded'}</p>
+                <p className="text-xs font-semibold text-[#2457A8]">{r.created_at ? fmtDateIST(String(r.created_at)) : '—'}</p>
+                <p className="text-[11px] text-[#7FA8CE]">{r.created_at ? fmtTimeIST(String(r.created_at)) : 'Time not recorded'}</p>
               </div>
               {/* CENTER — event detail */}
               <div className="min-w-[220px] flex-1">
                 <div className="flex flex-wrap items-baseline gap-x-2">
-                  <span className="text-[13px] font-semibold text-[#17212B]">{who}</span>
-                  <span className="rounded-md bg-[#F1F3F6] px-1.5 py-0.5 text-[10px] font-medium" style={{ color: isMaint ? BLUE : NAVY }}>{isMaint ? 'Maintenance' : 'Task'}</span>
-                  {r.ticket_number ? <span className="text-[11px] tabular-nums text-[#98A2B3]">#{String(r.ticket_number)}</span> : null}
+                  <span className="text-[13px] font-semibold text-[#2457A8]">{who}</span>
+                  <span className="rounded-md bg-[#FFFCFA] px-1.5 py-0.5 text-[10px] font-medium" style={{ color: isMaint ? BLUE : NAVY }}>{isMaint ? 'Maintenance' : 'Task'}</span>
+                  {r.ticket_number ? <span className="text-[11px] tabular-nums text-[#7FA8CE]">#{String(r.ticket_number)}</span> : null}
                 </div>
-                <p className="mt-1 text-xs text-[#697586]">
+                <p className="mt-1 text-xs text-[#2457A8]">
                   {[r.allocation_method && String(r.allocation_method).replace(/_/g, ' '),
                     r.actor_name && `by ${String(r.actor_name)}`,
                     r.reason && String(r.reason),
@@ -180,13 +180,13 @@ export function AllocationTimeline({ employeeId, propertyId, bounds }: {
               {/* RIGHT — workflow */}
               <div className="flex-none lg:w-[280px]">
                 {r.lifecycle ? <Stepper lifecycle={r.lifecycle as unknown as Lifecycle} />
-                  : <span className="text-[11px] text-[#C9D0DA]">No lifecycle data</span>}
+                  : <span className="text-[11px] text-[#C3D6F0]">No lifecycle data</span>}
               </div>
             </div>
           </li>;
         })}
       </ol>}
-    {data && data.total > data.items.length && <div className="flex items-center justify-between border-t border-[#E9EDF2] px-5 py-3 text-xs text-[#697586]">
+    {data && data.total > data.items.length && <div className="flex items-center justify-between border-t border-[#EAF1FB] px-5 py-3 text-xs text-[#2457A8]">
       <span>{data.total} records · page {page} of {Math.ceil(data.total / data.limit)}</span>
       <span className="flex gap-1">
         <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</Button>

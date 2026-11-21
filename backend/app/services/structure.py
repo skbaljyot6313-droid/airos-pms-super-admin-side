@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo
 IST = ZoneInfo("Asia/Kolkata")
 
 from sqlalchemy import delete as sa_delete
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -26,10 +26,12 @@ from app.core.exceptions import AppError
 from app.models.allocation import AllocationEvent
 from app.models.maintenance import MaintenanceTicket, MaintenanceTicketEvent
 from app.models.property import Property
-from app.models.structure import Area, Bed, Dorm, Room, Washroom, WashroomFixture, Zone
+from app.models.structure import Area, Bed, Dorm, Room, Section, Washroom, WashroomFixture, Zone
 from app.models.task import Task, TaskHistoryEvent
 from app.models.user import User, UserRole
 from app.schemas.structure import (
+    SectionCreateRequest,
+    SectionUpdateRequest,
     AreaCreateRequest,
     AreaUpdateRequest,
     BulkUnitStatusRequest,
@@ -73,6 +75,31 @@ class ValidationErr(AppError):
 
 WASHROOM_TYPES = {"male", "female", "unisex"}
 STAY_TYPES = {"stay"}
+
+
+def _clean_custom_units(values: list | None) -> list[dict]:
+    """Normalize the zone's free-text unit list into ``{name, qty}``
+    entries — trim, drop empties, dedupe case-insensitively on the name,
+    cap at 100 entries / 120 chars / qty 9999. Accepts plain strings
+    (legacy rows and simple clients) as ``qty=1``."""
+    out: list[dict] = []
+    seen: set[str] = set()
+    for raw in values or []:
+        if isinstance(raw, str):
+            name, qty = raw.strip()[:120], 1
+        else:
+            name = str(getattr(raw, "name", "") or (raw.get("name", "") if isinstance(raw, dict) else "")).strip()[:120]
+            try:
+                qty = int(getattr(raw, "qty", 1) if not isinstance(raw, dict) else raw.get("qty", 1))
+            except (TypeError, ValueError):
+                qty = 1
+        qty = max(1, min(qty, 9999))
+        if name and name.lower() not in seen:
+            seen.add(name.lower())
+            out.append({"name": name, "qty": qty})
+        if len(out) >= 100:
+            break
+    return out
 
 
 class StructureService:
@@ -138,14 +165,19 @@ class StructureService:
     async def _zone_for_washroom(
         self, zone_id: uuid.UUID | None, property_id: uuid.UUID
     ):
-        """Washrooms are facilities, not guest units — any property zone can
-        hold them (unlike rooms/dorms, which are stay-zone only)."""
+        """Washrooms are guest facilities — only 'stay' zones can hold them,
+        same as rooms/dorms."""
         if zone_id is None:
             return None
         res = await self.session.execute(
             select(Zone).where(Zone.id == zone_id, Zone.property_id == property_id)
         )
         zone = res.scalar_one_or_none()
+        if zone is not None and zone.zone_type not in STAY_TYPES:
+            raise ValidationErr(
+                "Washrooms can only be assigned to zones of type 'stay'.",
+                field="zone_uid",
+            )
         if zone is None:
             raise ValidationErr("Zone not found in this property.", field="zone_uid")
         return zone
@@ -328,6 +360,47 @@ class StructureService:
     # Areas
     # ------------------------------------------------------------------
 
+    async def _section_id_for(
+        self, property_id: uuid.UUID, section_uid: uuid.UUID | None
+    ) -> uuid.UUID | None:
+        if section_uid is None:
+            return None
+        section = await self.session.get(Section, section_uid)
+        if section is None or section.property_id != property_id:
+            raise ValidationErr("Section not found in this property.", field="section_uid")
+        return section.id
+
+    async def create_section(self, user: User, payload: SectionCreateRequest) -> Section:
+        prop = await self._property_for_write(user, payload.property_uid)
+        section = Section(
+            property_id=prop.id,
+            name=payload.name.strip(),
+            code=await self._next_code(Section, prop.id, "SECTION"),
+            description=payload.description,
+        )
+        self.session.add(section)
+        await self._commit()
+        return section
+
+    async def update_section(
+        self, user: User, section_id: uuid.UUID, payload: SectionUpdateRequest
+    ) -> Section:
+        section, _ = await self._get(Section, section_id, user)
+        for k, v in payload.model_dump(exclude_unset=True).items():
+            setattr(section, k, v)
+        await self._commit()
+        return section
+
+    async def delete_section(self, user: User, section_id: uuid.UUID) -> None:
+        """Detach and delete a section. Areas inside are ungrouped, never
+        deleted — their zones and units are untouched (SET NULL)."""
+        section, _ = await self._get(Section, section_id, user)
+        await self.session.execute(
+            update(Area).where(Area.section_id == section.id).values(section_id=None)
+        )
+        await self.session.delete(section)
+        await self._commit()
+
     async def create_area(self, user: User, payload: AreaCreateRequest) -> Area:
         prop = await self._property_for_write(user, payload.property_uid)
         area = Area(
@@ -335,6 +408,7 @@ class StructureService:
             name=payload.name.strip(),
             code=await self._next_code(Area, prop.id, "AREA"),
             level_number=payload.level_number,
+            section_id=await self._section_id_for(prop.id, payload.section_uid),
             description=payload.description,
         )
         self.session.add(area)
@@ -346,6 +420,9 @@ class StructureService:
     ) -> Area:
         area, _ = await self._get(Area, area_id, user)
         data = payload.model_dump(exclude_unset=True)
+        if 'section_uid' in data:
+            data['section_id'] = await self._section_id_for(
+                area.property_id, data.pop('section_uid'))
         for k, v in data.items():
             setattr(area, k, v)
         await self._commit()
@@ -399,6 +476,7 @@ class StructureService:
             zone_type=payload.zone_type or "stay",
             floor=payload.floor,
             description=payload.description,
+            custom_units=_clean_custom_units(payload.custom_units),
         )
         self.session.add(zone)
         await self._commit()
@@ -413,6 +491,8 @@ class StructureService:
             data["area_id"] = await self._area_in_property(
                 data.pop("area_uid"), zone.property_id
             )
+        if "custom_units" in data:
+            data["custom_units"] = _clean_custom_units(data["custom_units"])
         new_type = data.get("zone_type")
         if new_type and new_type != zone.zone_type and new_type not in STAY_TYPES:
             # Moving away from 'stay' — unassign any units inside

@@ -9,7 +9,7 @@ import { useRealtimeChannel, propChannel } from '../../realtime/useRealtimeChann
 import { fmtTimeIST, fmtDateLongIST } from '../../lib/datetime';
 
 const inputCls =
-  'px-3 py-2 text-sm bg-white border border-[#E2DCD0] rounded-[10px] focus:outline-none focus:ring-[3px] focus:ring-[#386641]/15 focus:border-[#386641]';
+  'px-3 py-2 text-sm bg-white border border-[#E7E5E4] rounded-[10px] focus:outline-none focus:ring-[3px] focus:ring-[#800020]/15 focus:border-[#800020]';
 
 const fmtTime = fmtTimeIST;
 
@@ -82,24 +82,24 @@ export const AbandonedTodayView: React.FC<Props> = ({ onOpenTask }) => {
       {/* Header + count */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-display font-bold text-xl text-[#24221F]">Today's Abandoned</h2>
-          <p className="text-sm text-[#8C867C]">
+          <h2 className="font-display font-bold text-xl text-[#0D1C42]">Today's Abandoned</h2>
+          <p className="text-sm text-[#667085]">
             {data ? fmtDateLongIST(data.abandoned_day || data.date) : ''}
           </p>
         </div>
         <span className={`px-2.5 py-1.5 rounded-[9px] text-[11px] font-semibold border ${
           count > 0
-            ? 'bg-[#FDE8E8] border-[#F5C8C8] text-[#B91C1C]'
-            : 'bg-white border-[#EAE5DC] text-[#58534C]'
+            ? 'bg-[#FAEBEB] border-[#F0C8C8] text-[#A83434]'
+            : 'bg-white border-[#E7E5E4] text-[#667085]'
         }`}>
-          Abandoned <span className="text-[#24221F]">{count}</span>
+          Abandoned <span className="text-[#0D1C42]">{count}</span>
         </span>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#A59F95]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#98A2B3]" />
           <input value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search tasks…" className={`${inputCls} w-full pl-8`} />
         </div>
@@ -114,27 +114,27 @@ export const AbandonedTodayView: React.FC<Props> = ({ onOpenTask }) => {
           <option value="MIDNIGHT_EXPIRY">Midnight expiry</option>
           <option value="FRESH_DAY_RESET">Fresh day reset</option>
         </select>
-        <button onClick={() => void load()} className="p-2 text-[#8C867C] hover:bg-[#F5F2EB] rounded-[9px] cursor-pointer" title="Refresh">
+        <button onClick={() => void load()} className="p-2 text-[#667085] hover:bg-[#FFFCFA] rounded-[9px] cursor-pointer" title="Refresh">
           <RefreshCw className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Table */}
       {loading ? (
-        <p className="text-sm text-[#8C867C] py-12 text-center">Loading abandoned tasks…</p>
+        <p className="text-sm text-[#667085] py-12 text-center">Loading abandoned tasks…</p>
       ) : rows.length === 0 ? (
         <div className="py-16 text-center">
-          <OctagonX className="w-10 h-10 text-[#D5CFC3] mx-auto mb-3" />
-          <p className="text-sm font-medium text-[#6C675F]">Nothing abandoned today</p>
-          <p className="text-xs text-[#8C867C] mt-1">
+          <OctagonX className="w-10 h-10 text-[#D6D3D1] mx-auto mb-3" />
+          <p className="text-sm font-medium text-[#667085]">Nothing abandoned today</p>
+          <p className="text-xs text-[#667085] mt-1">
             Tasks abandoned by the expiry sweep, daily rollover, or manually will appear here.
           </p>
         </div>
       ) : (
-        <div className="rounded-[12px] border border-[#EAE5DC] bg-white overflow-x-auto">
+        <div className="rounded-[12px] border border-[#E7E5E4] bg-white overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[860px]">
             <thead>
-              <tr className="border-b border-[#EAE5DC] text-[10.5px] uppercase tracking-wider text-[#8C867C]">
+              <tr className="border-b border-[#E7E5E4] text-[10.5px] uppercase tracking-wider text-[#667085]">
                 <th className="px-3.5 py-2.5 font-semibold">Abandoned At</th>
                 <th className="px-3.5 py-2.5 font-semibold">Task</th>
                 <th className="px-3.5 py-2.5 font-semibold">Target</th>
@@ -147,31 +147,31 @@ export const AbandonedTodayView: React.FC<Props> = ({ onOpenTask }) => {
             </thead>
             <tbody>
               {rows.map((item) => (
-                <tr key={item.task_uid} className="border-b border-[#F0ECE4] last:border-0 bg-[#FDF6EC]">
-                  <td className="px-3.5 py-2.5 whitespace-nowrap text-[12px] text-[#58534C]">
+                <tr key={item.task_uid} className="border-b border-[#F6F4F2] last:border-0 bg-[#FFFCFA]">
+                  <td className="px-3.5 py-2.5 whitespace-nowrap text-[12px] text-[#667085]">
                     <span className="inline-flex items-center gap-1.5">
-                      <Clock className="w-3 h-3 text-[#A59F95]" /> {fmtTime(item.abandoned_at)}
+                      <Clock className="w-3 h-3 text-[#98A2B3]" /> {fmtTime(item.abandoned_at)}
                     </span>
                   </td>
                   <td className="px-3.5 py-2.5">
-                    <p className="font-semibold text-[13px] text-[#24221F] leading-tight">{item.title}</p>
+                    <p className="font-semibold text-[13px] text-[#0D1C42] leading-tight">{item.title}</p>
                     {item.ticket_number && (
-                      <p className="text-[10.5px] text-[#8C867C]">{item.ticket_number}</p>
+                      <p className="text-[10.5px] text-[#667085]">{item.ticket_number}</p>
                     )}
                   </td>
-                  <td className="px-3.5 py-2.5 text-[12px] text-[#58534C]">
+                  <td className="px-3.5 py-2.5 text-[12px] text-[#667085]">
                     {item.target_label || 'Property-wide'}
                   </td>
-                  <td className="px-3.5 py-2.5 text-[12px] text-[#58534C] whitespace-nowrap">
+                  <td className="px-3.5 py-2.5 text-[12px] text-[#667085] whitespace-nowrap">
                     {item.zone_name || '—'}
                   </td>
-                  <td className="px-3.5 py-2.5 text-[12px] text-[#58534C] whitespace-nowrap">
+                  <td className="px-3.5 py-2.5 text-[12px] text-[#667085] whitespace-nowrap">
                     {item.assignee || 'Unassigned'}
                   </td>
-                  <td className="px-3.5 py-2.5 text-[12px] text-[#58534C] whitespace-nowrap">
+                  <td className="px-3.5 py-2.5 text-[12px] text-[#667085] whitespace-nowrap">
                     {item.scheduled_for ? (
                       <span className="inline-flex items-center gap-1.5">
-                        <Clock className="w-3 h-3 text-[#A59F95]" /> {fmtTime(item.scheduled_for)}
+                        <Clock className="w-3 h-3 text-[#98A2B3]" /> {fmtTime(item.scheduled_for)}
                       </span>
                     ) : '—'}
                   </td>
@@ -180,7 +180,7 @@ export const AbandonedTodayView: React.FC<Props> = ({ onOpenTask }) => {
                       {reasonLabel(item.abandoned_reason)}
                     </Badge>
                     {item.abandoned_from_status && (
-                      <p className="text-[10.5px] text-[#8C867C] mt-0.5">
+                      <p className="text-[10.5px] text-[#667085] mt-0.5">
                         was {item.abandoned_from_status.replace(/_/g, ' ')}
                       </p>
                     )}
@@ -188,7 +188,7 @@ export const AbandonedTodayView: React.FC<Props> = ({ onOpenTask }) => {
                   <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
                     <button
                       onClick={() => onOpenTask(item.task_uid)}
-                      className="px-2.5 py-1.5 text-xs font-semibold text-[#386641] hover:bg-[#EBF3EC] rounded-[8px] inline-flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1.5 text-xs font-semibold text-[#800020] hover:bg-[#F7E9EE] rounded-[8px] inline-flex items-center gap-1 cursor-pointer"
                     >
                       Open <ChevronRight className="w-3.5 h-3.5" />
                     </button>

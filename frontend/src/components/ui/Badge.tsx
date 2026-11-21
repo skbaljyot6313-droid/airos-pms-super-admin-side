@@ -6,7 +6,7 @@ import { TASK_STATUS_LABELS, TASK_TYPE_LABELS } from '../../lib/taskUtils';
 
 export interface BadgeProps {
   children: ReactNode;
-  variant?: 'sage' | 'orange' | 'red' | 'lavender' | 'neutral' | 'outline';
+  variant?: 'sage' | 'orange' | 'red' | 'lavender' | 'info' | 'neutral' | 'outline';
   size?: 'sm' | 'md';
   className?: string;
 }
@@ -23,12 +23,13 @@ export const Badge: React.FC<BadgeProps> = ({
   };
 
   const variantStyles = {
-    sage: 'bg-[#EBF3EC] text-[#285230] border border-[#CEE4D1]',
-    orange: 'bg-[#FEF3E8] text-[#9A4C07] border border-[#FCD9BD]',
-    red: 'bg-[#FDE8E8] text-[#A32A2A] border border-[#F9C3C3]',
-    lavender: 'bg-[#F2EFF9] text-[#554388] border border-[#DDD5F0]',
-    neutral: 'bg-[#F3EFE9] text-[#48443D] border border-[#E2DDD5]',
-    outline: 'bg-transparent text-[#575249] border border-[#DDD7CC]',
+    sage: 'bg-[#E6F4EE] text-[#0F6847] border border-[#BFE3D2]',
+    orange: 'bg-[#FDF3E2] text-[#A56514] border border-[#F2D9AF]',
+    red: 'bg-[#FAEBEB] text-[#A83434] border border-[#F0C8C8]',
+    lavender: 'bg-[#F0EBFA] text-[#5C41A5] border border-[#D8CAF0]',
+    info: 'bg-[#EAF1FB] text-[#2457A8] border border-[#C3D6F0]',
+    neutral: 'bg-[#EFF1F4] text-[#5F6776] border border-[#D9DDE3]',
+    outline: 'bg-transparent text-[#667085] border border-[#D6D3D1]',
   };
 
   return (
@@ -117,30 +118,32 @@ export function unitVisualState(input: UnitStateInput): UnitVisualState {
   return 'neutral';
 }
 
+export const WASHROOM_TILE = 'bg-[#3C3D37] border-[#3C3D37] text-white';
+
 export const UNIT_VISUAL_TINT: Record<UnitVisualState, string> = {
-  green: 'bg-[#EBF3EC] border-[#CEE4D1] text-[#244E2C]',
-  purple: 'bg-[#F2EFF9] border-[#DDD5F0] text-[#554388]',
-  beige: 'bg-[#FDF6EC] border-[#EFDDBE] text-[#7A540F]',
-  red: 'bg-[#FDE8E8] border-[#F9C3C3] text-[#A32A2A]',
-  neutral: 'bg-[#F3EFE9] border-[#E2DDD5] text-[#8C867C]',
+  green: 'bg-[#1E3B2F] border-[#1E3B2F] text-white',
+  purple: 'bg-[#1B365D] border-[#1B365D] text-white',
+  beige: 'bg-[#FBF5DD] border-[#EBDFAE] text-[#0D1C42]',
+  red: 'bg-[#790D16] border-[#790D16] text-white',
+  neutral: 'bg-[#7A8495] border-[#7A8495] text-white',
 };
 
 /** Dot accent color per visual state — shared by every status list. */
 export const UNIT_VISUAL_DOT: Record<UnitVisualState, string> = {
-  green: 'bg-[#386641]',
-  purple: 'bg-[#7C3AED]',
-  beige: 'bg-[#D97706]',
-  red: 'bg-[#C53B3B]',
-  neutral: 'bg-[#A59F95]',
+  green: 'bg-[#1E3B2F]',
+  purple: 'bg-[#1B365D]',
+  beige: 'bg-[#F4BE38]',
+  red: 'bg-[#790D16]',
+  neutral: 'bg-[#7A8495]',
 };
 
 /** Text accent color per visual state. */
 export const UNIT_VISUAL_TEXT: Record<UnitVisualState, string> = {
-  green: 'text-[#2E6038]',
-  purple: 'text-[#554388]',
-  beige: 'text-[#9A4C07]',
-  red: 'text-[#A32A2A]',
-  neutral: 'text-[#736E65]',
+  green: 'text-[#1E3B2F]',
+  purple: 'text-[#1B365D]',
+  beige: 'text-[#A56514]',
+  red: 'text-[#790D16]',
+  neutral: 'text-[#5F6776]',
 };
 
 /** Badge variant per visual state — status pills go through the resolver too. */
@@ -171,29 +174,29 @@ export const RoomStatusBadge: React.FC<{ status: RoomStatus; size?: 'sm' | 'md' 
   switch (status) {
     case 'available':
       return (
-        <Badge variant="sage" size={size}>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#386641]" />
+        <Badge variant="sage" size={size} className="bg-[#1E3B2F] text-white border-[#1E3B2F]">
+          <span className="w-1.5 h-1.5 rounded-full bg-white" />
           Available
         </Badge>
       );
     case 'occupied':
       return (
-        <Badge variant="lavender" size={size} className="bg-[#F2EFF9] text-[#554388] border-[#DDD5F0]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED]" />
+        <Badge variant="lavender" size={size} className="bg-[#1B365D] text-white border-[#1B365D]">
+          <span className="w-1.5 h-1.5 rounded-full bg-white" />
           Occupied
         </Badge>
       );
     case 'cleaning':
       return (
-        <Badge variant="orange" size={size} className="bg-[#FDF6EC] text-[#7A540F] border-[#EFDDBE]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#D6A017]" />
+        <Badge variant="orange" size={size} className="bg-[#FBF5DD] text-[#0D1C42] border-[#EBDFAE]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#0D1C42]" />
           Cleaning
         </Badge>
       );
     case 'maintenance':
       return (
-        <Badge variant="red" size={size}>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#C53B3B]" />
+        <Badge variant="red" size={size} className="bg-[#790D16] text-white border-[#790D16]">
+          <span className="w-1.5 h-1.5 rounded-full bg-white" />
           Maintenance
         </Badge>
       );
@@ -209,29 +212,29 @@ export const BedStatusBadge: React.FC<{ status: BedStatus; size?: 'sm' | 'md' }>
   switch (status) {
     case 'available':
       return (
-        <Badge variant="sage" size={size}>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#386641]" />
+        <Badge variant="sage" size={size} className="bg-[#1E3B2F] text-white border-[#1E3B2F]">
+          <span className="w-1.5 h-1.5 rounded-full bg-white" />
           Available
         </Badge>
       );
     case 'occupied':
       return (
-        <Badge variant="lavender" size={size} className="bg-[#F2EFF9] text-[#554388] border-[#DDD5F0]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED]" />
+        <Badge variant="lavender" size={size} className="bg-[#1B365D] text-white border-[#1B365D]">
+          <span className="w-1.5 h-1.5 rounded-full bg-white" />
           Occupied
         </Badge>
       );
     case 'cleaning':
       return (
-        <Badge variant="orange" size={size} className="bg-[#FDF6EC] text-[#7A540F] border-[#EFDDBE]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#D6A017]" />
+        <Badge variant="orange" size={size} className="bg-[#FBF5DD] text-[#0D1C42] border-[#EBDFAE]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#0D1C42]" />
           Cleaning
         </Badge>
       );
     case 'maintenance':
       return (
-        <Badge variant="red" size={size}>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#C53B3B]" />
+        <Badge variant="red" size={size} className="bg-[#790D16] text-white border-[#790D16]">
+          <span className="w-1.5 h-1.5 rounded-full bg-white" />
           Maintenance
         </Badge>
       );
@@ -261,7 +264,7 @@ export const TaskStatusBadge: React.FC<{ status: TaskStatus; size?: 'sm' | 'md' 
       );
     case 'pending':
       return (
-        <Badge variant="orange" size={size} className="bg-[#FDF6EC] text-[#8A5A14] border-[#EFDDBE]">
+        <Badge variant="orange" size={size} className="bg-[#FBF5DD] text-[#0D1C42] border-[#EBDFAE]">
           <Clock className="w-3 h-3" />
           {TASK_STATUS_LABELS[status]}
         </Badge>
@@ -289,7 +292,7 @@ export const TaskStatusBadge: React.FC<{ status: TaskStatus; size?: 'sm' | 'md' 
       );
     case 'submitted':
       return (
-        <Badge variant="lavender" size={size} className="bg-[#EAF1FB] text-[#2C4A7C] border-[#C9D8F0]">
+        <Badge variant="lavender" size={size} className="bg-[#1B365D] text-white border-[#1B365D]">
           <Clock className="w-3 h-3" />
           {TASK_STATUS_LABELS[status]}
         </Badge>
@@ -309,7 +312,7 @@ export const TaskStatusBadge: React.FC<{ status: TaskStatus; size?: 'sm' | 'md' 
       );
     case 'abandoned':
       return (
-        <Badge variant="red" size={size} className="bg-[#F6E9E4] text-[#8C4A2F] border-[#EAD2C5]">
+        <Badge variant="neutral" size={size} className="bg-[#EFF1F4] text-[#5F6776] border-[#D9DDE3]">
           <AlertCircle className="w-3 h-3" />
           {TASK_STATUS_LABELS[status]}
         </Badge>
@@ -333,7 +336,7 @@ export const TaskTypeBadge: React.FC<{ type: TaskType; size?: 'sm' | 'md' }> = (
       );
     case 'automated':
       return (
-        <Badge variant="lavender" size={size} className="bg-[#EFF0FA] text-[#3F4C8C] border-[#D5DAF0]">
+        <Badge variant="lavender" size={size} className="bg-[#1B365D] text-white border-[#1B365D]">
           <Zap className="w-3 h-3" />
           {TASK_TYPE_LABELS[type]}
         </Badge>
