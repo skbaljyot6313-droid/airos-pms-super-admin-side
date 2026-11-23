@@ -808,7 +808,7 @@ class DashboardService:
         A unit of capacity is a room or a bed — dorm parents are never counted
         because their beds are already the capacity units.
 
-        hour       : units occupied at each whole hour (instant snapshot), up to now.
+        hour       : units occupied at each 15-minute mark (instant snapshot), up to now.
         day        : units with any stay overlapping the operational day.
         week/month : mean of the daily values in the bucket.
         Denominator: current unit inventory (rooms + beds). Historical inventory is
@@ -823,10 +823,14 @@ class DashboardService:
             first_record = min((_op_day(o.checked_in_at, op) for o in unit_rows), default=None)
         covers_range = first_record is not None and first_record <= d_from
         if granularity == "hour":
+            # 15-minute steps — the chart wants minute-level detail, not
+            # whole-hour snapshots. 96 points/day keeps the series dense.
+            step = timedelta(minutes=15)
             points = []
-            t = p_start.replace(minute=0, second=0, microsecond=0)
+            t = p_start.replace(minute=(p_start.minute // 15) * 15,
+                                second=0, microsecond=0)
             if t < p_start:
-                t += timedelta(hours=1)
+                t += step
             end = min(p_end, now)
             while t < end:
                 occ = {key(o) for o in unit_rows
@@ -842,7 +846,7 @@ class DashboardService:
                     "total_rooms": n_capacity,
                     "occupancy_pct": _pct(len(occ), n_capacity),
                 })
-                t += timedelta(hours=1)
+                t += step
             daily = []
             series_days = points
         else:

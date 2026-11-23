@@ -214,7 +214,7 @@ export const DashboardView: React.FC = () => {
           value={granularity}
           onChange={(e) => setGranularity(e.target.value as DashboardGranularity)}
           disabled={period === 'today' || period === 'yesterday'}
-          title={period === 'today' || period === 'yesterday' ? 'Today and yesterday are shown hourly' : undefined}
+          title={period === 'today' || period === 'yesterday' ? 'Today and yesterday are shown in 15-minute steps' : undefined}
           className="rounded-[9px] border border-line-strong bg-canvas px-2.5 py-1.5 text-body text-ink disabled:opacity-60"
         >
           {GRANULARITY_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
@@ -323,7 +323,7 @@ export const DashboardView: React.FC = () => {
       {header}
 
       {/* 1. Occupancy trend — primary */}
-      <Section id="sec-trend" title="Occupancy trend" note={`${trend.granularity === 'hour' ? 'Hourly' : trend.granularity === 'day' ? 'Daily' : trend.granularity === 'week' ? 'Weekly average' : 'Monthly average'} · ${d.period.label}`}>
+      <Section id="sec-trend" title="Occupancy trend" note={`${trend.granularity === 'hour' ? 'Every 15 min' : trend.granularity === 'day' ? 'Daily' : trend.granularity === 'week' ? 'Weekly average' : 'Monthly average'} · ${d.period.label}`}>
         <Panel className="p-4 sm:p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="text-meta font-semibold text-ink">
