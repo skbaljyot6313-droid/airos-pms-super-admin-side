@@ -34,9 +34,9 @@ services:
       - "GO2RTC_API_USERNAME=${GO2RTC_API_USER:-airos}"
       - "GO2RTC_API_PASSWORD=${GO2RTC_API_PASSWORD:?set GO2RTC_API_PASSWORD in .env}"
     ports:
-      # Control API — loopback only on the host; the backend reaches it on
-      # localhost or over the host firewall allowlist. NEVER public.
-      - "127.0.0.1:1984:1984"
+      # Control API — reachable by the Cloud Run backend over the GCP
+      # firewall rule + basic auth (backend is remote, not on this host).
+      - "1984:1984"
       # RTSP restream consumed by MediaMTX — docker network only.
     expose:
       - "8554"
@@ -68,7 +68,6 @@ services:
       # or ICE falls back to TCP/8889.
       MTX_WEBRTCADDITIONALHOSTS: ${PUBLIC_MEDIA_HOST:?set PUBLIC_MEDIA_HOST in .env}
       MTX_WEBRTCICESERVERS2: ""
-      MTX_WEBRTCICETCPMUXADDRESS: ":8889"
       # Distribution is WebRTC + HLS only — nothing else listens.
       MTX_RTMP: "no"
       MTX_SRT: "no"
@@ -76,7 +75,7 @@ services:
       # Viewer/resource ceilings — bounded, tune to host capacity.
       MTX_PATHREADLIMITS: ""
     ports:
-      - "127.0.0.1:9997:9997"    # control API (backend) — localhost/firewalled
+      - "9997:9997"              # control API (backend on Cloud Run) — firewall + auth
       - "8889:8889"              # WHEP signalling + ICE-TCP mux (browser)
       - "8888:8888"              # HLS (browser fallback)
       - "8189:8189/udp"          # WebRTC ICE media (browser)
