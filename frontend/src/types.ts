@@ -156,10 +156,22 @@ export interface Task {
   due_date?: string;
   due_time?: string;
   start_time?: string; // HH:MM anchor for repetitive schedules
+  /** Daily work window (HH:MM) + break — the shared assignment contract
+   *  rendered identically by every calendar. */
+  end_time?: string | null;
+  break_start_time?: string | null;
+  break_end_time?: string | null;
+  /** Net working estimate in minutes (window minus break) */
+  estimated_minutes?: number | null;
+  /** Server-computed: open work past its scheduled end instant (IST) */
+  is_overdue?: boolean;
   recurrence_start_date?: string; // first day the schedule runs
   recurrence_end_date?: string;   // null/absent = runs forever
   recurrence_window_end?: string; // HH:MM — daily window end (hourly recurrences)
   created_by_name?: string;
+  /** Role of the actor who created the assignment — distinguishes
+   *  Super-Admin-created work from Department-Head-created work. */
+  created_by_role?: string | null;
   recurrence?: RecurrenceSchedule;
   recurrence_interval_days?: number; // used when recurrence === 'custom'
   series_id?: string;                 // repetitive-series lineage
@@ -173,6 +185,7 @@ export interface Task {
   operational_date?: string;
   /** Department attribution — department-head allocated work */
   department_id?: string | null;
+  department_name?: string | null;
   /** Manager-authored checklist (takes precedence over template checklist) */
   checklist?: { title: string; description?: string | null; required?: boolean }[] | null;
   abandoned_at?: string;

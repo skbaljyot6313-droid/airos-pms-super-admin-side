@@ -226,16 +226,70 @@ export const DeptCalendarTab: React.FC<{ departmentUid: string }> = ({ departmen
   });
   const [tasks, setTasks] = useState<Task[]>([]);
   const [openTask, setOpenTask] = useState<Task | null>(null);
+  const [roster, setRoster] = useState<DeptRoster | null>(null);
+  const [pickedEmps, setPickedEmps] = useState<Set<string>>(new Set());
+  const [empQuery, setEmpQuery] = useState('');
+  const [empOpen, setEmpOpen] = useState(false);
+
+  useEffect(() => {
+    departmentWorkApi.roster(departmentUid).then(setRoster).catch(() => setRoster(null));
+  }, [departmentUid]);
 
   useEffect(() => {
     if (!activePropertyUid) return;
-    departmentWorkApi.calendar(activePropertyUid, range.from, range.to, { department_id: departmentUid })
+    departmentWorkApi.calendar(activePropertyUid, range.from, range.to, {
+      department_id: departmentUid,
+      employee_ids: pickedEmps.size ? [...pickedEmps] : undefined,
+      search: empQuery || undefined,
+    })
       .then((r) => setTasks(r.items))
       .catch(() => setTasks([]));
-  }, [activePropertyUid, departmentUid, range]);
+  }, [activePropertyUid, departmentUid, range, pickedEmps, empQuery]);
+
+  const toggleEmp = (uid: string) =>
+    setPickedEmps((s) => { const n = new Set(s); n.has(uid) ? n.delete(uid) : n.add(uid); return n; });
 
   return (
     <>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <div className="relative">
+          <button
+            onClick={() => setEmpOpen((o) => !o)}
+            className="px-3 py-1.5 rounded-[8px] border border-[#D6D3D1] bg-white text-[12px] font-medium text-[#0D1C42] hover:border-[#800020]"
+          >
+            {pickedEmps.size ? `${pickedEmps.size} employee${pickedEmps.size > 1 ? 's' : ''}` : 'All employees'}
+          </button>
+          {empOpen && (
+            <div className="absolute z-20 mt-1 w-60 max-h-56 overflow-y-auto rounded-[10px] border border-[#E7E5E4] bg-white shadow-lg p-1.5 space-y-0.5">
+              {(roster?.items ?? []).map((r) => (
+                <label key={r.employee_uid}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-[#F6F4F2] cursor-pointer text-[12px]">
+                  <input type="checkbox" checked={pickedEmps.has(r.employee_uid)}
+                    onChange={() => toggleEmp(r.employee_uid)} className="accent-[#800020]" />
+                  <span className="truncate">{r.name}</span>
+                </label>
+              ))}
+              {(roster?.items ?? []).length === 0 && (
+                <p className="text-[11px] text-[#667085] px-2 py-1">No roster loaded.</p>
+              )}
+            </div>
+          )}
+        </div>
+        {pickedEmps.size > 0 && (
+          <button onClick={() => setPickedEmps(new Set())}
+            className="text-[11px] text-[#800020] font-medium hover:underline">
+            Clear employees
+          </button>
+        )}
+        <div className="relative flex-1 min-w-[160px] max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#98A2B3]" />
+          <input
+            value={empQuery} onChange={(e) => setEmpQuery(e.target.value)}
+            placeholder="Search assignments…"
+            className="w-full pl-8 pr-3 py-1.5 rounded-[8px] border border-[#D6D3D1] bg-white text-[12px] text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
+          />
+        </div>
+      </div>
       <WorkCalendar
         tasks={tasks} range={range}
         onRangeChange={(from, to) => setRange({ from, to })}

@@ -79,28 +79,36 @@ async def department_performance(
         user, department_id, from_date=from_date, to_date=to_date)
 
 
-@router.get("/tasks/calendar")
-async def tasks_calendar(
+@router.get("/work/calendar")
+async def work_calendar(
     property_id: str = Query(...),
     from_date: str = Query(...),
     to_date: str = Query(...),
     department_id: str | None = None,
     employee_id: str | None = None,
+    employee_ids: str | None = Query(
+        None, description="Comma-separated employee uids — multi filter"),
     zone_id: str | None = None,
     status: str | None = None,
     priority: str | None = None,
     work_type: str | None = None,
+    search: str | None = Query(None, max_length=200),
     user: User = DeptStaff,
     session: AsyncSession = Depends(get_db),
 ):
-    """Date-scoped work for the property/department calendar — real task
-    rows overlapping the window on scheduled_for, due_date or
+    """Date-scoped work for the property/department work calendar — real
+    task rows overlapping the window on scheduled_for, due_date or
     operational_date. Department managers are auto-scoped to their
     departments."""
+    multi_ids = {
+        uid for uid in (_uid(p) for p in (employee_ids or "").split(","))
+        if uid
+    }
     tasks = await DeptWorkService(session).calendar(
         user, property_id=_uid(property_id),
         from_date=from_date, to_date=to_date,
         department_id=_uid(department_id), employee_id=_uid(employee_id),
+        employee_ids=multi_ids or None,
         zone_id=_uid(zone_id), status=status, priority=priority,
-        work_type=work_type)
+        work_type=work_type, search=search)
     return {"items": await _tasks_list_payload(session, tasks)}

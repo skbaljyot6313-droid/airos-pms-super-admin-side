@@ -48,6 +48,23 @@ const taskTime = (t: Task): string | null => {
   return null;
 };
 
+/** 'HH:MM–HH:MM' work window when the assignment carries one — the shared
+ * schedule contract also shown on the employee calendar. */
+const windowLabel = (t: Task): string | null => {
+  const s = t.start_time?.slice(0, 5);
+  const e = t.end_time?.slice(0, 5);
+  if (s && e) return `${s}–${e}`;
+  if (s) return `${s}–`;
+  return taskTime(t);
+};
+
+/** Effective status for display — open work past its scheduled end is
+ * overdue (server-computed, consistent with the employee calendar). */
+const displayStatus = (t: Task): string =>
+  t.is_overdue && !['completed', 'cancelled', 'submitted', 'abandoned'].includes(t.status)
+    ? 'overdue'
+    : t.status;
+
 const locationLabel = (t: Task): string | null =>
   t.room_number ? `Room ${t.room_number}`
     : t.dorm_name ? t.dorm_name
@@ -68,7 +85,7 @@ interface Props {
 export const WorkCalendar: React.FC<Props> = ({
   tasks, onEventClick, range, onRangeChange, view: viewProp, onViewChange,
 }) => {
-  const [innerView, setInnerView] = useState<CalendarViewMode>('agenda');
+  const [innerView, setInnerView] = useState<CalendarViewMode>('week');
   const view = viewProp ?? innerView;
   const setView = (v: CalendarViewMode) => {
     setInnerView(v);
@@ -145,13 +162,13 @@ export const WorkCalendar: React.FC<Props> = ({
       : `${new Date(range.from + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} – ${new Date(range.to + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
   const EventChip: React.FC<{ t: Task; dense?: boolean }> = ({ t, dense }) => {
-    const st = styleFor(t.status);
-    const time = taskTime(t);
+    const st = styleFor(displayStatus(t));
+    const time = windowLabel(t);
     return (
       <button
         onClick={() => onEventClick?.(t)}
         className={`w-full text-left rounded-[6px] px-1.5 py-1 ${st.chip} hover:ring-1 hover:ring-[#800020]/40 transition-shadow cursor-pointer`}
-        title={`${t.title} · ${t.status}${t.assigned_to_name ? ` · ${t.assigned_to_name}` : ''}`}
+        title={`${t.title} · ${displayStatus(t)}${t.assigned_to_name ? ` · ${t.assigned_to_name}` : ''}`}
       >
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: st.dot }} />
@@ -160,9 +177,9 @@ export const WorkCalendar: React.FC<Props> = ({
             {t.title}
           </span>
         </div>
-        {!dense && (t.assigned_to_name || locationLabel(t)) && (
+        {!dense && (t.assigned_to_name || locationLabel(t) || t.department_name) && (
           <div className="text-[10px] opacity-75 truncate pl-3">
-            {[t.assigned_to_name, locationLabel(t)].filter(Boolean).join(' · ')}
+            {[t.assigned_to_name, locationLabel(t), t.department_name].filter(Boolean).join(' · ')}
           </div>
         )}
       </button>
@@ -270,19 +287,19 @@ export const WorkCalendar: React.FC<Props> = ({
             </div>
           )}
           {(byDay.get(range.from) ?? []).map((t) => {
-            const st = styleFor(t.status);
+            const st = styleFor(displayStatus(t));
             return (
               <button key={t.task_uid} onClick={() => onEventClick?.(t)}
                 className="w-full text-left px-4 py-2.5 hover:bg-[#FFFCFA] flex items-center gap-3">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: st.dot }} />
-                <span className="text-[12px] text-[#667085] w-12 shrink-0">{taskTime(t) ?? '—'}</span>
+                <span className="text-[12px] text-[#667085] w-12 shrink-0">{windowLabel(t) ?? '—'}</span>
                 <span className="flex-1 min-w-0">
                   <span className="block text-[13px] font-medium text-[#0D1C42] truncate">{t.title}</span>
                   <span className="block text-[11px] text-[#667085] truncate">
                     {[t.assigned_to_name, locationLabel(t), t.priority].filter(Boolean).join(' · ')}
                   </span>
                 </span>
-                <span className={`text-[11px] px-1.5 py-0.5 rounded-[5px] ${st.chip}`}>{t.status.replace('_', ' ')}</span>
+                <span className={`text-[11px] px-1.5 py-0.5 rounded-[5px] ${st.chip}`}>{displayStatus(t).replace('_', ' ')}</span>
               </button>
             );
           })}
@@ -302,19 +319,19 @@ export const WorkCalendar: React.FC<Props> = ({
                   {d === today && ' — today'}
                 </div>
                 {list.map((t) => {
-                  const st = styleFor(t.status);
+                  const st = styleFor(displayStatus(t));
                   return (
                     <button key={t.task_uid} onClick={() => onEventClick?.(t)}
                       className="w-full text-left px-4 py-2 hover:bg-[#FFFCFA] flex items-center gap-3">
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ background: st.dot }} />
-                      <span className="text-[12px] text-[#667085] w-12 shrink-0">{taskTime(t) ?? '—'}</span>
+                      <span className="text-[12px] text-[#667085] w-12 shrink-0">{windowLabel(t) ?? '—'}</span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-[13px] font-medium text-[#0D1C42] truncate">{t.title}</span>
                         <span className="block text-[11px] text-[#667085] truncate">
                           {[t.assigned_to_name, locationLabel(t), t.priority].filter(Boolean).join(' · ')}
                         </span>
                       </span>
-                      <span className={`text-[11px] px-1.5 py-0.5 rounded-[5px] ${st.chip}`}>{t.status.replace('_', ' ')}</span>
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded-[5px] ${st.chip}`}>{displayStatus(t).replace('_', ' ')}</span>
                     </button>
                   );
                 })}

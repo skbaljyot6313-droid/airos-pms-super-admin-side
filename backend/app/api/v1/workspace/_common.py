@@ -38,13 +38,23 @@ def _uid(v: str | None) -> uuid.UUID | None:
 
 async def _tasks_list_payload(session: AsyncSession, tasks: list) -> list[dict]:
     """Shared /tasks list serialization — resolves each task's
-    _resolved_area_id from its zone or unit with four batched IN() lookups
-    (no per-row queries). Used by list_tasks and the /workspace aggregate."""
+    _resolved_area_id from its zone or unit plus the department label
+    with five batched IN() lookups (no per-row queries). Used by
+    list_tasks, the /workspace aggregate and the work calendars."""
+    from app.models.department import Department
     from app.models.structure import Dorm, Room, Washroom, Zone
     zone_ids = {t.zone_id for t in tasks if t.zone_id}
     room_ids = {t.room_id for t in tasks if t.room_id}
     dorm_ids = {t.dorm_id for t in tasks if t.dorm_id}
     washroom_ids = {t.washroom_id for t in tasks if t.washroom_id}
+    dept_ids = {t.department_id for t in tasks if t.department_id}
+    departments = {
+        d.id: d.name for d in (await session.execute(
+            select(Department).where(Department.id.in_(dept_ids))
+        )).scalars()
+    } if dept_ids else {}
+    for task in tasks:
+        task._department_name = departments.get(task.department_id)
     zones = {
         z.id: z for z in (await session.execute(
             select(Zone).where(Zone.id.in_(zone_ids))

@@ -43,6 +43,15 @@ export async function deleteTask(task_uid: string): Promise<void> {
   return apiFetch<void>(`/tasks/${task_uid}`, { method: 'DELETE' });
 }
 
+/** Cancel an assignment — the record stays in the shared 'cancelled'
+ *  state (the delete path permanently removes the row instead). */
+export async function cancelTask(task_uid: string, note?: string): Promise<Task> {
+  return apiFetch<Task>(`/tasks/${task_uid}/cancel`, {
+    method: 'POST',
+    body: { note },
+  });
+}
+
 /** Start an assigned task — status → in_progress + history event. */
 export async function startTask(task_uid: string): Promise<Task> {
   return apiFetch<Task>(`/tasks/${task_uid}/start`, { method: 'POST' });

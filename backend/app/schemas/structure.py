@@ -384,6 +384,20 @@ class TaskCreateRequest(BaseModel):
     scheduled_for: str | None = None
     expires_at: str | None = None
     start_time: str | None = None  # HH:MM — when the recurrence schedule begins
+    # Daily work window (HH:MM) + break — the shared assignment contract
+    # rendered by every calendar; NULL on classic tasks.
+    end_time: str | None = None
+    break_start_time: str | None = None
+    break_end_time: str | None = None
+    # Net working estimate in minutes (window minus break).
+    estimated_minutes: int | None = None
+    # Manager's assignment notes — merged into the description the same
+    # way the Employee Backend team allocation does ("\n\nNotes: …").
+    notes: str | None = None
+    # Conflict policy — default blocks on overlaps/duplicates (409 +
+    # details.conflicts); authorised users re-submit with this set after
+    # seeing the conflict list.
+    allow_conflicts: bool = False
     recurrence_start_date: str | None = None   # first day the schedule runs
     recurrence_end_date: str | None = None     # None = runs forever
     recurrence_window_end: str | None = None   # HH:MM — daily window end
@@ -413,6 +427,16 @@ class TaskUpdateRequest(BaseModel):  # noqa: D401 - partial update payload
     due_date: str | None = None
     due_time: str | None = None
     start_time: str | None = None
+    end_time: str | None = None
+    break_start_time: str | None = None
+    break_end_time: str | None = None
+    estimated_minutes: int | None = None
+    notes: str | None = None
+    allow_conflicts: bool = False
+    # Optimistic concurrency — when the caller read the row it can pin the
+    # update to that snapshot; a stale read gets 409 STALE_VERSION instead
+    # of silently overwriting a concurrent change.
+    base_updated_at: str | None = None
     recurrence_start_date: str | None = None
     recurrence_end_date: str | None = None
     recurrence_window_end: str | None = None

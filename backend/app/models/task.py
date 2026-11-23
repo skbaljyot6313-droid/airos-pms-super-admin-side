@@ -117,12 +117,23 @@ class Task(Base):
     due_time: Mapped[str | None] = mapped_column(String(16), nullable=True)
     # HH:MM — anchor time a repetitive schedule starts from each cycle
     start_time: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # HH:MM daily window + break — set by staff/department-head allocation
+    # so every calendar renders the full shift shape; NULL on classic tasks.
+    end_time: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    break_start_time: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    break_end_time: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # Net working estimate in minutes (window minus break), when supplied
+    estimated_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Repetition window — from date to end date (None = runs forever), and
     # an optional daily time window for multi-per-day recurrences
     recurrence_start_date: Mapped[str | None] = mapped_column(String(64), nullable=True)
     recurrence_end_date: Mapped[str | None] = mapped_column(String(64), nullable=True)
     recurrence_window_end: Mapped[str | None] = mapped_column(String(16), nullable=True)
     created_by_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Actor role at creation (super_admin | property_manager |
+    # department_manager | …) — lets every interface distinguish
+    # Super-Admin-created work from Department-Head-created work.
+    created_by_role: Mapped[str | None] = mapped_column(String(32), nullable=True)
     submitted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

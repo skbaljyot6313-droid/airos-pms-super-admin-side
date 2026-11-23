@@ -79,6 +79,24 @@ async def delete_task(
     await TaskService(session).delete_task(user, task_id)
 
 
+@router.post("/tasks/{task_id}/cancel")
+async def cancel_task(
+    task_id: uuid.UUID,
+    payload: TaskActionRequest,
+    user: User = Depends(require_role(
+        UserRole.SUPER_ADMIN, UserRole.PROPERTY_MANAGER,
+        UserRole.DEPARTMENT_MANAGER)),
+    session: AsyncSession = Depends(get_db),
+):
+    """Cancel an assignment — the record stays in the unified
+    ``cancelled`` state (department managers are department-scoped
+    inside the service)."""
+    return ws.task_out(
+        await TaskService(session).cancel_task(
+            user, task_id, reason=payload.note)
+    )
+
+
 @router.post("/tasks/{task_id}/start")
 async def start_task(
     task_id: uuid.UUID,

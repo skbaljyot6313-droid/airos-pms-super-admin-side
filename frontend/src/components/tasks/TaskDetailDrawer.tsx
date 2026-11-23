@@ -154,6 +154,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
     requestTaskRedo,
     reassignTask,
     deleteTask,
+    cancelTask,
     addToast,
   } = useApp();
 
@@ -173,6 +174,8 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
   const [redoNote, setRedoNote] = useState('');
   const [reassignMode, setReassignMode] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [isCompleting, setIsCompleting] = useState(false);
   const [viewer, setViewer] = useState<{
     title: string;
@@ -383,6 +386,39 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
                 </span>
                 <p className="text-xs font-medium text-[#0D1C42] mt-1.5">{formatTaskDue(task)}</p>
               </div>
+
+              {(task.start_time || task.end_time) && (
+                <div className="p-3 rounded-[12px] bg-white border border-[#E7E5E4]">
+                  <span className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> Work window
+                  </span>
+                  <p className="text-xs font-medium text-[#0D1C42] mt-1.5">
+                    {task.start_time?.slice(0, 5) ?? '—'}–{task.end_time?.slice(0, 5) ?? '—'}
+                    {task.break_start_time && task.break_end_time && (
+                      <span className="block text-[10px] text-[#667085] mt-0.5">
+                        Break {task.break_start_time.slice(0, 5)}–{task.break_end_time.slice(0, 5)}
+                        {task.estimated_minutes ? ` · ~${task.estimated_minutes} min` : ''}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {task.created_by_role && (
+                <div className="p-3 rounded-[12px] bg-white border border-[#E7E5E4]">
+                  <span className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider flex items-center gap-1">
+                    <UserCheck className="w-3 h-3" /> Source
+                  </span>
+                  <p className="text-xs font-medium text-[#0D1C42] mt-1.5">
+                    {task.created_by_role === 'department_manager'
+                      ? 'Department Head'
+                      : task.created_by_role === 'super_admin'
+                      ? 'Super Admin'
+                      : task.created_by_role.replace('_', ' ')}
+                    {task.department_name ? ` · ${task.department_name}` : ''}
+                  </p>
+                </div>
+              )}
 
               <div className="p-3 rounded-[12px] bg-white border border-[#E7E5E4]">
                 <span className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider flex items-center gap-1">
@@ -720,6 +756,17 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
                       <span>Edit</span>
                     </Button>
                   )}
+                  {!['completed', 'cancelled'].includes(status) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCancelConfirm(true)}
+                      className="gap-1.5 text-[#A83434] border-[#F0C8C8] hover:bg-[#FAEBEB]"
+                    >
+                      <Undo2 className="w-3.5 h-3.5" />
+                      <span>Cancel work</span>
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -730,6 +777,38 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({ task: taskSu
                     <span>Delete</span>
                   </Button>
                 </div>
+
+                {cancelConfirm && (
+                  <div className="space-y-2 pt-1">
+                    <textarea
+                      rows={2}
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      placeholder="Reason for cancelling (recorded in history)…"
+                      className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#D6D3D1] rounded-[10px] text-xs text-[#0D1C42] focus:outline-none focus:ring-2 focus:ring-[#800020]"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => {
+                          cancelTask(task.task_uid, cancelReason.trim() || undefined);
+                          setCancelConfirm(false);
+                          setCancelReason('');
+                          handleClose();
+                        }}
+                      >
+                        Confirm cancellation
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setCancelConfirm(false)}>
+                        Back
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-[#667085]">
+                      The assignment is marked cancelled and stays visible in history — it is not deleted.
+                    </p>
+                  </div>
+                )}
 
                 {redoMode && (
                   <div className="space-y-2 pt-1">

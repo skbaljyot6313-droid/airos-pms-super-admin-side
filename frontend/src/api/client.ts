@@ -82,11 +82,14 @@ export type ApiFieldError = { field?: string; message: string; code?: string };
 export class ApiError extends Error {
   status: number;
   fieldErrors: ApiFieldError[];
+  /** Structured extras from the server error envelope (e.g. conflicts). */
+  details?: Record<string, unknown>;
 
-  constructor(status: number, message: string, fieldErrors: ApiFieldError[] = []) {
+  constructor(status: number, message: string, fieldErrors: ApiFieldError[] = [], details?: Record<string, unknown>) {
     super(message);
     this.status = status;
     this.fieldErrors = fieldErrors;
+    this.details = details;
   }
 
   /** First field-targeted error, e.g. for 422/409 responses. */
@@ -114,8 +117,13 @@ const normalizeError = (status: number, body: unknown): ApiError => {
 
   if (typeof detail === 'string' && detail) return new ApiError(status, detail);
   if (detail && typeof detail === 'object' && 'message' in (detail as object)) {
-    const d = detail as { message: string; field?: string };
-    return new ApiError(status, d.message, d.field ? [{ field: d.field, message: d.message }] : []);
+    const d = detail as { message: string; field?: string } & Record<string, unknown>;
+    const { message, field, ...rest } = d;
+    return new ApiError(
+      status, message,
+      field ? [{ field, message }] : [],
+      Object.keys(rest).length ? rest : undefined,
+    );
   }
 
   const fallback: Record<number, string> = {

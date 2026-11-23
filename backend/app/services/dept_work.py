@@ -183,10 +183,25 @@ class DeptWorkService:
         if len(assignees) > 25:
             raise ValidationErr(
                 "Assign to at most 25 employees at once.", field="employee_uids")
+        members: dict[uuid.UUID, Employee] = {}
         for uid in assignees:
-            await employee_in_department(self.session, dept, uid)
+            members[uid] = await employee_in_department(
+                self.session, dept, uid)
 
         svc = TaskService(self.session)
+        # One conflict check for the whole batch BEFORE any row is
+        # created — the same contract the Employee Backend enforces
+        # (409 details.conflicts; an explicit allow_conflicts override
+        # proceeds and is audited).
+        if not payload.allow_conflicts:
+            from app.domain.schedule_conflicts import parse_dt as _pdt
+            await svc._guard_schedule_conflicts(
+                members,
+                title=payload.title,
+                scheduled_for=_pdt(payload.scheduled_for),
+                due_date=payload.due_date, due_time=payload.due_time,
+                start_time=payload.start_time, end_time=payload.end_time,
+                property_id=dept.property_id)
         payload = payload.model_copy(update={
             "department_uid": dept.id,
             "employee_uids": None,
@@ -195,7 +210,8 @@ class DeptWorkService:
         tasks = []
         for uid in assignees:
             tasks.append(await svc.create_task(
-                user, payload, batch_id=batch_id, employee_override=uid))
+                user, payload, batch_id=batch_id, employee_override=uid,
+                conflicts_checked=True))
         return tasks
 
     # ------------------------------------------------------------------
@@ -285,10 +301,12 @@ class DeptWorkService:
                        from_date: str, to_date: str,
                        department_id: uuid.UUID | None = None,
                        employee_id: uuid.UUID | None = None,
+                       employee_ids: set[uuid.UUID] | None = None,
                        zone_id: uuid.UUID | None = None,
                        status: str | None = None,
                        priority: str | None = None,
-                       work_type: str | None = None) -> list[Task]:
+                       work_type: str | None = None,
+                       search: str | None = None) -> list[Task]:
         from_d = _norm_date(from_date, "from")
         to_d = _norm_date(to_date, "to")
         if not from_d or not to_d:
@@ -320,6 +338,8 @@ class DeptWorkService:
         q = q.where(_date_overlap(from_d, to_d))
         if employee_id:
             q = q.where(Task.employee_id == employee_id)
+        if employee_ids:
+            q = q.where(Task.employee_id.in_(employee_ids))
         if zone_id:
             q = q.where(Task.zone_id == zone_id)
         if status:
@@ -328,6 +348,11 @@ class DeptWorkService:
             q = q.where(Task.priority == priority)
         if work_type:
             q = q.where(Task.work_type == work_type)
+        if search:
+            q = q.where(or_(
+                Task.title.ilike(f"%{search.strip()}%"),
+                Task.assigned_to_name.ilike(f"%{search.strip()}%"),
+            ))
         rows = (await self.session.execute(
             q.order_by(Task.scheduled_for.asc().nulls_last(),
                        Task.due_date.asc().nulls_last())

@@ -56,6 +56,25 @@ IST = ZoneInfo("Asia/Kolkata")
 logger = get_logger("app.task")
 
 
+class ScheduleConflictErr(ConflictErr):
+    """409 with the structured conflict list the frontend renders —
+    identical wire contract to the Employee Backend's team allocation."""
+    code = "SCHEDULE_CONFLICT"
+    message = "Assignment conflicts with existing scheduled work."
+
+
+def _conflict_error(conflicts: list[dict]) -> ScheduleConflictErr:
+    return ScheduleConflictErr(details={"conflicts": conflicts})
+
+
+# Task fields whose change constitutes a reschedule — triggers the
+# assignee notification and re-runs the conflict guard.
+SCHEDULE_FIELDS = (
+    "due_date", "due_time", "scheduled_for",
+    "start_time", "end_time", "break_start_time", "break_end_time",
+)
+
+
 def _local_now() -> datetime:
     return datetime.now(IST).replace(tzinfo=None)
 
@@ -244,6 +263,10 @@ class TaskService:
             washroom_id=task.washroom_id, zone_id=task.zone_id,
         )
         task._resolved_area_id = location.area_id
+        if getattr(task, "department_id", None):
+            from app.models.department import Department
+            task._department_name = await self.session.scalar(
+                select(Department.name).where(Department.id == task.department_id))
         return task
 
     async def get_task(self, user: User, task_id: uuid.UUID) -> Task:
@@ -543,9 +566,42 @@ class TaskService:
 
     # ------------------------------------------------------------------
 
+    async def _guard_schedule_conflicts(
+        self,
+        employees: dict[uuid.UUID, Employee],
+        *,
+        title: str,
+        scheduled_for: datetime | None,
+        due_date: str | None,
+        due_time: str | None,
+        start_time: str | None,
+        end_time: str | None,
+        property_id: uuid.UUID,
+        exclude_task_ids: set[uuid.UUID] | None = None,
+    ) -> None:
+        """Raise 409 SCHEDULE_CONFLICT (details.conflicts) when the
+        proposed window overlaps or duplicates open work for any
+        assignee — the SAME rules the Employee Backend enforces for
+        department-head allocation (shared domain module)."""
+        from app.domain.schedule_conflicts import (
+            assignment_conflicts, hm)
+
+        target_day = (
+            scheduled_for.astimezone(IST).date().isoformat()
+            if scheduled_for else (due_date or "")[:10] or None)
+        conflicts = await assignment_conflicts(
+            self.session, employees,
+            target_day=target_day,
+            start=hm(start_time), end=hm(end_time),
+            title=title, property_id=property_id,
+            exclude_task_ids=exclude_task_ids)
+        if conflicts:
+            raise _conflict_error(conflicts)
+
     async def create_task(self, user: User, payload: TaskCreateRequest,
                           *, batch_id: uuid.UUID | None = None,
-                          employee_override: uuid.UUID | None = None) -> Task:
+                          employee_override: uuid.UUID | None = None,
+                          conflicts_checked: bool = False) -> Task:
         prop = await self.structure._property_for_write(user, payload.property_uid)
         if payload.task_type not in TASK_TYPES:
             raise ValidationErr("Invalid task_type.", field="task_type")
@@ -559,6 +615,12 @@ class TaskService:
                 raise ValidationErr("Invalid work_type.", field="work_type")
         else:
             work_type = infer_task_work_type(title=payload.title)
+        # Break window must arrive as a pair — same contract as the
+        # Employee Backend team allocation.
+        if (payload.break_start_time is None) != (payload.break_end_time is None):
+            raise ValidationErr(
+                "Break needs both a start and an end.",
+                field="break_start_time")
         department_id = await self._department_or_none(
             payload.department_uid, prop.id)
         emp_id, emp_name = await self._employee_or_none(
@@ -598,6 +660,24 @@ class TaskService:
         scheduled_for = _parse_dt(payload.scheduled_for, "scheduled_for")
         expires_at = _parse_dt(payload.expires_at, "expires_at")
 
+        # Schedule-window conflict guard — the SAME rules the Employee
+        # Backend applies for department-head allocation (shared domain
+        # module). Only explicit assignments are guarded: the zone/area
+        # round-robin has its own availability logic, and the department
+        # batch path pre-checks the whole batch up front.
+        explicit_assignee = bool(employee_override or payload.employee_uid)
+        if (
+            emp_id and explicit_assignee
+            and not payload.allow_conflicts and not conflicts_checked
+        ):
+            emp = await self.session.get(Employee, emp_id)
+            await self._guard_schedule_conflicts(
+                {emp_id: emp} if emp else {},
+                title=payload.title, scheduled_for=scheduled_for,
+                due_date=payload.due_date, due_time=payload.due_time,
+                start_time=payload.start_time, end_time=payload.end_time,
+                property_id=prop.id)
+
         from app.services.task_location import resolve_task_location
 
         location = await resolve_task_location(
@@ -632,6 +712,13 @@ class TaskService:
 
         from app.services.maintenance import next_ticket_number
 
+        description = payload.description
+        if payload.notes and payload.notes.strip():
+            description = (
+                f"{description}\n\nNotes: {payload.notes.strip()}"
+                if description else payload.notes.strip()
+            )
+
         task = Task(
             property_id=prop.id,
             ticket_number=await next_ticket_number(self.session, "task"),
@@ -653,7 +740,7 @@ class TaskService:
             employee_id=emp_id,
             assigned_to_name=emp_name,
             title=payload.title.strip(),
-            description=payload.description,
+            description=description,
             task_type=payload.task_type,
             work_type=work_type,
             origin=("guest_request" if payload.is_guest_request
@@ -670,10 +757,15 @@ class TaskService:
             due_date=payload.due_date,
             due_time=payload.due_time,
             start_time=payload.start_time,
+            end_time=payload.end_time,
+            break_start_time=payload.break_start_time,
+            break_end_time=payload.break_end_time,
+            estimated_minutes=payload.estimated_minutes,
             recurrence_start_date=payload.recurrence_start_date,
             recurrence_end_date=payload.recurrence_end_date,
             recurrence_window_end=payload.recurrence_window_end,
             created_by_name=user.name,
+            created_by_role=user.role.value if user.role else None,
             recurrence=payload.recurrence,
             recurrence_interval_days=payload.recurrence_interval_days,
             automation_rule=rule,
@@ -729,6 +821,31 @@ class TaskService:
     ) -> Task:
         task = await self._get_task(user, task_id)
         data = payload.model_dump(exclude_unset=True)
+
+        # Optimistic concurrency — a caller pinning its read snapshot gets
+        # a conflict instead of silently overwriting a concurrent change.
+        base_updated_at = data.pop("base_updated_at", None)
+        if base_updated_at:
+            try:
+                snap = datetime.fromisoformat(
+                    str(base_updated_at).replace("Z", "+00:00"))
+            except ValueError:
+                raise ValidationErr("Invalid base_updated_at.",
+                                    field="base_updated_at")
+            current = task.updated_at
+            if current and current.tzinfo is None:
+                current = current.replace(tzinfo=UTC)
+            if snap.tzinfo is None:
+                snap = snap.replace(tzinfo=UTC)
+            if current and abs((current - snap).total_seconds()) > 1:
+                raise ConflictErr(
+                    "This assignment was changed by someone else — reload "
+                    "and try again.",
+                    code="STALE_VERSION",
+                    details={
+                        "server_updated_at": current.isoformat(),
+                    })
+        allow_conflicts = bool(data.pop("allow_conflicts", False))
         if "status" in data:
             # Status is workflow state — it must move through the lifecycle
             # endpoints (start/complete/redo/reopen) so evidence gates and
@@ -738,6 +855,15 @@ class TaskService:
                 "(start, complete, redo, reopen).",
                 field="status",
             )
+        # Break window must arrive as a pair once applied.
+        new_brk_s = data.get("break_start_time", task.break_start_time)
+        new_brk_e = data.get("break_end_time", task.break_end_time)
+        if (new_brk_s is None) != (new_brk_e is None):
+            raise ValidationErr(
+                "Break needs both a start and an end.",
+                field="break_start_time")
+
+        schedule_snapshot = {f: getattr(task, f) for f in SCHEDULE_FIELDS}
         if "work_type" in data:
             wt = data.pop("work_type")
             if wt is not None:
@@ -867,9 +993,43 @@ class TaskService:
                 [c.model_dump() if hasattr(c, "model_dump") else c for c in cl]
                 if cl else None
             )
+        if "notes" in data:
+            # Manager notes merge into the description — same contract
+            # as the Employee Backend's team update ("\n\nNotes: …").
+            notes = (data.pop("notes") or "").strip()
+            if notes:
+                desc = (data.get("description") or "").strip() \
+                    or task.description or ""
+                data["description"] = (
+                    f"{desc}\n\nNotes: {notes}" if desc else notes)
         for k, v in data.items():
             setattr(task, k, v)
-        self._history(task, "edited", user)
+
+        schedule_changed = any(
+            getattr(task, f) != schedule_snapshot[f] for f in SCHEDULE_FIELDS)
+        if (
+            schedule_changed and task.employee_id and not allow_conflicts
+            and task.status not in {
+                "submitted", "completed", "cancelled", "abandoned"}
+        ):
+            emp = await self.session.get(Employee, task.employee_id)
+            await self._guard_schedule_conflicts(
+                {task.employee_id: emp} if emp else {},
+                title=task.title, scheduled_for=task.scheduled_for,
+                due_date=task.due_date, due_time=task.due_time,
+                start_time=task.start_time, end_time=task.end_time,
+                property_id=task.property_id,
+                exclude_task_ids={task.id})
+
+        self._history(
+            task, "edited", user,
+            note="Rescheduled" if schedule_changed else None)
+        if schedule_changed and task.employee_id:
+            self._work_notification(
+                task, user, n_type="task_rescheduled",
+                title=f"Rescheduled: {task.title[:80]}",
+                body=f"{user.name} rescheduled “{task.title[:120]}”"
+                     + (f" to {task.due_date[:10] if task.due_date else 'a new time'}"))
         self._emit_task(task, "task.updated")
         await self.session.commit()
         return task
@@ -899,6 +1059,46 @@ class TaskService:
                                    reason=trig)
         self._emit_task(task, "task.deleted")
         await self.session.commit()
+
+    async def cancel_task(
+        self, user: User, task_id: uuid.UUID, reason: str | None = None
+    ) -> Task:
+        """Cancel an open assignment — the unified ``cancelled`` terminal
+        state the Employee Backend team tools also use. The record stays
+        (audit trail intact); a blocked resource is released the same way
+        delete_task releases it."""
+        task = await self._get_task(user, task_id)
+        await self._require_task_department_scope(user, task)
+        if task.status in {
+            "submitted", "completed", "cancelled", "abandoned",
+        }:
+            raise ConflictErr(f"Cannot cancel a {task.status} task.")
+        task.status = "cancelled"
+        self._history(
+            task, "cancelled", user,
+            note=f"Cancelled{(' — ' + reason) if reason else ''}")
+        self._work_notification(
+            task, user, n_type="task_cancelled",
+            title=f"Cancelled: {task.title[:80]}",
+            body=f"{user.name} cancelled “{task.title[:120]}”"
+                 + (f" — {reason}" if reason else ""))
+        room_id, dorm_id, washroom_id = (
+            task.room_id, task.dorm_id, task.washroom_id)
+        if room_id or dorm_id or washroom_id:
+            from app.services.resource_state import ResourceStateService
+            state = ResourceStateService(self.session)
+            trig = f"task cancelled ({task.ticket_number or task.title})"
+            for rtype, rid in (
+                ("room", room_id), ("dorm", dorm_id),
+                ("washroom", washroom_id),
+            ):
+                if rid:
+                    await state.derive(
+                        rtype, rid, release_to="available",
+                        user=user, reason=trig)
+        self._emit_task(task, "task.updated")
+        await self.session.commit()
+        return task
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -1344,6 +1544,46 @@ class TaskService:
         return next(
             (s for s in subs if s.status == "pending"), None
         )
+
+    def _work_notification(
+        self, task: Task, user: User, *, n_type: str, title: str,
+        body: str,
+    ) -> None:
+        """Write the shared notifications row the employee's feed picks
+        up — the Employee Backend's push outbox sweeps it to devices."""
+        from app.models.notifications import Notification
+
+        if not task.employee_id:
+            return
+        self.session.add(
+            Notification(
+                property_id=task.property_id,
+                employee_id=task.employee_id,
+                employee_name=task.assigned_to_name,
+                task_id=task.id,
+                type=n_type,
+                title=title[:200],
+                body=body[:500],
+            )
+        )
+
+    async def _require_task_department_scope(
+        self, user: User, task: Task
+    ) -> None:
+        """Department managers act only inside their managed departments —
+        the task's own department, or its assignee's, must be in scope.
+        Cross-scope attempts get NotFound, never a leak."""
+        if user.role != UserRole.DEPARTMENT_MANAGER:
+            return
+        from app.services.dept_scope import managed_department_ids
+        ids = await managed_department_ids(self.session, user) or set()
+        dept_id = task.department_id
+        if dept_id is None and task.employee_id:
+            dept_id = await self.session.scalar(
+                select(Employee.department_id).where(
+                    Employee.id == task.employee_id))
+        if dept_id is None or dept_id not in ids:
+            raise NotFoundErr("Task not found.")
 
     def _review_notification(
         self, task: Task, user: User, approved: bool, note: str | None

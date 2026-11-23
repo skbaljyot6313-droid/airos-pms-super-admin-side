@@ -282,6 +282,8 @@ interface AppContextType {
   createTask: (data: Omit<TaskCreateRequest, 'property_uid'>) => Promise<Task>;
   updateTask: (task_uid: string, updates: TaskUpdateRequest) => Promise<void>;
   deleteTask: (task_uid: string) => Promise<void>;
+  /** Cancel an open assignment — record stays in 'cancelled' state. */
+  cancelTask: (task_uid: string, note?: string) => Promise<Task>;
   startTask: (task_uid: string) => Promise<void>;
   completeTask: (task_uid: string, photo_urls: string[], note?: string) => Promise<void>;
   requestTaskRedo: (task_uid: string, note?: string) => Promise<void>;
@@ -2338,6 +2340,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     [addToast]
   );
 
+  const cancelTask = useCallback(
+    async (task_uid: string, note?: string) => {
+      try {
+        const updated = await tasksApi.cancelTask(task_uid, note);
+        setTasks((prev) => prev.map((t) => (t.task_uid === task_uid ? updated : t)));
+        addToast({ type: 'warning', title: 'Assignment cancelled', description: updated.title });
+        return updated;
+      } catch (err) {
+        addToast({
+          type: 'error',
+          title: 'Cancel Failed',
+          description: apiErrorMessage(err, 'Could not cancel the assignment.'),
+        });
+        throw err;
+      }
+    },
+    [addToast]
+  );
+
   const freshDay = useCallback(async () => {
     if (!activePropertyUid) return;
     try {
@@ -2804,6 +2825,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     createTask,
     updateTask,
     deleteTask,
+    cancelTask,
     startTask,
     completeTask,
     requestTaskRedo,

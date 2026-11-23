@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy import inspect as sa_inspect
 
 from app.core.storage import storage_key_from_url
+from app.domain.schedule_conflicts import is_overdue as is_task_overdue
 from app.models.employee import Employee
 from app.models.property import Property
 from app.models.structure import Area, Bed, Dorm, Room, Section, Washroom, Zone
@@ -480,16 +481,23 @@ def task_out(t: Task) -> dict:
         "due_date": t.due_date,
         "due_time": t.due_time,
         "start_time": t.start_time,
+        "end_time": t.end_time,
+        "break_start_time": t.break_start_time,
+        "break_end_time": t.break_end_time,
+        "estimated_minutes": t.estimated_minutes,
         "recurrence_start_date": t.recurrence_start_date,
         "recurrence_end_date": t.recurrence_end_date,
         "recurrence_window_end": t.recurrence_window_end,
         "created_by_name": t.created_by_name,
+        "created_by_role": t.created_by_role,
+        "is_overdue": is_task_overdue(t),
         "recurrence": t.recurrence,
         "recurrence_interval_days": t.recurrence_interval_days,
         "series_id": str(t.series_id) if t.series_id else None,
         "scheduled_for": t.scheduled_for,
         "expires_at": t.expires_at,
         "department_id": str(t.department_id) if t.department_id else None,
+        "department_name": getattr(t, "_department_name", None),
         "template_id": str(t.template_id) if t.template_id else None,
         "abandoned_at": t.abandoned_at,
         "abandoned_reason": t.abandoned_reason,

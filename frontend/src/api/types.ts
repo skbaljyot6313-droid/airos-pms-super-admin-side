@@ -464,6 +464,17 @@ export interface TaskCreateRequest {
   due_time?: string;
   /** HH:MM — time of day each repetitive occurrence starts */
   start_time?: string;
+  /** Daily work window + break — shared assignment contract */
+  end_time?: string;
+  break_start_time?: string;
+  break_end_time?: string;
+  estimated_minutes?: number;
+  /** Manager notes — merged into the description server-side */
+  notes?: string;
+  /** Explicit conflict override after reviewing details.conflicts */
+  allow_conflicts?: boolean;
+  scheduled_for?: string;
+  expires_at?: string;
   recurrence_start_date?: string;
   recurrence_end_date?: string;
   recurrence_window_end?: string;
@@ -476,6 +487,10 @@ export interface TaskCreateRequest {
     template_description?: string;
     assign_to_uid?: string;
   };
+  /** Department-head allocation — attribution + multi-employee fan-out */
+  department_uid?: string;
+  checklist?: { title: string; description?: string | null; required?: boolean }[];
+  employee_uids?: string[];
 }
 
 export interface TaskUpdateRequest {
@@ -495,6 +510,16 @@ export interface TaskUpdateRequest {
   due_date?: string;
   due_time?: string;
   start_time?: string;
+  end_time?: string | null;
+  break_start_time?: string | null;
+  break_end_time?: string | null;
+  estimated_minutes?: number | null;
+  notes?: string;
+  allow_conflicts?: boolean;
+  /** Pin the update to the read snapshot — 409 STALE_VERSION when stale */
+  base_updated_at?: string;
+  scheduled_for?: string;
+  expires_at?: string;
   recurrence_start_date?: string;
   recurrence_end_date?: string;
   recurrence_window_end?: string;
