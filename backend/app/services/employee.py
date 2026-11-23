@@ -162,9 +162,6 @@ class EmployeeService:
             )
             self.session.add(emp)
             await self.session.flush()
-            # mark the collection loaded-empty so employee_out never
-            # triggers a lazy emit on a brand-new row.
-            emp.area_assignments = []
 
             await self.users.create(
                 company_id=prop.company_id,
