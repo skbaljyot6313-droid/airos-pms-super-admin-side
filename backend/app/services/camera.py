@@ -686,6 +686,9 @@ class CameraService:
         key = (user.id, cid, quality)
         lock = _session_locks.setdefault(key, asyncio.Lock())
         async with lock:
+            # Sweep BEFORE the join — the bulk UPDATE expires ORM state
+            # and must not end sessions the SELECT is about to load.
+            await self._sweep_idle_due()
             # Effective quality in SQL: 'sub' only when the camera
             # actually has a substream, else graceful 'main' fallback —
             # needed up-front so the session join matches.
@@ -732,7 +735,6 @@ class CameraService:
             if not _media_ready():
                 raise ServiceUnavailable()
             sub = quality == "sub" and bool(cam.sub_rtsp_url)
-            await self._sweep_idle_due()
             reused = sess is not None
             if sess is None:
                 counts = await self._stream_counts(user.id, cam.id, pid)

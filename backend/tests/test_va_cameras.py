@@ -225,6 +225,57 @@ async def test_stream_session_guards(data, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_stream_session_recreates_after_idle_sweep(data, monkeypatch):
+    """A session ended by the idle sweep must not be reused — the sweep
+    runs before the join SELECT so an ended row is never loaded as active."""
+    from datetime import datetime, timedelta, UTC
+
+    import app.services.camera as cmod
+
+    svc = data.service
+    cam = await svc.create_camera(
+        data.admin,
+        str(data.prop.id),
+        CameraCreateRequest(name="Cam", rtsp_url="rtsp://10.0.0.6/feed"),
+    )
+    cid = cam["camera_uid"]
+    monkeypatch.setattr(cmod, "_media_ready", lambda: True)
+
+    async def _noop(_cam):
+        return None
+
+    monkeypatch.setattr(cmod, "_ensure_media_registered", _noop)
+    exp = datetime.now(UTC) + timedelta(hours=1)
+    monkeypatch.setattr(cmod.mediamtx, "mint_stream_token", lambda *a, **k: ("tok", exp))
+    monkeypatch.setattr(cmod.mediamtx, "playback_urls", lambda *a, **k: {})
+
+    s1 = await svc.create_session(data.admin, str(data.prop.id), cid, "webrtc")
+    assert s1["reused"] is False and s1["status"] == "active"
+
+    # Age the session past the idle TTL, then force the amortized sweep.
+    row = data.session.execute(
+        select(CameraStreamSession).where(
+            CameraStreamSession.id == uuid.UUID(s1["session_uid"])
+        )
+    ).scalar_one()
+    row.last_activity_at = datetime.now(UTC) - timedelta(hours=1)
+    data.session.commit()
+    cmod._last_sweep = 0
+
+    s2 = await svc.create_session(data.admin, str(data.prop.id), cid, "webrtc")
+    assert s2["reused"] is False
+    assert s2["session_uid"] != s1["session_uid"]
+    assert s2["status"] == "active" and s2["ended_at"] is None
+
+    row2 = data.session.execute(
+        select(CameraStreamSession).where(
+            CameraStreamSession.id == uuid.UUID(s1["session_uid"])
+        )
+    ).scalar_one()
+    assert row2.status == "ended" and row2.ended_at is not None
+
+
+@pytest.mark.asyncio
 async def test_cross_property_isolation(data):
     other_prop = Property(
         id=uuid.uuid4(), company_id=data.admin.company_id, name="Q",
