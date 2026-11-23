@@ -7,4 +7,6 @@ rtsp:
   listen: ":8554"
 webrtc:
   listen: ":8555"
-streams: {}
+# NOTE: must be a block map (or empty), never `streams: {}` — go2rtc's
+# config writer fails on the empty flow map when persisting API writes.
+streams:

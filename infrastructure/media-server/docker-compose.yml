@@ -38,7 +38,7 @@ services:
       # localhost or over the host firewall allowlist. NEVER public.
       - "127.0.0.1:1984:1984"
       # RTSP restream consumed by MediaMTX — docker network only.
-      expose:
+    expose:
       - "8554"
 
   mediamtx:

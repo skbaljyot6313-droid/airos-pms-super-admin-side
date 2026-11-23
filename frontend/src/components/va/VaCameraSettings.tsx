@@ -144,6 +144,11 @@ export const VaCameraSettings: React.FC<{ propertyUid: string }> = ({
     setSaving(true);
     try {
       const body: VaCameraPayload = { ...form };
+      // Empty strings fail backend min-length constraints — send null for
+      // untouched optional fields.
+      (Object.keys(body) as (keyof VaCameraPayload)[]).forEach((k) => {
+        if (body[k] === '') body[k] = null as never;
+      });
       if (modal === 'edit' && editing) {
         // Never send the masked URL or an empty password back.
         if (body.rtsp_url === editing.rtsp_url_masked)
