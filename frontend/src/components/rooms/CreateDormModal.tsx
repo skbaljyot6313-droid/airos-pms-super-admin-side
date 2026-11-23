@@ -8,6 +8,7 @@ import { zoneSupportsUnits } from '../../lib/zoneUtils';
 interface CreateDormModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultZoneUid?: string;
 }
 
 export const DORM_TYPES = ['Mixed Dorm', 'Female Dorm', 'Male Dorm'] as const;
@@ -17,7 +18,7 @@ export const WASHROOM_TYPES = [
   'No Washroom',
 ] as const;
 
-export const CreateDormModal: React.FC<CreateDormModalProps> = ({ isOpen, onClose }) => {
+export const CreateDormModal: React.FC<CreateDormModalProps> = ({ isOpen, onClose, defaultZoneUid }) => {
   const { createDorm, currentPropertyZones, currentPropertyDorms } = useApp();
 
   const [name, setName] = useState('');
@@ -25,7 +26,7 @@ export const CreateDormModal: React.FC<CreateDormModalProps> = ({ isOpen, onClos
   const [dormType, setDormType] = useState<(typeof DORM_TYPES)[number]>('Mixed Dorm');
   const [washroom, setWashroom] = useState<(typeof WASHROOM_TYPES)[number]>('Attached Washroom');
   const [areaSqft, setAreaSqft] = useState('320');
-  const [zoneUid, setZoneUid] = useState('');
+  const [zoneUid, setZoneUid] = useState(defaultZoneUid ?? '');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 

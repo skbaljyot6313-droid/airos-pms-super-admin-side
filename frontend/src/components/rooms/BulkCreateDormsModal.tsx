@@ -11,6 +11,7 @@ import { Plus, Trash2, AlertTriangle } from 'lucide-react';
 interface BulkCreateDormsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultZoneUid?: string;
 }
 
 const MAX_ROWS = 50; // matches the backend DormBulkCreateRequest limit
@@ -38,6 +39,7 @@ const badBorder = 'border-[#B34A68] focus:ring-[#D64545]';
 export const BulkCreateDormsModal: React.FC<BulkCreateDormsModalProps> = ({
   isOpen,
   onClose,
+  defaultZoneUid,
 }) => {
   const { bulkCreateDorms, currentPropertyDorms, currentPropertyZones } = useApp();
 
@@ -48,12 +50,12 @@ export const BulkCreateDormsModal: React.FC<BulkCreateDormsModalProps> = ({
     bedCount: '',
     dormType: 'Mixed Dorm',
     washroom: 'Attached Washroom',
-    zoneUid: '',
+    zoneUid: defaultZoneUid ?? '',
     areaSqft: '',
     description: '',
   });
 
-  const [rows, setRows] = useState<DormRow[]>(() => [{ key: 0, name: '', bedCount: '', dormType: 'Mixed Dorm', washroom: 'Attached Washroom', zoneUid: '', areaSqft: '', description: '' }]);
+  const [rows, setRows] = useState<DormRow[]>(() => [{ key: 0, name: '', bedCount: '', dormType: 'Mixed Dorm', washroom: 'Attached Washroom', zoneUid: defaultZoneUid ?? '', areaSqft: '', description: '' }]);
   const [attempted, setAttempted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,7 +125,7 @@ export const BulkCreateDormsModal: React.FC<BulkCreateDormsModalProps> = ({
 
   const reset = () => {
     nextKey.current = 1;
-    setRows([{ key: 0, name: '', bedCount: '', dormType: 'Mixed Dorm', washroom: 'Attached Washroom', zoneUid: '', areaSqft: '', description: '' }]);
+    setRows([{ key: 0, name: '', bedCount: '', dormType: 'Mixed Dorm', washroom: 'Attached Washroom', zoneUid: defaultZoneUid ?? '', areaSqft: '', description: '' }]);
     setAttempted(false);
     setSubmitError(null);
   };

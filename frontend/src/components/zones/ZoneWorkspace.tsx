@@ -40,6 +40,11 @@ import { fixtureCountsFor, fixtureMeta, isCustomKind } from '../../lib/washroomF
 import { CreateMaintenanceModal, MaintenanceTarget } from '../maintenance/CreateMaintenanceModal';
 import { WashroomDetailModal } from '../rooms/WashroomDetailModal';
 import { WashroomModal, WashroomCreateDefaults } from '../rooms/WashroomModal';
+import { CreateRoomModal } from '../rooms/CreateRoomModal';
+import { BulkCreateRoomsModal } from '../rooms/BulkCreateRoomsModal';
+import { CreateDormModal } from '../rooms/CreateDormModal';
+import { BulkCreateDormsModal } from '../rooms/BulkCreateDormsModal';
+import { BulkCreateWashroomsModal } from '../rooms/BulkCreateWashroomsModal';
 import { OccupancyToggle } from '../rooms/OccupancyToggle';
 import { RequestItemModal } from '../rooms/RequestItemModal';
 import { SwitchGuestModal, SwitchSource } from '../rooms/SwitchGuestModal';
@@ -175,6 +180,12 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
   const [editingWashroom, setEditingWashroom] = useState<Washroom | null>(null);
   const [washroomDefaults, setWashroomDefaults] =
     useState<WashroomCreateDefaults | undefined>(undefined);
+
+  // Stay-zone unit creation — each modal is mounted only while open so it
+  // always starts fresh with this zone preselected.
+  const [createModal, setCreateModal] = useState<
+    'room' | 'bulkRoom' | 'dorm' | 'bulkDorm' | 'bulkWashroom' | null
+  >(null);
 
   // entity_uid → active ticket maps for room / dorm / bed maintenance actions
   const { ticketsByRoom, ticketsByDorm, ticketsByBed, ticketsByWashroom } = useMemo(() => {
@@ -510,6 +521,41 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
 
       {/* ── Rooms, Dorms & Washrooms ──────────────────────────────────── */}
       <div className="space-y-6">
+
+      {/* Unit creation for this stay zone — managers only */}
+      {supportsUnits && !isEmployee && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="primary" size="sm" onClick={() => setCreateModal('room')}>
+            <Plus className="w-4 h-4 mr-1.5" />
+            <span>Add Room</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setCreateModal('bulkRoom')}>
+            <span>Bulk Create Rooms</span>
+          </Button>
+          <Button variant="primary" size="sm" onClick={() => setCreateModal('dorm')}>
+            <Bed className="w-4 h-4 mr-1.5" />
+            <span>Add Dorm</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setCreateModal('bulkDorm')}>
+            <span>Bulk Create Dorms</span>
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              setEditingWashroom(null);
+              setWashroomDefaults({ zone_uid: zone.zone_uid });
+              setWashroomModalOpen(true);
+            }}
+          >
+            <Bath className="w-4 h-4 mr-1.5" />
+            <span>Add Washroom</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setCreateModal('bulkWashroom')}>
+            <span>Bulk Create Washrooms</span>
+          </Button>
+        </div>
+      )}
 
       {/* Multi-Select Toolbar & Bulk Operations Dock — only meaningful for stay zones */}
       {supportsUnits && (
@@ -1558,6 +1604,22 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
           busyUnits.has(`${checkoutTarget.kind}:${checkoutTarget.uid}`)
         }
       />
+
+      {createModal === 'room' && (
+        <CreateRoomModal isOpen defaultZoneUid={zone.zone_uid} onClose={() => setCreateModal(null)} />
+      )}
+      {createModal === 'bulkRoom' && (
+        <BulkCreateRoomsModal isOpen defaultZoneUid={zone.zone_uid} onClose={() => setCreateModal(null)} />
+      )}
+      {createModal === 'dorm' && (
+        <CreateDormModal isOpen defaultZoneUid={zone.zone_uid} onClose={() => setCreateModal(null)} />
+      )}
+      {createModal === 'bulkDorm' && (
+        <BulkCreateDormsModal isOpen defaultZoneUid={zone.zone_uid} onClose={() => setCreateModal(null)} />
+      )}
+      {createModal === 'bulkWashroom' && (
+        <BulkCreateWashroomsModal isOpen defaultZoneUid={zone.zone_uid} onClose={() => setCreateModal(null)} />
+      )}
 
       {washroomModalOpen && (
         <WashroomModal

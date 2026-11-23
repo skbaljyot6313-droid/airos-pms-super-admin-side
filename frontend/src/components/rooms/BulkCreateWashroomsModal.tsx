@@ -10,6 +10,7 @@ import { WASHROOM_TYPES } from './WashroomModal';
 interface BulkCreateWashroomsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultZoneUid?: string;
 }
 
 const MAX_ROWS = 50;
@@ -29,24 +30,24 @@ const inputCls =
 const okBorder = 'border-[#D6D3D1] focus:ring-[#800020]';
 const badBorder = 'border-[#B34A68] focus:ring-[#D64545]';
 
-const emptyRow = (key: number): WashroomRow => ({
+const emptyRow = (key: number, zoneUid = ''): WashroomRow => ({
   key,
   name: '',
   washroomType: 'unisex',
   stallCount: 0,
   urinalCount: 0,
   showerCount: 0,
-  zoneUid: '',
+  zoneUid,
 });
 
 export const BulkCreateWashroomsModal: React.FC<
   BulkCreateWashroomsModalProps
-> = ({ isOpen, onClose }) => {
+> = ({ isOpen, onClose, defaultZoneUid }) => {
   const { bulkCreateWashrooms, currentPropertyWashrooms, currentPropertyZones } =
     useApp();
 
   const nextKey = useRef(1);
-  const [rows, setRows] = useState<WashroomRow[]>(() => [emptyRow(0)]);
+  const [rows, setRows] = useState<WashroomRow[]>(() => [emptyRow(0, defaultZoneUid)]);
   const [attempted, setAttempted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,7 +83,7 @@ export const BulkCreateWashroomsModal: React.FC<
 
   const reset = () => {
     nextKey.current = 1;
-    setRows([emptyRow(0)]);
+    setRows([emptyRow(0, defaultZoneUid)]);
     setAttempted(false);
     setSubmitError(null);
   };
@@ -282,7 +283,7 @@ export const BulkCreateWashroomsModal: React.FC<
           variant="outline"
           size="sm"
           disabled={rows.length >= MAX_ROWS}
-          onClick={() => setRows((prev) => [...prev, emptyRow(nextKey.current++)])}
+          onClick={() => setRows((prev) => [...prev, emptyRow(nextKey.current++, defaultZoneUid)])}
         >
           <Plus className="w-3.5 h-3.5 mr-1" />
           Add Washroom Row

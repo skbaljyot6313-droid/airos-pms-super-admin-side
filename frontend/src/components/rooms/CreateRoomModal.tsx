@@ -8,6 +8,7 @@ import { zoneSupportsUnits } from '../../lib/zoneUtils';
 interface CreateRoomModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultZoneUid?: string;
 }
 
 export const ROOM_TYPES = [
@@ -20,7 +21,7 @@ export const ROOM_TYPES = [
   'Studio Suite',
 ];
 
-export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) => {
+export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose, defaultZoneUid }) => {
   const { createRoom, currentPropertyZones, currentPropertyRooms } = useApp();
 
   const [roomNumber, setRoomNumber] = useState('');
@@ -28,7 +29,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
   const [customType, setCustomType] = useState('');
   const [areaSqft, setAreaSqft] = useState('260');
   const [bedCount, setBedCount] = useState('1');
-  const [zoneUid, setZoneUid] = useState<string>('');
+  const [zoneUid, setZoneUid] = useState<string>(defaultZoneUid ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Instant name-conflict feedback — same check the backend enforces (409)

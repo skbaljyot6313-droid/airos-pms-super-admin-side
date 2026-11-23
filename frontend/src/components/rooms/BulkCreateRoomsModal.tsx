@@ -8,11 +8,13 @@ import { Layers, AlertTriangle, CheckCircle2 } from 'lucide-react';
 interface BulkCreateRoomsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultZoneUid?: string;
 }
 
 export const BulkCreateRoomsModal: React.FC<BulkCreateRoomsModalProps> = ({
   isOpen,
   onClose,
+  defaultZoneUid,
 }) => {
   const { bulkCreateRooms, currentPropertyRooms, currentPropertyZones } = useApp();
 
@@ -21,7 +23,7 @@ export const BulkCreateRoomsModal: React.FC<BulkCreateRoomsModalProps> = ({
   const [prefix, setPrefix] = useState<string>('');
   const [roomType, setRoomType] = useState<string>(ROOM_TYPES[1]);
   const [areaSqft, setAreaSqft] = useState<number>(250);
-  const [zoneUid, setZoneUid] = useState<string>('');
+  const [zoneUid, setZoneUid] = useState<string>(defaultZoneUid ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Existing room numbers in property
