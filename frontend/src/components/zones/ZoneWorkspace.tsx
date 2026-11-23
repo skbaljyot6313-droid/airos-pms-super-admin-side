@@ -758,6 +758,8 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                 {zoneRooms.map((room) => {
                   const isSelected = selectedRoomUids.includes(room.room_uid);
+                  const vs = unitVisualState(room);
+                  const darkTint = vs === 'purple' || vs === 'red' || vs === 'neutral';
 
                   return (
                     <Card
@@ -768,7 +770,7 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                         }
                       }}
                       className={`p-4 transition-all relative ${
-                        UNIT_VISUAL_TINT[unitVisualState(room)]
+                        UNIT_VISUAL_TINT[vs]
                       } ${
                         isSelected
                           ? 'border-[#800020] ring-2 ring-[#800020]/20 shadow-xs'
@@ -794,29 +796,55 @@ export const ZoneWorkspace: React.FC<ZoneWorkspaceProps> = ({ zone, onBack }) =>
                             <Check className="w-3.5 h-3.5" strokeWidth={3} />
                           </button>
 
-                          <span className="font-display font-bold text-lg text-[#0D1C42]">
+                          <span
+                            className={`font-display font-bold text-lg ${
+                              darkTint ? 'text-white' : 'text-[#0D1C42]'
+                            }`}
+                          >
                             {room.room_number}
                           </span>
                         </div>
                         <RoomStatusBadge status={room.status} />
                       </div>
 
-                      <p className="text-xs font-medium text-[#0D1C42]">{room.type}</p>
-                      <div className="text-[11px] text-[#667085] mt-1.5 flex items-center justify-between">
+                      <p
+                        className={`text-xs font-medium ${
+                          darkTint ? 'text-white' : 'text-[#0D1C42]'
+                        }`}
+                      >
+                        {room.type}
+                      </p>
+                      <div
+                        className={`text-[11px] mt-1.5 flex items-center justify-between ${
+                          darkTint ? 'text-white/70' : 'text-[#667085]'
+                        }`}
+                      >
                         <span>{room.area_sqft} sq ft · {room.bed_count} Bed</span>
                         {room.current_guest ? (
-                          <span className="text-[#3478D4] font-medium truncate max-w-[120px]">
+                          <span
+                            className={`font-medium truncate max-w-[120px] ${
+                              darkTint ? 'text-white' : 'text-[#3478D4]'
+                            }`}
+                          >
                             {room.current_guest}
                           </span>
                         ) : (
-                          <span className="text-[#667085] italic">No guest assigned</span>
+                          <span
+                            className={`italic ${
+                              darkTint ? 'text-white/60' : 'text-[#667085]'
+                            }`}
+                          >
+                            No guest assigned
+                          </span>
                         )}
                       </div>
 
                       {/* Occupancy toggle + workflow actions — commands only,
                           ResourceStateService stays the authority */}
                       <div
-                        className="mt-3 pt-2.5 border-t border-[#F6F4F2] flex items-center justify-between gap-2 flex-wrap"
+                        className={`mt-3 pt-2.5 border-t flex items-center justify-between gap-2 flex-wrap ${
+                          darkTint ? 'border-white/20' : 'border-[#F6F4F2]'
+                        }`}
                         onClick={(e) => e.stopPropagation()}
                       >
                         {!isEmployee ? (

@@ -121,7 +121,7 @@ export function unitVisualState(input: UnitStateInput): UnitVisualState {
 export const WASHROOM_TILE = 'bg-[#3C3D37] border-[#3C3D37] text-white';
 
 export const UNIT_VISUAL_TINT: Record<UnitVisualState, string> = {
-  green: 'bg-[#1E3B2F] border-[#1E3B2F] text-white',
+  green: 'bg-[#FFFFFF] border-[#E7E5E4] text-[#0D1C42]',
   purple: 'bg-[#1B365D] border-[#1B365D] text-white',
   beige: 'bg-[#FBF5DD] border-[#EBDFAE] text-[#0D1C42]',
   red: 'bg-[#790D16] border-[#790D16] text-white',
