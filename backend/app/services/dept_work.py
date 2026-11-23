@@ -47,7 +47,7 @@ def _date_overlap(from_d: str, to_d: str):
     scheduled_for (IST), due_date (date prefix) or operational_date."""
     sched_ist = func.timezone("Asia/Kolkata", Task.scheduled_for)
     return or_(
-        func.date(sched_ist).between(from_d, to_d),
+        func.date(sched_ist).between(date.fromisoformat(from_d), date.fromisoformat(to_d)),
         func.substr(Task.due_date, 1, 10).between(from_d, to_d),
         Task.operational_date.between(from_d, to_d),
     )
