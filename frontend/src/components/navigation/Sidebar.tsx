@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Boxes,
+  Bed,
   Cctv,
   ClipboardList,
   Wrench,
@@ -61,7 +62,14 @@ function buildGroups(): NavGroup[] {
           label: 'Spaces',
           path: 'property/spaces/zones',
           icon: <Boxes className="w-[18px] h-[18px]" />,
-          active: (p) => p.includes('/property/spaces'),
+          active: (p) =>
+            p.includes('/property/spaces') && !p.includes('/property/spaces/units'),
+        },
+        {
+          label: 'Stay Units',
+          path: 'property/spaces/units',
+          icon: <Bed className="w-[18px] h-[18px]" />,
+          active: (p) => p.includes('/property/spaces/units'),
         },
         {
           label: 'Video',
