@@ -486,7 +486,7 @@ export const RoomsDormsView: React.FC = () => {
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Zones ({currentPropertyZones.length})</span>
+            <span>Zone Board</span>
           </button>
         </div>
 
@@ -707,8 +707,6 @@ export const RoomsDormsView: React.FC = () => {
                   <Card
                     key={room.room_uid}
                     className={`p-4 flex flex-col justify-between hover:border-[#CDC9C7] ${
-                      UNIT_VISUAL_TINT[unitVisualState(room)]
-                    } ${
                       isSelected ? 'ring-2 ring-[#800020] ring-offset-1 ring-offset-white' : ''
                     }`}
                   >
