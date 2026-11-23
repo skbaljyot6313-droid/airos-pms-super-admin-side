@@ -192,6 +192,7 @@ class EmployeeService:
             )
             self._emit_employee(emp, "employee.created")
             await self.session.commit()
+            await self.session.refresh(emp)
             return emp
         except IntegrityError as exc:
             await self.session.rollback()
@@ -232,6 +233,7 @@ class EmployeeService:
         )
         self._emit_employee(emp, "employee.updated")
         await self.session.commit()
+        await self.session.refresh(emp)
         return emp
 
     async def assign_zone(
