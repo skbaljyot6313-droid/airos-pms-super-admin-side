@@ -119,7 +119,11 @@ export const EmployeeRequestsView: React.FC<{
   };
 
   const openApprove = () => {
-    setApprovePropertyUid(activeProperty?.property_uid ?? '');
+    // The code already resolved the property at submission — preselect
+    // it; the admin may still override.
+    setApprovePropertyUid(
+      selected?.property_uid ?? activeProperty?.property_uid ?? '',
+    );
     setApproveZoneUid('');
     setActionError(null);
     setApproveOpen(true);
@@ -347,6 +351,14 @@ export const EmployeeRequestsView: React.FC<{
               />
               <DetailRow label="Joining Date" value={selected.joining_date} />
               <DetailRow
+                label="Property"
+                value={
+                  properties.find(
+                    (p) => p.property_uid === selected.property_uid,
+                  )?.name ?? selected.property_uid
+                }
+              />
+              <DetailRow
                 label="Reporting Manager"
                 value={selected.reporting_manager}
               />
@@ -431,8 +443,8 @@ export const EmployeeRequestsView: React.FC<{
               </select>
             </div>
             <p className="text-[11px] text-ink-3 mt-1">
-              Registration requests are organization-level — choose which
-              property this employee works in.
+              Preselected from the applicant's organization code — change
+              only if they should work in a different property.
             </p>
           </div>
           <div>

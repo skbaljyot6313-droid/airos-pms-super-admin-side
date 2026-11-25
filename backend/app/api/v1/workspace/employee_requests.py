@@ -18,8 +18,9 @@ from app.schemas.employee_requests import (
     EmployeeRequestListResponse,
     EmployeeRequestOut,
     EmployeeRequestRejectIn,
-    OrganizationCodeResponse,
+    OrganizationCodesResponse,
     PendingCountResponse,
+    PropertyCodeOut,
 )
 from app.services.employee_requests import (
     EmployeeRequestService,
@@ -35,28 +36,46 @@ SuperAdmin = Depends(require_super_admin)
 # ------------------------- Organization code -------------------------
 
 @router.get(
-    "/organization/code", response_model=OrganizationCodeResponse
+    "/organization/code", response_model=OrganizationCodesResponse
 )
-async def get_organization_code(
+async def get_organization_codes(
     response: Response,
     user: User = SuperAdmin,
     session: AsyncSession = Depends(get_db),
 ):
+    """Every property in the caller's organization with its own code —
+    a code admits registrations into that specific property."""
     response.headers["Cache-Control"] = "private, no-store"
-    code = await OrganizationService(session).get_code(user)
-    return OrganizationCodeResponse(organization_code=code)
+    props = await OrganizationService(session).list_codes(user)
+    return OrganizationCodesResponse(
+        items=[
+            PropertyCodeOut(
+                property_uid=str(p.id),
+                property_name=p.name,
+                organization_code=p.organization_code,
+            )
+            for p in props
+        ]
+    )
 
 
 @router.post(
-    "/organization/code/regenerate",
-    response_model=OrganizationCodeResponse,
+    "/organization/code/{property_id}/regenerate",
+    response_model=PropertyCodeOut,
 )
 async def regenerate_organization_code(
+    property_id: uuid.UUID,
     user: User = SuperAdmin,
     session: AsyncSession = Depends(get_db),
 ):
-    code = await OrganizationService(session).regenerate_code(user)
-    return OrganizationCodeResponse(organization_code=code)
+    prop = await OrganizationService(session).regenerate_code(
+        user, property_id
+    )
+    return PropertyCodeOut(
+        property_uid=str(prop.id),
+        property_name=prop.name,
+        organization_code=prop.organization_code,
+    )
 
 
 # ------------------------- Employee requests -------------------------

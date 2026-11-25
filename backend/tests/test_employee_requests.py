@@ -73,9 +73,10 @@ async def _seed(session: AsyncSession):
     return out
 
 
-def _request(company_id: uuid.UUID, **over) -> EmployeeRegistrationRequest:
+def _request(company_id: uuid.UUID, property_id: uuid.UUID = None, **over
+) -> EmployeeRegistrationRequest:
     base = dict(
-        company_id=company_id, status="pending",
+        company_id=company_id, property_id=property_id, status="pending",
         full_name="Jane Applicant", username="jane.a",
         email="jane@x.test", phone="555",
         designation="Housekeeper", department="HK",
@@ -90,13 +91,13 @@ def _request(company_id: uuid.UUID, **over) -> EmployeeRegistrationRequest:
 async def test_approve_creates_employee_and_user(session):
     s = await _seed(session)
     admin, prop = s["a"]["admin"], s["a"]["prop"]
-    req = _request(s["a"]["company"].id)
+    req = _request(s["a"]["company"].id, s["a"]["prop"].id)
     session.add(req)
     await session.commit()
 
     svc = EmployeeRequestService(session)
     out_req, emp_id, user_id = await svc.approve(
-        admin, req.id, EmployeeRequestApproveIn(property_uid=prop.id)
+        admin, req.id, EmployeeRequestApproveIn()  # no override — uses request's property
     )
 
     emp = await session.scalar(select(Employee).where(Employee.id == emp_id))
@@ -132,15 +133,14 @@ async def test_approve_creates_employee_and_user(session):
 async def test_approve_twice_is_rejected(session):
     s = await _seed(session)
     admin, prop = s["a"]["admin"], s["a"]["prop"]
-    req = _request(s["a"]["company"].id)
+    req = _request(s["a"]["company"].id, s["a"]["prop"].id)
     session.add(req)
     await session.commit()
 
     svc = EmployeeRequestService(session)
-    payload = EmployeeRequestApproveIn(property_uid=prop.id)
-    await svc.approve(admin, req.id, payload)
+    await svc.approve(admin, req.id, EmployeeRequestApproveIn())
     with pytest.raises(RequestAlreadyDecided):
-        await svc.approve(admin, req.id, payload)
+        await svc.approve(admin, req.id, EmployeeRequestApproveIn())
     # And exactly one employee + one user exist.
     assert await session.scalar(
         select(func.count(Employee.id)).where(Employee.email == "jane@x.test")
@@ -153,7 +153,7 @@ async def test_approve_twice_is_rejected(session):
 async def test_reject_marks_request_and_keeps_record(session):
     s = await _seed(session)
     admin = s["a"]["admin"]
-    req = _request(s["a"]["company"].id)
+    req = _request(s["a"]["company"].id, s["a"]["prop"].id)
     session.add(req)
     await session.commit()
 
@@ -174,7 +174,7 @@ async def test_reject_marks_request_and_keeps_record(session):
 async def test_cross_org_isolation(session):
     """Company B's admin can never see or decide company A's request."""
     s = await _seed(session)
-    req = _request(s["a"]["company"].id)
+    req = _request(s["a"]["company"].id, s["a"]["prop"].id)
     session.add(req)
     await session.commit()
 
@@ -195,8 +195,8 @@ async def test_pending_count_and_filters(session):
     s = await _seed(session)
     admin = s["a"]["admin"]
     svc = EmployeeRequestService(session)
-    r1 = _request(s["a"]["company"].id)
-    r2 = _request(s["a"]["company"].id, username="bob.b",
+    r1 = _request(s["a"]["company"].id, s["a"]["prop"].id)
+    r2 = _request(s["a"]["company"].id, s["a"]["prop"].id, username="bob.b",
                   email="bob@x.test", full_name="Bob Baker")
     r2.status = "approved"
     session.add_all([r1, r2])
@@ -216,7 +216,7 @@ async def test_approve_other_org_property_rejected(session):
     request can never land outside its own organization."""
     s = await _seed(session)
     admin_a = s["a"]["admin"]
-    req = _request(s["a"]["company"].id)
+    req = _request(s["a"]["company"].id, s["a"]["prop"].id)
     session.add(req)
     await session.commit()
 

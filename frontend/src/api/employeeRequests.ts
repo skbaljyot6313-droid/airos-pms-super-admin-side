@@ -61,7 +61,9 @@ export async function getEmployeeRequest(
 }
 
 export interface ApproveEmployeeRequestBody {
-  property_uid: string;
+  /** Admin override — defaults to the property the registration code
+   *  resolved to at submission. */
+  property_uid?: string;
   zone_uid?: string | null;
   shift?: string | null;
   job_title?: string | null;
@@ -98,17 +100,24 @@ export async function rejectEmployeeRequest(
 
 // --------------------------- Organization code ---------------------------
 
-export async function getOrganizationCode(): Promise<{
+export interface PropertyCode {
+  property_uid: string;
+  property_name: string;
   organization_code: string;
-}> {
-  return apiFetch<{ organization_code: string }>('/organization/code');
 }
 
-export async function regenerateOrganizationCode(): Promise<{
-  organization_code: string;
+/** One code per property in the caller's organization. */
+export async function getOrganizationCodes(): Promise<{
+  items: PropertyCode[];
 }> {
-  return apiFetch<{ organization_code: string }>(
-    '/organization/code/regenerate',
+  return apiFetch<{ items: PropertyCode[] }>('/organization/code');
+}
+
+export async function regenerateOrganizationCode(
+  property_uid: string,
+): Promise<PropertyCode> {
+  return apiFetch<PropertyCode>(
+    `/organization/code/${property_uid}/regenerate`,
     { method: 'POST' },
   );
 }

@@ -13,9 +13,10 @@ from pydantic import BaseModel, Field
 
 
 class EmployeeRequestApproveIn(BaseModel):
-    # Requests are company-scoped until decided — the admin picks which
-    # property (and optionally zone/shift) the employee lands in.
-    property_uid: uuid.UUID
+    # The registration code already resolved the property at submission
+    # — this field is an admin OVERRIDE, not a requirement. The service
+    # falls back to the request's own property_uid.
+    property_uid: uuid.UUID | None = None
     zone_uid: uuid.UUID | None = None
     shift: str | None = Field(default=None, max_length=64)
     # Admin overrides — blank means "use what the applicant submitted".
@@ -72,5 +73,11 @@ class EmployeeRequestApproveResponse(BaseModel):
     username: str
 
 
-class OrganizationCodeResponse(BaseModel):
+class PropertyCodeOut(BaseModel):
+    property_uid: str
+    property_name: str
     organization_code: str
+
+
+class OrganizationCodesResponse(BaseModel):
+    items: list[PropertyCodeOut]

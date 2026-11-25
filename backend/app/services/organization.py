@@ -1,10 +1,12 @@
-"""OrganizationService — the organization's 12-char registration code.
+"""OrganizationService — per-property 12-char registration codes.
 
-The code is what admits a mobile-app registration request into this
-company. Reading it and rotating it are super-admin-only surfaces —
-rotation invalidates the old code for NEW requests instantly (existing
-approved employees are untouched; their link is the users row, not the
-code). Every rotation is audited.
+One company can run many properties and an employee joins a PROPERTY —
+each property therefore has its own code, and a mobile-app registration
+request resolves the exact property (and its company transitively) from
+it. Reading and rotating codes are super-admin-only surfaces — rotation
+invalidates the old code for NEW requests instantly (existing approved
+employees are untouched; their link is the users row, not the code).
+Every rotation is audited.
 """
 
 import uuid
@@ -15,23 +17,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AppError
 from app.core.security import generate_organization_code
-from app.models.company import Company
+from app.models.property import Property
 from app.models.user import User
 from app.services.audit import AuditService
 
 
-class OrganizationNotFound(AppError):
+class PropertyNotFound(AppError):
     status_code = status.HTTP_404_NOT_FOUND
-    code = "ORGANIZATION_NOT_FOUND"
-    message = "Organization not found."
+    code = "PROPERTY_NOT_FOUND"
+    message = "Property not found."
 
 
 async def unique_organization_code(session: AsyncSession) -> str:
-    """Generate a code that doesn't collide with any company's."""
+    """Generate a code that doesn't collide with any property's."""
     for _ in range(20):
         code = generate_organization_code()
         exists = await session.scalar(
-            select(Company.id).where(Company.organization_code == code)
+            select(Property.id).where(Property.organization_code == code)
         )
         if exists is None:
             return code
@@ -44,42 +46,58 @@ class OrganizationService:
         self.session = session
         self.audit = AuditService(session)
 
-    async def _company(self, user: User) -> Company:
-        # Requests resolve the company from the CALLER's own
-        # company_id — an admin can never reach another org's code.
-        company = await self.session.scalar(
-            select(Company).where(Company.id == user.company_id)
+    async def list_codes(self, user: User) -> list[Property]:
+        """Every property in the caller's company, with its code. The
+        caller's ``company_id`` is the ONLY tenant scope — an admin can
+        never reach another organization's codes."""
+        res = await self.session.execute(
+            select(Property)
+            .where(Property.company_id == user.company_id)
+            .order_by(Property.name)
         )
-        if company is None:
-            raise OrganizationNotFound()
-        return company
+        return list(res.scalars())
 
-    async def get_code(self, user: User) -> str:
-        return (await self._company(user)).organization_code
+    async def _company_property(
+        self, user: User, property_id: uuid.UUID
+    ) -> Property:
+        prop = await self.session.scalar(
+            select(Property).where(
+                Property.id == property_id,
+                Property.company_id == user.company_id,
+            )
+        )
+        if prop is None:
+            # Same 404 whether it doesn't exist or belongs to another
+            # organization — no cross-tenant existence leak.
+            raise PropertyNotFound()
+        return prop
 
-    async def regenerate_code(self, user: User) -> str:
-        company = await self._company(user)
-        old = company.organization_code
-        company.organization_code = await unique_organization_code(
+    async def regenerate_code(
+        self, user: User, property_id: uuid.UUID
+    ) -> Property:
+        prop = await self._company_property(user, property_id)
+        old = prop.organization_code
+        prop.organization_code = await unique_organization_code(
             self.session
         )
         self.audit.record(
             user,
-            entity_type="company",
-            entity_id=company.id,
-            entity_name=company.company_name,
+            entity_type="property",
+            entity_id=prop.id,
+            entity_name=prop.name,
             action="organization_code_regenerated",
-            property_id=None,
+            property_id=prop.id,
             detail={
                 # Old code is partially masked — enough to correlate an
                 # audit row with a leaked/reported code, not enough to
                 # keep using it.
                 "previous_code_hint": f"{old[:4]}…{old[-2:]}" if old else None,
                 "new_code_hint": (
-                    f"{company.organization_code[:4]}…"
-                    f"{company.organization_code[-2:]}"
+                    f"{prop.organization_code[:4]}…"
+                    f"{prop.organization_code[-2:]}"
                 ),
             },
         )
         await self.session.commit()
-        return company.organization_code
+        await self.session.refresh(prop)
+        return prop

@@ -46,7 +46,7 @@ from app.schemas.structure import EmployeeCreateRequest
 from app.services import payroll as payroll_svc
 from app.services.audit import AuditService
 from app.services.employee import EmployeeService
-from app.services.structure import NotFoundErr
+from app.services.structure import NotFoundErr, ValidationErr
 
 
 class RequestAlreadyDecided(AppError):
@@ -190,11 +190,24 @@ class EmployeeRequestService:
         await self._claim(user, request_id, "approved")
         req = await self.get_request(user, request_id)
 
+        # The registration code already resolved the property at
+        # submission — an explicit payload override still wins (the
+        # admin owns the decision), but the request's own property is
+        # the default. _property_for_write enforces company scope either
+        # way, so a foreign property can never sneak in.
+        property_uid = payload.property_uid or req.property_id
+        if property_uid is None:
+            await self.session.rollback()
+            raise ValidationErr(
+                "Choose a property to place this employee in.",
+                field="property_uid",
+            )
+
         # Reuse the existing employee-creation service verbatim — the
         # only difference is the password hash, which was Argon2id'd at
         # submission time and moves onto the users row as-is.
         create_req = EmployeeCreateRequest(
-            property_uid=payload.property_uid,
+            property_uid=property_uid,
             name=req.full_name,
             email=req.email,
             password="approval-hash-override",  # never hashed — see kwarg
@@ -221,6 +234,8 @@ class EmployeeRequestService:
             select(User.id).where(User.employee_id == emp.id)
         )
 
+        # property_id was already set at submission — refresh it in case
+        # the admin overrode the placement.
         req.property_id = emp.property_id
         req.created_employee_id = emp.id
         req.created_user_id = user_id
