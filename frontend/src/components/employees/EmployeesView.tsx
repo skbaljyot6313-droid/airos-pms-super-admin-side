@@ -11,8 +11,6 @@ import { LeavesPanel } from './LeavesPanel';
 import { ShiftManager } from './ShiftManager';
 import { AttendanceBoard } from './AttendanceBoard';
 import { TeamAnalyticsTab } from './analysis/TeamAnalytics';
-import { EmployeeRequestsView } from './EmployeeRequestsView';
-import { getEmployeeRequestsPendingCount } from '../../api/employeeRequests';
 import { BackButton } from '../ui/BackButton';
 import { isEmployeeDeactivated } from '../../lib/employeeUtils';
 
@@ -49,8 +47,8 @@ export const EmployeesView: React.FC = () => {
     useApp();
 
   const isStaff = currentUser?.role === 'super_admin' || currentUser?.role === 'property_manager';
-  type EmpTab = 'board' | 'directory' | 'deactivated' | 'live' | 'leaves' | 'shifts' | 'attendance' | 'analytics' | 'requests';
-  const EMP_TABS: EmpTab[] = ['board', 'directory', 'deactivated', 'live', 'leaves', 'shifts', 'attendance', 'analytics', 'requests'];
+  type EmpTab = 'board' | 'directory' | 'deactivated' | 'live' | 'leaves' | 'shifts' | 'attendance' | 'analytics';
+  const EMP_TABS: EmpTab[] = ['board', 'directory', 'deactivated', 'live', 'leaves', 'shifts', 'attendance', 'analytics'];
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<EmpTab>(() => {
     const t = searchParams.get('tab');
@@ -73,24 +71,7 @@ export const EmployeesView: React.FC = () => {
     });
   };
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  // Pending registration-request count — polled while this view is
-  // mounted; super_admin only (the endpoint enforces it anyway).
-  const [pendingRequests, setPendingRequests] = useState(0);
   const isSuperAdmin = currentUser?.role === 'super_admin';
-  useEffect(() => {
-    if (!isSuperAdmin) return;
-    let cancelled = false;
-    const poll = () =>
-      getEmployeeRequestsPendingCount()
-        .then((r) => !cancelled && setPendingRequests(r.pending))
-        .catch(() => undefined);
-    void poll();
-    const t = window.setInterval(poll, 30_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(t);
-    };
-  }, [isSuperAdmin]);
 
   const activeEmployees = currentPropertyEmployees.filter(
     (e) => !isEmployeeDeactivated(e)
@@ -125,18 +106,6 @@ export const EmployeesView: React.FC = () => {
               label="Unallocated"
               tone={currentPropertyUnallocatedEmployees.length > 0 ? 'warn' : 'default'}
             />
-            {isSuperAdmin && (
-              <button
-                onClick={() => setTab('requests')}
-                title="Pending employee registration requests"
-              >
-                <MetricPill
-                  value={pendingRequests}
-                  label="Requests"
-                  tone={pendingRequests > 0 ? 'warn' : 'default'}
-                />
-              </button>
-            )}
           </div>
         </div>
 
@@ -278,32 +247,6 @@ export const EmployeesView: React.FC = () => {
                 />
                 <span>Leaves</span>
               </button>
-              {isSuperAdmin && (
-                <button
-                  onClick={() => setTab('requests')}
-                  className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 ${
-                    activeTab === 'requests'
-                      ? 'bg-white text-[#0D1C42] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
-                      : 'text-[#800020] hover:text-[#0D1C42]'
-                  }`}
-                >
-                  <UserCheck
-                    className={`w-3.5 h-3.5 ${activeTab === 'requests' ? 'text-[#800020]' : ''}`}
-                  />
-                  <span>Requests</span>
-                  {pendingRequests > 0 && (
-                    <span
-                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] ${
-                        activeTab === 'requests'
-                          ? 'bg-[#FDF3E2] text-[#A56514]'
-                          : 'bg-[#FDF3E2] text-[#A56514]'
-                      }`}
-                    >
-                      {pendingRequests}
-                    </span>
-                  )}
-                </button>
-              )}
             </>
           )}
         </div>
@@ -331,8 +274,6 @@ export const EmployeesView: React.FC = () => {
         <TeamAnalyticsTab />
       ) : activeTab === 'leaves' ? (
         <LeavesPanel />
-      ) : activeTab === 'requests' ? (
-        <EmployeeRequestsView onCountChange={setPendingRequests} />
       ) : (
         <EmployeeDirectory deactivated={activeTab === 'deactivated'} />
       )}

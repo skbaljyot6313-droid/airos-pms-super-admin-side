@@ -28,6 +28,9 @@ const RoomsDormsView = React.lazy(() =>
 const EmployeesView = React.lazy(() =>
   import('./components/employees/EmployeesView').then((m) => ({ default: m.EmployeesView }))
 );
+const AccountsView = React.lazy(() =>
+  import('./components/accounts/AccountsView').then((m) => ({ default: m.AccountsView }))
+);
 const SalariesView = React.lazy(() =>
   import('./components/payroll/SalariesView').then((m) => ({ default: m.SalariesView }))
 );
@@ -265,6 +268,7 @@ const AppContent: React.FC = () => {
           <Route path="/property/:propertyUid/workforce/dashboard" element={<RequireAuth><PropertyScopedView><EmployeeDashboard /></PropertyScopedView></RequireAuth>} />
           <Route path="/property/:propertyUid/workforce/employees" element={<RequireAuth><PropertyScopedView><EmployeesView /></PropertyScopedView></RequireAuth>} />
           <Route path="/property/:propertyUid/workforce/employees/:employeeUid" element={<RequireAuth><PropertyScopedView><EmployeeDetailView /></PropertyScopedView></RequireAuth>} />
+          <Route path="/property/:propertyUid/workforce/accounts" element={<RequireAuth><PropertyScopedView><RequireRole roles={['super_admin']}><AccountsView /></RequireRole></PropertyScopedView></RequireAuth>} />
           <Route path="/property/:propertyUid/workforce/salaries" element={<RequireAuth><PropertyScopedView><RequireRole roles={['super_admin', 'human_resource']}><SalariesView /></RequireRole></PropertyScopedView></RequireAuth>} />
           <Route path="/property/:propertyUid/workforce/departments" element={<RequireAuth><PropertyScopedView><DepartmentsView /></PropertyScopedView></RequireAuth>} />
           <Route path="/property/:propertyUid/workforce/departments/:departmentUid" element={<RequireAuth><PropertyScopedView><DepartmentDetailView /></PropertyScopedView></RequireAuth>} />

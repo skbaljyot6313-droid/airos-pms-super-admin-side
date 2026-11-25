@@ -81,3 +81,23 @@ class PropertyCodeOut(BaseModel):
 
 class OrganizationCodesResponse(BaseModel):
     items: list[PropertyCodeOut]
+
+
+class AccountOut(BaseModel):
+    account_uid: str
+    name: str
+    username: str
+    email: str
+    phone_number: str | None
+    role: str
+    job_title: str | None
+    property_uid: str | None
+    property_name: str | None
+    is_active: bool
+    last_login_at: datetime | None
+    created_at: datetime
+
+
+class AccountListResponse(BaseModel):
+    items: list[AccountOut]
+    total: int

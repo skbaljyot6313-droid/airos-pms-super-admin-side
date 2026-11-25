@@ -19,6 +19,7 @@ from app.core.exceptions import AppError
 from app.core.security import generate_organization_code
 from app.models.property import Property
 from app.models.user import User
+from app.repositories.user import UserRepository
 from app.services.audit import AuditService
 
 
@@ -56,6 +57,16 @@ class OrganizationService:
             .order_by(Property.name)
         )
         return list(res.scalars())
+
+    async def list_accounts(
+        self, user: User
+    ) -> list[tuple[User, str | None]]:
+        """Every login account in the caller's company, paired with the
+        scoped property's name. Same tenant rule as ``list_codes`` —
+        ``company_id`` is the only scope."""
+        return await UserRepository(self.session).list_for_company(
+            user.company_id
+        )
 
     async def _company_property(
         self, user: User, property_id: uuid.UUID

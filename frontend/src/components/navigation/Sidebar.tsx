@@ -127,11 +127,11 @@ function buildGroups(): NavGroup[] {
           active: (p) => p.includes('/workforce/departments'),
         },
         {
-          label: 'Requests',
-          path: 'workforce/employees?tab=requests',
+          label: 'Accounts',
+          path: 'workforce/accounts',
           icon: <UserCheck className="w-[18px] h-[18px]" />,
           roles: ['super_admin'],
-          active: (p, s) => p.includes('/workforce/employees') && tabIs(s, 'requests'),
+          active: (p) => p.includes('/workforce/accounts'),
         },
         {
           label: 'Attendance',
@@ -345,7 +345,7 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; onCloseMobile: () => void 
                         </span>
                         {!collapsed && <span className="truncate">{item.label}</span>}
                         {!collapsed &&
-                          item.path === 'workforce/employees?tab=requests' &&
+                          item.path === 'workforce/accounts' &&
                           pendingRequests > 0 && (
                             <span className="ml-auto rounded-[6px] bg-[#FDF3E2] px-1.5 py-0.5 text-[10px] font-semibold text-[#A56514]">
                               {pendingRequests}

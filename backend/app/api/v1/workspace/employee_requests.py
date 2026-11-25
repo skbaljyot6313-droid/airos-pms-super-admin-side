@@ -13,6 +13,8 @@ from app.core.database import get_db
 from app.dependencies.auth import require_super_admin
 from app.models.user import User
 from app.schemas.employee_requests import (
+    AccountListResponse,
+    AccountOut,
     EmployeeRequestApproveIn,
     EmployeeRequestApproveResponse,
     EmployeeRequestListResponse,
@@ -75,6 +77,41 @@ async def regenerate_organization_code(
         property_uid=str(prop.id),
         property_name=prop.name,
         organization_code=prop.organization_code,
+    )
+
+
+# ------------------------------ Accounts ------------------------------
+
+@router.get("/accounts", response_model=AccountListResponse)
+async def list_accounts(
+    user: User = SuperAdmin,
+    session: AsyncSession = Depends(get_db),
+):
+    """Every login account in the caller's organization with its role —
+    the Workforce → Accounts roster. Read-only; account writes happen in
+    signup / request approval / employee onboarding."""
+    rows = await OrganizationService(session).list_accounts(user)
+    return AccountListResponse(
+        items=[
+            AccountOut(
+                account_uid=str(u.id),
+                name=u.name,
+                username=u.username,
+                email=u.email,
+                phone_number=u.phone_number,
+                role=u.role.value,
+                job_title=u.job_title,
+                property_uid=(
+                    str(u.property_id) if u.property_id else None
+                ),
+                property_name=property_name,
+                is_active=u.is_active,
+                last_login_at=u.last_login_at,
+                created_at=u.created_at,
+            )
+            for u, property_name in rows
+        ],
+        total=len(rows),
     )
 
 

@@ -5,12 +5,26 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.models.property import Property
 from app.models.user import User, UserRole
 
 
 class UserRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    async def list_for_company(
+        self, company_id: uuid.UUID
+    ) -> list[tuple[User, str | None]]:
+        """Every user in the company + the name of their scoped property
+        (None when the account isn't property-bound)."""
+        res = await self.session.execute(
+            select(User, Property.name)
+            .outerjoin(Property, Property.id == User.property_id)
+            .where(User.company_id == company_id)
+            .order_by(User.name)
+        )
+        return [(row[0], row[1]) for row in res.all()]
 
     async def get_by_id(self, user_id: uuid.UUID) -> User | None:
         res = await self.session.execute(
