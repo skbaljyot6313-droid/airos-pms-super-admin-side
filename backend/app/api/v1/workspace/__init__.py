@@ -8,12 +8,12 @@ for overlapping paths like ``/tasks/review-queue`` vs ``/tasks/{id}``).
 """
 from fastapi import APIRouter
 
-from . import bootstrap, dashboard, departments, dept_work, employees, maintenance, occupancy, properties, reads, structure, tasks
+from . import bootstrap, dashboard, departments, dept_work, employee_requests, employees, maintenance, occupancy, properties, reads, structure, tasks
 
 router = APIRouter(tags=["workspace"])
 
 for _module in (
-    bootstrap, dashboard, departments, dept_work, reads, structure, occupancy, employees, tasks,
-    maintenance, properties,
+    bootstrap, dashboard, departments, dept_work, reads, structure, occupancy, employee_requests,
+    employees, tasks, maintenance, properties,
 ):
     router.include_router(_module.router)

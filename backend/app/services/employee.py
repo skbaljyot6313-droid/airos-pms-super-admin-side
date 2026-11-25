@@ -122,7 +122,14 @@ class EmployeeService:
             candidate = f"{base}.{n}"
         return candidate
 
-    async def create_employee(self, user: User, payload: EmployeeCreateRequest) -> Employee:
+    async def create_employee(
+        self, user: User, payload: EmployeeCreateRequest, *,
+        password_hash: str | None = None,
+    ) -> Employee:
+        """`password_hash` — pre-computed Argon2id hash that bypasses
+        hashing ``payload.password``. Used by the registration-approval
+        flow, where the hash was computed at request submission and the
+        plaintext password never reached the database."""
         prop = await self.structure._property_for_write(user, payload.property_uid)
         zone_id = await self._zone_or_none(payload.zone_uid, prop.id)
 
@@ -168,7 +175,7 @@ class EmployeeService:
                 name=emp.name,
                 email=email,
                 username=username,
-                password_hash=hash_password(payload.password),
+                password_hash=password_hash or hash_password(payload.password),
                 phone_number=payload.phone,
                 role=UserRole.EMPLOYEE,
                 property_id=prop.id,

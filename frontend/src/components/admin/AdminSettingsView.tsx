@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
-import { Building2, Clock3, Database, RefreshCw } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Building2, Check, Clock3, Copy, Database, KeyRound, RefreshCw } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 import { ApiError } from '../../api/client';
+import {
+  getOrganizationCode,
+  regenerateOrganizationCode,
+} from '../../api/employeeRequests';
 
 export const AdminSettingsView: React.FC = () => {
   const {
@@ -34,6 +39,63 @@ export const AdminSettingsView: React.FC = () => {
   const [dayStart, setDayStart] = useState(company?.operational_day_start || '06:00');
   const [isSavingDay, setIsSavingDay] = useState(false);
   const [dayError, setDayError] = useState<string | null>(null);
+
+  // Organization Code — the 12-char key that admits mobile-app
+  // registration requests into this company. Fetched once on mount;
+  // rotation requires an explicit confirmation.
+  const [orgCode, setOrgCode] = useState<string | null>(null);
+  const [orgCodeError, setOrgCodeError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [regenOpen, setRegenOpen] = useState(false);
+  const [regenLoading, setRegenLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getOrganizationCode()
+      .then((r) => !cancelled && setOrgCode(r.organization_code))
+      .catch((e) =>
+        !cancelled &&
+        setOrgCodeError(
+          e instanceof ApiError ? e.message : 'Could not load organization code.',
+        ),
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const copyOrgCode = async () => {
+    if (!orgCode) return;
+    try {
+      await navigator.clipboard.writeText(orgCode);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable — the code stays visible for manual copy */
+    }
+  };
+
+  const handleRegenerate = async () => {
+    setRegenLoading(true);
+    try {
+      const r = await regenerateOrganizationCode();
+      setOrgCode(r.organization_code);
+      setRegenOpen(false);
+      addToast({
+        type: 'success',
+        title: 'Code Regenerated',
+        description:
+          'The previous organization code no longer accepts new registrations.',
+      });
+    } catch (e) {
+      setOrgCodeError(
+        e instanceof ApiError ? e.message : 'Could not regenerate the code.',
+      );
+      setRegenOpen(false);
+    } finally {
+      setRegenLoading(false);
+    }
+  };
 
   const handleSaveCompany = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,6 +215,77 @@ export const AdminSettingsView: React.FC = () => {
           </div>
         </form>
       </Card>
+
+      {/* Organization Code — admits employee self-registration requests */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <KeyRound className="w-4 h-4 text-[#800020]" />
+          <h3 className="font-display font-bold text-base text-[#0D1C42]">
+            Organization Code
+          </h3>
+        </div>
+        <p className="text-xs text-[#667085] font-body mb-4">
+          Share this code with prospective employees — it joins their mobile-app
+          registration request to this organization for admin approval.
+        </p>
+
+        {orgCodeError && (
+          <div
+            role="alert"
+            className="mb-4 p-3 rounded-[10px] bg-[#FAEBEB] border border-[#F0C8C8] text-[#A83434] text-xs font-medium"
+          >
+            {orgCodeError}
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1 flex items-center justify-center px-4 py-3.5 rounded-[10px] bg-[#F6F4F2] border border-[#E7E5E4]">
+            <span className="font-mono text-lg font-bold tracking-[0.35em] text-[#0D1C42] select-all">
+              {orgCode ?? '············'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => void copyOrgCode()}
+              disabled={!orgCode}
+            >
+              {copied ? (
+                <Check className="w-4 h-4 text-[#386641]" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
+              {copied ? 'Copied' : 'Copy Code'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setRegenOpen(true)}
+              disabled={!orgCode}
+            >
+              <RefreshCw className="w-4 h-4" />
+              Regenerate
+            </Button>
+          </div>
+        </div>
+        <p className="text-[11px] text-[#667085] font-body mt-3">
+          Regenerating immediately invalidates the previous code for new
+          registration requests. Existing approved employees are unaffected.
+        </p>
+      </Card>
+
+      <ConfirmationDialog
+        isOpen={regenOpen}
+        onClose={() => setRegenOpen(false)}
+        onConfirm={() => void handleRegenerate()}
+        entityType="Organization Code"
+        entityName={orgCode ?? ''}
+        title="Regenerate organization code?"
+        warningTitle="This immediately invalidates the current code."
+        impactMessage="Any pending new sign-ups using the old code will fail code verification. Requests already submitted and approved employees are unaffected."
+        confirmLabel="Regenerate Code"
+        confirmVariant="primary"
+        isLoading={regenLoading}
+      />
 
       {/* Operational Day — drives the daily rollover + task analysis */}
       <Card className="p-6">

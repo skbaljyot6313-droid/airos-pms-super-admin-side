@@ -11,6 +11,7 @@ import {
   Network,
   CalendarCheck,
   CalendarDays,
+  UserCheck,
   Wallet,
   ScrollText,
   Building2,
@@ -23,6 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { getEmployeeRequestsPendingCount } from '../../api/employeeRequests';
 import { cn } from '../../lib/utils';
 
 const COLLAPSED_KEY = 'airos_sa_nav_collapsed';
@@ -123,6 +125,13 @@ function buildGroups(): NavGroup[] {
           path: 'workforce/departments',
           icon: <Network className="w-[18px] h-[18px]" />,
           active: (p) => p.includes('/workforce/departments'),
+        },
+        {
+          label: 'Requests',
+          path: 'workforce/employees?tab=requests',
+          icon: <UserCheck className="w-[18px] h-[18px]" />,
+          roles: ['super_admin'],
+          active: (p, s) => p.includes('/workforce/employees') && tabIs(s, 'requests'),
         },
         {
           label: 'Attendance',
@@ -260,6 +269,24 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; onCloseMobile: () => void 
   const groups = useMemo(buildGroups, []);
   const role = currentUser?.role ?? currentRole;
 
+  // Pending employee-registration count — polled while the shell is
+  // mounted; only super_admin sees the Requests item it decorates.
+  const [pendingRequests, setPendingRequests] = useState(0);
+  useEffect(() => {
+    if (role !== 'super_admin') return;
+    let cancelled = false;
+    const poll = () =>
+      getEmployeeRequestsPendingCount()
+        .then((r) => !cancelled && setPendingRequests(r.pending))
+        .catch(() => undefined);
+    void poll();
+    const t = window.setInterval(poll, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [role]);
+
   const visible = (item: NavItem) => !item.roles || (role ? item.roles.includes(role) : false);
   const go = (item: NavItem) => {
     navigate(item.absolute ? item.path : `${propertyRoot}/${item.path}`);
@@ -317,6 +344,13 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; onCloseMobile: () => void 
                           {item.icon}
                         </span>
                         {!collapsed && <span className="truncate">{item.label}</span>}
+                        {!collapsed &&
+                          item.path === 'workforce/employees?tab=requests' &&
+                          pendingRequests > 0 && (
+                            <span className="ml-auto rounded-[6px] bg-[#FDF3E2] px-1.5 py-0.5 text-[10px] font-semibold text-[#A56514]">
+                              {pendingRequests}
+                            </span>
+                          )}
                       </button>
                     );
                   })}
