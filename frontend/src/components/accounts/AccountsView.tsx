@@ -53,7 +53,18 @@ type AccountsTab = 'accounts' | 'requests' | 'codes';
 const TABS: AccountsTab[] = ['accounts', 'requests', 'codes'];
 
 export const AccountsView: React.FC = () => {
-  const { activeProperty } = useApp();
+  const { activeProperty, currentUser, currentRole } = useApp();
+  const isSuperAdmin =
+    (currentUser?.role ?? currentRole) === 'super_admin';
+  // Property isolation: default to the selected property's accounts and
+  // requests; "All properties" is the explicit org-wide view. Only
+  // super_admin gets that option — a property manager is always
+  // property-scoped (the backend pins them server-side regardless).
+  const [scopeAll, setScopeAll] = useState(false);
+  const orgWide = isSuperAdmin && scopeAll;
+  const scopedPropertyUid = orgWide
+    ? undefined
+    : activeProperty?.property_uid;
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<AccountsTab>(() => {
@@ -95,14 +106,14 @@ export const AccountsView: React.FC = () => {
 
   const loadAccounts = useCallback(() => {
     setAccountsError(null);
-    listAccounts()
+    listAccounts(scopedPropertyUid)
       .then((r) => setAccounts(r.items))
       .catch((e) =>
         setAccountsError(
           e instanceof ApiError ? e.message : 'Could not load accounts.',
         ),
       );
-  }, []);
+  }, [scopedPropertyUid]);
 
   useEffect(() => {
     loadAccounts();
@@ -158,20 +169,51 @@ export const AccountsView: React.FC = () => {
         </h1>
         <p className="font-body text-sm text-[#800020] mt-1">
           Login accounts, roles &amp; permissions, registration requests, and
-          organization codes across{' '}
-          <span className="text-[#0D1C42] font-medium">the whole organization</span>
+          organization codes for{' '}
+          <span className="text-[#0D1C42] font-medium">
+            {orgWide ? 'the whole organization' : (activeProperty?.name ?? 'this property')}
+          </span>
         </p>
       </div>
 
-      {/* Segmented control */}
-      <div className="inline-flex p-1 rounded-[10px] bg-[#F6F4F2] w-fit">
-        {tabBtn('accounts', <ShieldCheck className="w-3.5 h-3.5" />, 'Accounts', accounts?.length)}
-        {tabBtn('requests', <Inbox className="w-3.5 h-3.5" />, 'Requests', pendingRequests)}
-        {tabBtn('codes', <KeyRound className="w-3.5 h-3.5" />, 'Codes')}
+      {/* Segmented control + property scope */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="inline-flex p-1 rounded-[10px] bg-[#F6F4F2] w-fit">
+          {tabBtn('accounts', <ShieldCheck className="w-3.5 h-3.5" />, 'Accounts', accounts?.length)}
+          {tabBtn('requests', <Inbox className="w-3.5 h-3.5" />, 'Requests', pendingRequests)}
+          {tabBtn('codes', <KeyRound className="w-3.5 h-3.5" />, 'Codes')}
+        </div>
+        {activeTab !== 'codes' && isSuperAdmin && (
+          <div className="inline-flex p-1 rounded-[10px] bg-[#F6F4F2] w-fit">
+            <button
+              onClick={() => setScopeAll(false)}
+              className={`px-3 py-1 rounded-[8px] text-[11px] font-semibold transition-all duration-150 cursor-pointer ${
+                !scopeAll
+                  ? 'bg-white text-[#0D1C42] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                  : 'text-[#800020] hover:text-[#0D1C42]'
+              }`}
+            >
+              {activeProperty?.name ?? 'This property'}
+            </button>
+            <button
+              onClick={() => setScopeAll(true)}
+              className={`px-3 py-1 rounded-[8px] text-[11px] font-semibold transition-all duration-150 cursor-pointer ${
+                scopeAll
+                  ? 'bg-white text-[#0D1C42] shadow-[0_1px_2px_rgba(20,30,24,0.10)]'
+                  : 'text-[#800020] hover:text-[#0D1C42]'
+              }`}
+            >
+              All properties
+            </button>
+          </div>
+        )}
       </div>
 
       {activeTab === 'requests' && (
-        <EmployeeRequestsView onCountChange={setPendingRequests} />
+        <EmployeeRequestsView
+          onCountChange={setPendingRequests}
+          propertyUid={scopedPropertyUid}
+        />
       )}
 
       {activeTab === 'codes' && <OrganizationCodes />}

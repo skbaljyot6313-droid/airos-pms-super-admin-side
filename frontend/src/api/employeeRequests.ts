@@ -36,6 +36,8 @@ export interface EmployeeRequest {
 export interface EmployeeRequestListParams {
   status?: RegistrationStatus;
   search?: string;
+  /** Narrow to one property's requests (company-validated). */
+  property_uid?: string;
   page?: number;
   limit?: number;
 }

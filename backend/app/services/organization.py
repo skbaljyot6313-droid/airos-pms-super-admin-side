@@ -3,7 +3,8 @@
 One company can run many properties and an employee joins a PROPERTY —
 each property therefore has its own code, and a mobile-app registration
 request resolves the exact property (and its company transitively) from
-it. Reading and rotating codes are super-admin-only surfaces — rotation
+it. Reading and rotating codes are super-admin and property-manager
+surfaces — managers only ever reach their own property's code. Rotation
 invalidates the old code for NEW requests instantly (existing approved
 employees are untouched; their link is the users row, not the code).
 Every rotation is audited.
@@ -18,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import AppError
 from app.core.security import generate_organization_code
 from app.models.property import Property
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.repositories.user import UserRepository
 from app.services.audit import AuditService
 
@@ -48,24 +49,32 @@ class OrganizationService:
         self.audit = AuditService(session)
 
     async def list_codes(self, user: User) -> list[Property]:
-        """Every property in the caller's company, with its code. The
-        caller's ``company_id`` is the ONLY tenant scope — an admin can
-        never reach another organization's codes."""
-        res = await self.session.execute(
-            select(Property)
-            .where(Property.company_id == user.company_id)
-            .order_by(Property.name)
-        )
+        """Every property in the caller's company, with its code.
+        Property managers only ever get their own property's code —
+        a code admits registrations into that property, so it must not
+        leak across property boundaries."""
+        q = select(Property).where(Property.company_id == user.company_id)
+        if user.role != UserRole.SUPER_ADMIN:
+            q = q.where(Property.id == user.property_id)
+        res = await self.session.execute(q.order_by(Property.name))
         return list(res.scalars())
 
     async def list_accounts(
-        self, user: User
+        self, user: User, property_uid: uuid.UUID | None = None
     ) -> list[tuple[User, str | None]]:
-        """Every login account in the caller's company, paired with the
-        scoped property's name. Same tenant rule as ``list_codes`` —
-        ``company_id`` is the only scope."""
+        """Login accounts in the caller's company, paired with the
+        scoped property's name. ``property_uid`` narrows to a single
+        property and must belong to the company. Property managers are
+        pinned to their own property — the filter can never widen
+        their scope (fail closed on a NULL property)."""
+        if user.role != UserRole.SUPER_ADMIN:
+            property_uid = user.property_id
+            if property_uid is None:
+                return []
+        elif property_uid is not None:
+            await self._company_property(user, property_uid)
         return await UserRepository(self.session).list_for_company(
-            user.company_id
+            user.company_id, property_id=property_uid
         )
 
     async def _company_property(
@@ -86,6 +95,13 @@ class OrganizationService:
     async def regenerate_code(
         self, user: User, property_id: uuid.UUID
     ) -> Property:
+        if (
+            user.role != UserRole.SUPER_ADMIN
+            and property_id != user.property_id
+        ):
+            # A manager may only rotate their own property's code —
+            # same 404 as a foreign-company property, no existence leak.
+            raise PropertyNotFound()
         prop = await self._company_property(user, property_id)
         old = prop.organization_code
         prop.organization_code = await unique_organization_code(

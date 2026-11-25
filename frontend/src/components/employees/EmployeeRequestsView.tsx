@@ -55,7 +55,9 @@ const DetailRow: React.FC<{ label: string; value?: string | null }> = ({
 
 export const EmployeeRequestsView: React.FC<{
   onCountChange?: (pending: number) => void;
-}> = ({ onCountChange }) => {
+  /** When set, the queue shows only this property's requests. */
+  propertyUid?: string;
+}> = ({ onCountChange, propertyUid }) => {
   const { properties, activeProperty } = useApp();
   const [statusFilter, setStatusFilter] =
     useState<RegistrationStatus | 'all'>('pending');
@@ -82,6 +84,7 @@ export const EmployeeRequestsView: React.FC<{
       const res = await listEmployeeRequests({
         status: statusFilter === 'all' ? undefined : statusFilter,
         search: search || undefined,
+        property_uid: propertyUid,
         limit: 100,
       });
       setItems(res.items);
@@ -91,7 +94,7 @@ export const EmployeeRequestsView: React.FC<{
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, search]);
+  }, [statusFilter, search, propertyUid]);
 
   useEffect(() => {
     void load();

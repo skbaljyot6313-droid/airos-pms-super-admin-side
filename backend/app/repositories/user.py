@@ -14,16 +14,19 @@ class UserRepository:
         self.session = session
 
     async def list_for_company(
-        self, company_id: uuid.UUID
+        self, company_id: uuid.UUID, *, property_id: uuid.UUID | None = None
     ) -> list[tuple[User, str | None]]:
         """Every user in the company + the name of their scoped property
-        (None when the account isn't property-bound)."""
-        res = await self.session.execute(
+        (None when the account isn't property-bound). ``property_id``
+        narrows to accounts bound to that property."""
+        q = (
             select(User, Property.name)
             .outerjoin(Property, Property.id == User.property_id)
             .where(User.company_id == company_id)
-            .order_by(User.name)
         )
+        if property_id is not None:
+            q = q.where(User.property_id == property_id)
+        res = await self.session.execute(q.order_by(User.name))
         return [(row[0], row[1]) for row in res.all()]
 
     async def get_by_id(self, user_id: uuid.UUID) -> User | None:

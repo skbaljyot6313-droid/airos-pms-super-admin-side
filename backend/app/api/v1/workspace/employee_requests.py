@@ -1,16 +1,20 @@
 """Employee registration requests + organization code endpoints.
 
-The whole surface is super_admin-only: registration requests carry
-personal + compensation data, and the organization code is the key that
-admits new requests — neither may leak to property-level staff.
+Super admins see the whole organization; property managers are pinned
+to their own ``property_id`` by the services — they can list accounts,
+review and decide requests, and read/rotate the code only for the
+property they manage. Other roles stay locked out: registration
+requests carry personal + compensation data, and the organization code
+is the key that admits new requests.
 """
 import uuid
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.dependencies.auth import require_super_admin
+from app.core.exceptions import AppError
+from app.dependencies.auth import require_property_manager
 from app.models.user import User
 from app.schemas.employee_requests import (
     AccountListResponse,
@@ -32,7 +36,22 @@ from app.services.organization import OrganizationService
 
 router = APIRouter()
 
-SuperAdmin = Depends(require_super_admin)
+Staff = Depends(require_property_manager)
+
+
+class _NotFound(AppError):
+    status_code = status.HTTP_404_NOT_FOUND
+    code = "NOT_FOUND"
+    message = "The requested resource was not found."
+
+
+def _uid(v: str | None) -> uuid.UUID | None:
+    if not v:
+        return None
+    try:
+        return uuid.UUID(v)
+    except ValueError:
+        raise _NotFound()
 
 
 # ------------------------- Organization code -------------------------
@@ -42,7 +61,7 @@ SuperAdmin = Depends(require_super_admin)
 )
 async def get_organization_codes(
     response: Response,
-    user: User = SuperAdmin,
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
     """Every property in the caller's organization with its own code —
@@ -67,7 +86,7 @@ async def get_organization_codes(
 )
 async def regenerate_organization_code(
     property_id: uuid.UUID,
-    user: User = SuperAdmin,
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
     prop = await OrganizationService(session).regenerate_code(
@@ -84,13 +103,18 @@ async def regenerate_organization_code(
 
 @router.get("/accounts", response_model=AccountListResponse)
 async def list_accounts(
-    user: User = SuperAdmin,
+    property_uid: str | None = Query(default=None),
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
-    """Every login account in the caller's organization with its role —
-    the Workforce → Accounts roster. Read-only; account writes happen in
-    signup / request approval / employee onboarding."""
-    rows = await OrganizationService(session).list_accounts(user)
+    """Login accounts in the caller's organization with their role — the
+    Workforce → Accounts roster. ``property_uid`` narrows to one
+    property's accounts (company-validated); omitted → the whole org.
+    Read-only; account writes happen in signup / request approval /
+    employee onboarding."""
+    rows = await OrganizationService(session).list_accounts(
+        user, property_uid=_uid(property_uid)
+    )
     return AccountListResponse(
         items=[
             AccountOut(
@@ -123,13 +147,18 @@ async def list_accounts(
 async def list_employee_requests(
     status: str | None = Query(None, pattern="^(pending|approved|rejected)$"),
     search: str | None = Query(None, max_length=200),
+    property_uid: str | None = Query(default=None),
     page: int = Query(1, ge=1, le=100000),
     limit: int = Query(25, ge=1, le=100),
-    user: User = SuperAdmin,
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
+    pid = _uid(property_uid)
+    if pid is not None:
+        await OrganizationService(session)._company_property(user, pid)
     items, total = await EmployeeRequestService(session).list_requests(
-        user, status_filter=status, search=search, page=page, limit=limit
+        user, status_filter=status, search=search, property_id=pid,
+        page=page, limit=limit,
     )
     return EmployeeRequestListResponse(
         items=items, total=total, page=page, limit=limit
@@ -141,7 +170,7 @@ async def list_employee_requests(
     response_model=PendingCountResponse,
 )
 async def employee_requests_pending_count(
-    user: User = SuperAdmin,
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
     count = await EmployeeRequestService(session).pending_count(user)
@@ -153,7 +182,7 @@ async def employee_requests_pending_count(
 )
 async def get_employee_request(
     request_id: uuid.UUID,
-    user: User = SuperAdmin,
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
     req = await EmployeeRequestService(session).get_request(user, request_id)
@@ -167,7 +196,7 @@ async def get_employee_request(
 async def approve_employee_request(
     request_id: uuid.UUID,
     payload: EmployeeRequestApproveIn,
-    user: User = SuperAdmin,
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
     req, emp_id, user_id = await EmployeeRequestService(session).approve(
@@ -189,7 +218,7 @@ async def approve_employee_request(
 async def reject_employee_request(
     request_id: uuid.UUID,
     payload: EmployeeRequestRejectIn,
-    user: User = SuperAdmin,
+    user: User = Staff,
     session: AsyncSession = Depends(get_db),
 ):
     req = await EmployeeRequestService(session).reject(

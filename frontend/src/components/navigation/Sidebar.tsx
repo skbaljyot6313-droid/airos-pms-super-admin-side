@@ -130,7 +130,7 @@ function buildGroups(): NavGroup[] {
           label: 'Accounts',
           path: 'workforce/accounts',
           icon: <UserCheck className="w-[18px] h-[18px]" />,
-          roles: ['super_admin'],
+          roles: ['super_admin', 'property_manager'],
           active: (p) => p.includes('/workforce/accounts'),
         },
         {
@@ -184,6 +184,9 @@ const PropertySwitcher: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const canSwitch = currentRole === 'super_admin' && companyProperties.length > 1;
+  // Outside property context (admin pages) the nav targets the first
+  // property — show that same property here so the target is explicit.
+  const displayProperty = activeProperty ?? companyProperties[0];
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -193,14 +196,14 @@ const PropertySwitcher: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  if (!activeProperty) return null;
+  if (!displayProperty) return null;
 
   return (
     <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => canSwitch && setOpen((v) => !v)}
-        title={activeProperty.name}
+        title={displayProperty.name}
         className={cn(
           'flex w-full items-center gap-2.5 rounded-lg border border-line bg-canvas px-2.5 py-2 text-left',
           canSwitch && 'cursor-pointer hover:bg-hover',
@@ -213,7 +216,7 @@ const PropertySwitcher: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
         {!collapsed && (
           <>
             <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">
-              {activeProperty.name}
+              {displayProperty.name}
             </span>
             {canSwitch && <ChevronDown className="h-3.5 w-3.5 shrink-0 text-ink-3" />}
           </>
@@ -232,7 +235,7 @@ const PropertySwitcher: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
               className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] text-ink hover:bg-hover"
             >
               <span className="truncate">{p.name}</span>
-              {p.property_uid === activePropertyUid && <Check className="h-3.5 w-3.5 text-brand" />}
+              {p.property_uid === (activePropertyUid ?? displayProperty.property_uid) && <Check className="h-3.5 w-3.5 text-brand" />}
             </button>
           ))}
         </div>
@@ -249,6 +252,7 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; onCloseMobile: () => void 
     currentRole,
     currentUser,
     activePropertyUid,
+    companyProperties,
     currentPath,
     navigate,
   } = useApp();
@@ -264,16 +268,21 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; onCloseMobile: () => void 
     });
   };
 
-  const inProperty = !!activePropertyUid;
-  const propertyRoot = `/property/${activePropertyUid}`;
+  // Outside a property workspace (admin directory, settings) the nav
+  // still links into the first property — PropertyScopedView adopts it
+  // as active on entry.
+  const effectivePropertyUid = activePropertyUid || companyProperties[0]?.property_uid;
+  const inProperty = !!effectivePropertyUid;
+  const propertyRoot = `/property/${effectivePropertyUid}`;
   const groups = useMemo(buildGroups, []);
   const role = currentUser?.role ?? currentRole;
 
   // Pending employee-registration count — polled while the shell is
-  // mounted; only super_admin sees the Requests item it decorates.
+  // mounted; the Accounts item it decorates is staff-only. The backend
+  // scopes the count to the caller's property for managers.
   const [pendingRequests, setPendingRequests] = useState(0);
   useEffect(() => {
-    if (role !== 'super_admin') return;
+    if (role !== 'super_admin' && role !== 'property_manager') return;
     let cancelled = false;
     const poll = () =>
       getEmployeeRequestsPendingCount()
@@ -466,9 +475,10 @@ export function useNavDestinations() {
   const { activePropertyUid, currentUser, currentRole, companyProperties } = useApp();
   const role = currentUser?.role ?? currentRole;
   return useMemo(() => {
-    const root = `/property/${activePropertyUid}`;
+    const effectiveUid = activePropertyUid || companyProperties[0]?.property_uid;
+    const root = `/property/${effectiveUid}`;
     const all: { label: string; path: string; group: string }[] = [];
-    if (activePropertyUid) {
+    if (effectiveUid) {
       for (const g of buildGroups())
         for (const i of g.items)
           if (!i.roles || (role && i.roles.includes(role)))

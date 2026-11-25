@@ -37,7 +37,7 @@ from app.core.centrifugo import prop_channel, queue_event
 from app.core.exceptions import AppError
 from app.models.notifications import Notification
 from app.models.registration_request import EmployeeRegistrationRequest
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.employee_requests import (
     EmployeeRequestApproveIn,
     EmployeeRequestOut,
@@ -97,12 +97,24 @@ class EmployeeRequestService:
         *,
         status_filter: str | None = None,
         search: str | None = None,
+        property_id: uuid.UUID | None = None,
         page: int = 1,
         limit: int = 25,
     ) -> tuple[list[EmployeeRequestOut], int]:
+        # Property managers are pinned to their own property — the
+        # caller-supplied filter can never widen their scope. A manager
+        # with no property sees nothing (fail closed).
+        if user.role != UserRole.SUPER_ADMIN:
+            property_id = user.property_id
+            if property_id is None:
+                return [], 0
         q = select(EmployeeRegistrationRequest).where(
             EmployeeRegistrationRequest.company_id == user.company_id
         )
+        if property_id is not None:
+            q = q.where(
+                EmployeeRegistrationRequest.property_id == property_id
+            )
         if status_filter in ("pending", "approved", "rejected"):
             q = q.where(
                 EmployeeRegistrationRequest.status == status_filter
@@ -133,12 +145,18 @@ class EmployeeRequestService:
         return [_out(r) for r in res.scalars()], total or 0
 
     async def pending_count(self, user: User) -> int:
-        res = await self.session.scalar(
-            select(func.count(EmployeeRegistrationRequest.id)).where(
-                EmployeeRegistrationRequest.company_id == user.company_id,
-                EmployeeRegistrationRequest.status == "pending",
-            )
+        q = select(func.count(EmployeeRegistrationRequest.id)).where(
+            EmployeeRegistrationRequest.company_id == user.company_id,
+            EmployeeRegistrationRequest.status == "pending",
         )
+        if user.role != UserRole.SUPER_ADMIN:
+            if user.property_id is None:
+                return 0
+            q = q.where(
+                EmployeeRegistrationRequest.property_id
+                == user.property_id
+            )
+        res = await self.session.scalar(q)
         return res or 0
 
     async def get_request(
@@ -151,9 +169,13 @@ class EmployeeRequestService:
             )
         )
         req = res.scalar_one_or_none()
-        if req is None:
-            # Same 404 whether the request doesn't exist or belongs to
-            # another organization — no cross-tenant existence leak.
+        if req is None or (
+            user.role != UserRole.SUPER_ADMIN
+            and req.property_id != user.property_id
+        ):
+            # Same 404 whether the request doesn't exist, belongs to
+            # another organization, or sits outside the caller's
+            # property — no cross-tenant existence leak.
             raise NotFoundErr()
         return req
 
@@ -163,13 +185,24 @@ class EmployeeRequestService:
     async def _claim(
         self, user: User, request_id: uuid.UUID, new_status: str
     ) -> None:
+        conditions = [
+            EmployeeRegistrationRequest.id == request_id,
+            EmployeeRegistrationRequest.company_id == user.company_id,
+            EmployeeRegistrationRequest.status == "pending",
+        ]
+        if user.role != UserRole.SUPER_ADMIN:
+            # The property pin is part of the atomic claim — a manager
+            # can never flip a request that belongs to another property,
+            # not even by racing a direct request_id.
+            if user.property_id is None:
+                raise NotFoundErr()
+            conditions.append(
+                EmployeeRegistrationRequest.property_id
+                == user.property_id
+            )
         res = await self.session.execute(
             update(EmployeeRegistrationRequest)
-            .where(
-                EmployeeRegistrationRequest.id == request_id,
-                EmployeeRegistrationRequest.company_id == user.company_id,
-                EmployeeRegistrationRequest.status == "pending",
-            )
+            .where(*conditions)
             .values(
                 status=new_status,
                 reviewed_by_id=user.id,

@@ -21,9 +21,11 @@ export interface Account {
   created_at: string;
 }
 
-export async function listAccounts(): Promise<{
+export async function listAccounts(property_uid?: string): Promise<{
   items: Account[];
   total: number;
 }> {
-  return apiFetch<{ items: Account[]; total: number }>('/accounts');
+  return apiFetch<{ items: Account[]; total: number }>('/accounts', {
+    query: property_uid ? { property_uid } : {},
+  });
 }
